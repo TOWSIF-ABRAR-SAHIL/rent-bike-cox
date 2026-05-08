@@ -6,7 +6,7 @@ A motorcycle and car rental platform specifically designed for Cox's Bazar, feat
 
 ### 1. Clone the repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/zaheen4/rent-bike-cox.git
 cd rent-bike-cox
 ```
 
