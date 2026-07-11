@@ -8,6 +8,7 @@ const bikeSchema = new mongoose.Schema({
   pricePerHour: { type: Number, required: true, default: 200 },
   images: [{ type: String, required: true }], // Array for multi-angle images
   availability: { type: Boolean, default: true },
+  isVerified: { type: Boolean, default: false },
   renter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 

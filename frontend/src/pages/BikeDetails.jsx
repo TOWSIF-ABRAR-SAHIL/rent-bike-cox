@@ -1,34 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Info } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import api from '../api/axios';
 
 const BikeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [bike, setBike] = useState(null);
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    // Mocking fetching bike details
-    const mockBike = {
-      _id: id,
-      model: 'Yamaha R15 V4',
-      brand: 'Yamaha',
-      category: 'Bike',
-      pricePerHour: 200,
-      description: 'The Yamaha R15 V4 is a high-performance sports bike perfect for the Marine Drive.',
-      images: [
-        'https://placehold.co/600x400?text=Front+View',
-        'https://placehold.co/600x400?text=Side+View',
-        'https://placehold.co/600x400?text=Rear+View'
-      ],
-      packages: [
-        { name: '1 Day', price: 2000 },
-        { name: '2 Days', price: 3500 },
-        { name: '1 Week', price: 10000 }
-      ]
+    const fetchBike = async () => {
+      try {
+        const [bikeRes, settingsRes] = await Promise.all([
+          api.get(`/dashboard/bikes/${id}`),
+          api.get('/dashboard/settings')
+        ]);
+        setBike(bikeRes.data);
+        setSettings(settingsRes.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
-    setBike(mockBike);
+    fetchBike();
   }, [id]);
 
   const handleBooking = () => {
@@ -39,7 +37,8 @@ const BikeDetails = () => {
     }
   };
 
-  if (!bike) return <div className="p-8 text-center">Loading...</div>;
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (!bike) return <div className="p-8 text-center">Bike not found.</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -63,7 +62,7 @@ const BikeDetails = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="font-bold mb-2">Available Packages:</h3>
             <ul className="space-y-2">
-              {bike.packages.map((pkg, i) => (
+              {settings?.packages?.map((pkg, i) => (
                 <li key={i} className="flex justify-between border-b pb-1">
                   <span>{pkg.name}</span>
                   <span className="font-bold">{pkg.price} TK</span>

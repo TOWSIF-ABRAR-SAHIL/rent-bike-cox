@@ -1,31 +1,36 @@
 const SSLCommerzPayment = require('sslcommerz-lts');
 const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
-const User = require('../models/User');
 const mongoose = require('mongoose');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASS;
 const is_live = process.env.SSLCOMMERZ_IS_LIVE === 'true';
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 exports.initPayment = async (req, res) => {
     try {
         const { bookingId } = req.body;
         const booking = await Booking.findById(bookingId).populate('user').populate('bike');
-        
+
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
         const tran_id = new mongoose.Types.ObjectId().toString();
-        const amount = booking.totalPrice * 0.5; // Rules: 50% advance
+
+        const hours = Math.ceil((new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60));
+        const isShortRental = hours <= 24;
+        const advancePercent = isShortRental ? 0.5 : 0.3;
+        const amount = booking.totalPrice * advancePercent;
 
         const data = {
             total_amount: amount,
             currency: 'BDT',
             tran_id: tran_id,
-            success_url: `http://localhost:5000/api/payment/success/${bookingId}/${tran_id}`,
-            fail_url: `http://localhost:5000/api/payment/fail`,
-            cancel_url: `http://localhost:5000/api/payment/cancel`,
-            ipn_url: `http://localhost:5000/api/payment/ipn`,
+            success_url: `${backendUrl}/api/payment/success/${bookingId}/${tran_id}`,
+            fail_url: `${backendUrl}/api/payment/fail`,
+            cancel_url: `${backendUrl}/api/payment/cancel`,
+            ipn_url: `${backendUrl}/api/payment/ipn`,
             shipping_method: 'No',
             product_name: booking.bike.model,
             product_category: 'Rental',
@@ -58,31 +63,33 @@ exports.initPayment = async (req, res) => {
 
 exports.paymentSuccess = async (req, res) => {
     try {
-        const { bookingId, tranId } = req.params;
+        const { bookingId } = req.params;
         const booking = await Booking.findById(bookingId);
-        
+
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
+        const hours = Math.ceil((new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60));
+        const isShortRental = hours <= 24;
+        const advancePercent = isShortRental ? 0.5 : 0.3;
+
         booking.status = 'Confirmed';
-        booking.paymentStatus = 'Partial'; // 50% advance
-        booking.advancePaid = booking.totalPrice * 0.5;
-        
+        booking.paymentStatus = 'Partial';
+        booking.advancePaid = booking.totalPrice * advancePercent;
+
         await booking.save();
-        
-        // Update bike availability
+
         await Bike.findByIdAndUpdate(booking.bike, { availability: false });
 
-        // Redirect to frontend invoice page
-        res.redirect(`http://localhost:5173/invoice/${bookingId}`);
+        res.redirect(`${frontendUrl}/invoice/${bookingId}`);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
 exports.paymentFail = async (req, res) => {
-    res.redirect('http://localhost:5173/payment-failed');
+    res.redirect(`${frontendUrl}/payment-failed`);
 };
 
 exports.paymentCancel = async (req, res) => {
-    res.redirect('http://localhost:5173/payment-cancelled');
+    res.redirect(`${frontendUrl}/payment-cancelled`);
 };

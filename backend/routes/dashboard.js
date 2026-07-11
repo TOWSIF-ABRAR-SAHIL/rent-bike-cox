@@ -6,13 +6,17 @@ const {
   getRenterBikes, 
   getGlobalSettings, 
   updateGlobalSettings, 
-  getAllBikes 
+  getAllBikes,
+  getAvailableBikes,
+  getBikeById
 } = require('../controllers/dashboardController');
 
 const upload = require('../middleware/uploadMiddleware');
 
 // Shared/Public
 router.get('/settings', getGlobalSettings);
+router.get('/bikes/available', getAvailableBikes);
+router.get('/bikes/:id', getBikeById);
 
 // Renter routes
 router.post('/bikes', auth, upload.array('bikeImages', 5), addBike);

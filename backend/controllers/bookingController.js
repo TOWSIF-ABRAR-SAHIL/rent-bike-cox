@@ -6,10 +6,14 @@ exports.createBooking = async (req, res) => {
     const { bikeId, startTime, endTime, couponCode } = req.body;
     const bike = await Bike.findById(bikeId);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    if (!bike.availability) return res.status(409).json({ message: 'Bike is not available for booking' });
 
     const start = new Date(startTime);
     const end = new Date(endTime);
+    if (end <= start) return res.status(400).json({ message: 'End time must be after start time' });
+
     const hours = Math.ceil((end - start) / (1000 * 60 * 60));
+    if (hours < 1) return res.status(400).json({ message: 'Minimum rental duration is 1 hour' });
     
     let totalPrice = hours * bike.pricePerHour;
     
