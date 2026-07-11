@@ -1,55 +1,44 @@
-# Rent Bike Cox's Bazar - MERN Stack
+# Rent Bike Cox's Bazar
 
-A motorcycle and car rental platform specifically designed for Cox's Bazar, featuring role-based access, identity verification, and real-time payments.
+Motorcycle and car rental platform for Cox's Bazar. Role-based access (Admin, Renter, User), identity verification via NID/license uploads, SSLCommerz payments (bKash, Nagad, bank), and printable rental invoices.
 
-## Setup Instructions
+## Tech Stack
 
-### 1. Clone the repository
+- **Frontend:** React 19, Vite, Tailwind CSS, React Router, Axios
+- **Backend:** Node.js, Express 5, Mongoose 9, MongoDB
+- **Auth:** JWT (bcryptjs)
+- **Payments:** SSLCommerz
+- **File Uploads:** Cloudinary (via multer)
+
+## Prerequisites
+
+- Node.js 18+
+- MongoDB (local or Atlas)
+- Cloudinary account (for NID/license/bike photo uploads)
+- SSLCommerz sandbox account (for payment testing)
+
+## Backend Setup
+
 ```bash
-git clone https://github.com/zaheen4/rent-bike-cox.git
-cd rent-bike-cox
+cd backend
+npm install
+cp .env.example .env    # fill in your credentials
+node scripts/seedAdmin.js   # creates admin@rentbikecox.com / admin123
+npm run dev
 ```
 
-### 2. Backend Setup
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file from the example:
-   ```bash
-   cp .env.example .env
-   ```
-4. Fill in the required values in `.env` (Cloudinary, SSLCommerz, MongoDB, etc.).
-5. Run the seed script to create an admin:
-   ```bash
-   node scripts/seedAdmin.js
-   ```
-6. Start the server:
-   ```bash
-   npm run dev
-   ```
+## Frontend Setup
 
-### 3. Frontend Setup
-1. Navigate to the frontend folder:
-   ```bash
-   cd ../frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Create a `.env` file from the example:
-   ```bash
-   cp .env.example .env
-   ```
-4. Start the frontend:
-   ```bash
-   npm run dev
-   ```
+```bash
+cd frontend
+npm install
+cp .env.example .env    # set VITE_API_URL
+npm run dev
+```
 
-## Key Rules & Constraints
-Refer to `RULES.md` for detailed business logic, fine policies, and operational constraints.
+Frontend runs on `http://localhost:5173`, backend on `http://localhost:5000`.
+
+## Project Docs
+
+- `RULES.md` — Business rules, fine policies, pricing
+- `PROJECT_PLAN.md` — Development roadmap, bug fixes, deployment checklist
