@@ -30,5 +30,6 @@ backend/node_modules/
 
 # Frontend
 frontend/.env
+frontend/.env.production
 frontend/node_modules/
 frontend/dist/

@@ -54,7 +54,15 @@ Global pricing (base hourly rate, packages) stored in `Settings` model (singleto
 
 ### File Uploads
 
-NID/license images and bike photos go through multer → Cloudinary. Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`.
+NID/license images and bike photos go through multer → Cloudinary. Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`. Optional video URL (YouTube/Vimeo) supported on bike listings.
+
+### Categories
+
+Vehicle categories are admin-managed via `Category` model. Default seed: Bike, Car, Microbus, SUV, Van. Admins can add/edit/deactivate/delete from Admin Dashboard. Bikes reference categories via ObjectId.
+
+### Security
+
+Backend uses `helmet` (HTTP headers), `compression` (gzip), and `express-rate-limit` (20 req/15min on auth routes). Frontend uses React.lazy() code splitting.
 
 ## Key Files
 
@@ -62,7 +70,9 @@ NID/license images and bike photos go through multer → Cloudinary. Folders: `r
 |---|---|
 | `backend/controllers/paymentController.js` | SSLCommerz integration, redirect URLs |
 | `backend/controllers/bookingController.js` | Price calculation, availability checks |
-| `backend/controllers/dashboardController.js` | All CRUD for bikes, settings, admin actions |
+| `backend/controllers/dashboardController.js` | All CRUD for bikes, settings, admin actions, categories |
+| `frontend/src/index.css` | Custom theme, glassmorphism, gradients, animations |
+| `frontend/src/pages/Home.jsx` | Hero section, search, category filter, bike cards |
 | `frontend/src/pages/Checkout.jsx` | Booking creation + payment redirect |
 | `frontend/src/api/axios.js` | Axios instance with JWT interceptor |
 
@@ -72,8 +82,9 @@ NID/license images and bike photos go through multer → Cloudinary. Folders: `r
 - Express 5 — route errors propagate differently than Express 4
 - `process.env` loads from `backend/.env` via dotenv at server start
 - Frontend env vars must be prefixed with `VITE_` to be exposed to client code
-- No protected routes on frontend — auth is checked ad-hoc in components
+- Frontend uses `ProtectedRoute` component for role-based route guards (not ad-hoc)
 - No global state management — all state is local `useState`, auth token in `localStorage`
+- Tailwind CSS 4 — `@apply` can only reference built-in utilities, not custom classes from `@layer utilities`. Use plain CSS properties for custom classes like gradients
 
 ## Business Rules
 

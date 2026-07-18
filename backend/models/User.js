@@ -7,10 +7,13 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['Admin', 'Renter', 'User'], default: 'User' },
   nid: { type: String, required: true, unique: true },
   license: { type: String, required: true },
-  nidImage: { type: String }, // URL to Cloudinary
-  licenseImage: { type: String }, // URL to Cloudinary
+  nidImage: { type: String },
+  licenseImage: { type: String },
   phoneNumber: { type: String, required: true },
-  address: { type: String }
+  address: { type: String },
+  isVerified: { type: Boolean, default: false }
 }, { timestamps: true });
+
+userSchema.index({ role: 1 });
 
 module.exports = mongoose.model('User', userSchema);

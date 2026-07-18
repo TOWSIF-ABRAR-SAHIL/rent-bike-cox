@@ -1,101 +1,343 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen } from 'lucide-react';
+import { useToast } from '../components/useToast';
+import { SkeletonPage } from '../components/ui/Skeleton';
+
+const TabButton = ({ active, onClick, icon: Icon, children }) => (
+  <button onClick={onClick}
+    className={`flex items-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+      active ? 'gradient-primary text-white shadow-lg shadow-blue-500/25' : 'glass text-gray-400 hover:text-white hover:bg-white/5'
+    }`}>
+    <Icon className="mr-2" size={16} /> {children}
+  </button>
+);
+
+const StatCard = ({ label, value, color }) => (
+  <div className="glass rounded-2xl p-5 border border-white/5">
+    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+    <p className={`text-2xl font-bold ${color}`}>{value}</p>
+  </div>
+);
 
 const AdminDashboard = () => {
+  const { addToast } = useToast();
   const [settings, setSettings] = useState({ basePricePerHour: 200, packages: [] });
   const [bikes, setBikes] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [activeTab, setActiveTab] = useState('settings');
+  const [loading, setLoading] = useState(true);
+  const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
+  const [newCategory, setNewCategory] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [settingsRes, bikesRes] = await Promise.all([
-        api.get('/dashboard/settings'),
-        api.get('/dashboard/admin/bikes')
-      ]);
+    Promise.all([
+      api.get('/dashboard/settings'),
+      api.get('/dashboard/admin/bikes'),
+      api.get('/dashboard/admin/users'),
+      api.get('/coupons'),
+      api.get('/dashboard/admin/categories')
+    ]).then(([settingsRes, bikesRes, usersRes, couponsRes, categoriesRes]) => {
       setSettings(settingsRes.data);
       setBikes(bikesRes.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      setUsers(usersRes.data);
+      setCoupons(couponsRes.data);
+      setCategories(categoriesRes.data);
+    }).catch(() => addToast('Failed to fetch data', 'error'))
+      .finally(() => setLoading(false));
+  }, [addToast]);
 
   const handleUpdateSettings = async (e) => {
     e.preventDefault();
     try {
       await api.put('/dashboard/admin/settings', settings);
-      alert('Settings updated successfully!');
-    } catch (err) {
-      alert('Failed to update settings');
-    }
+      addToast('Settings updated!', 'success');
+    } catch { addToast('Failed to update settings', 'error'); }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+  const toggleBikeVerification = async (bikeId) => {
+    try {
+      await api.put(`/dashboard/admin/bikes/${bikeId}/verify`);
+      setBikes(bikes.map(b => b._id === bikeId ? { ...b, isVerified: !b.isVerified } : b));
+      addToast('Bike updated', 'success');
+    } catch { addToast('Failed', 'error'); }
+  };
 
-      <div className="flex space-x-4 mb-8">
-        <button onClick={() => setActiveTab('settings')} className={`flex items-center px-4 py-2 rounded ${activeTab === 'settings' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
-          <Settings className="mr-2" size={18} /> Settings
-        </button>
-        <button onClick={() => setActiveTab('bikes')} className={`flex items-center px-4 py-2 rounded ${activeTab === 'bikes' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
-          <Bike className="mr-2" size={18} /> Manage Bikes
-        </button>
-        <button onClick={() => setActiveTab('coupons')} className={`flex items-center px-4 py-2 rounded ${activeTab === 'coupons' ? 'bg-blue-600 text-white' : 'bg-white border'}`}>
-          <Tag className="mr-2" size={18} /> Coupons
-        </button>
+  const toggleUserVerification = async (userId) => {
+    try {
+      await api.put(`/dashboard/admin/users/${userId}/verify`);
+      setUsers(users.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u));
+      addToast('User updated', 'success');
+    } catch { addToast('Failed', 'error'); }
+  };
+
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post('/coupons', newCoupon);
+      setCoupons([res.data, ...coupons]);
+      setNewCoupon({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
+      addToast('Coupon created!', 'success');
+    } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
+  };
+
+  const handleDeleteCoupon = async (id) => {
+    if (!window.confirm('Delete this coupon?')) return;
+    try {
+      await api.delete(`/coupons/${id}`);
+      setCoupons(coupons.filter(c => c._id !== id));
+      addToast('Deleted', 'success');
+    } catch { addToast('Failed', 'error'); }
+  };
+
+  const toggleCouponActive = async (id, isActive) => {
+    try {
+      await api.put(`/coupons/${id}`, { isActive: !isActive });
+      setCoupons(coupons.map(c => c._id === id ? { ...c, isActive: !isActive } : c));
+      addToast('Updated', 'success');
+    } catch { addToast('Failed', 'error'); }
+  };
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.post('/dashboard/admin/categories', { name: newCategory });
+      setCategories([...categories, res.data]);
+      setNewCategory('');
+      addToast('Category added!', 'success');
+    } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (!window.confirm('Delete?')) return;
+    try {
+      await api.delete(`/dashboard/admin/categories/${id}`);
+      setCategories(categories.filter(c => c._id !== id));
+      addToast('Deleted', 'success');
+    } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
+  };
+
+  const toggleCategoryActive = async (id, isActive) => {
+    try {
+      const res = await api.put(`/dashboard/admin/categories/${id}`, { isActive: !isActive });
+      setCategories(categories.map(c => c._id === id ? res.data : c));
+      addToast('Updated', 'success');
+    } catch { addToast('Failed', 'error'); }
+  };
+
+  if (loading) return <SkeletonPage />;
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-1">Admin Dashboard</h1>
+        <p className="text-gray-400 text-sm">Manage your rental platform</p>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <StatCard label="Total Vehicles" value={bikes.length} color="text-blue-400" />
+        <StatCard label="Users" value={users.length} color="text-green-400" />
+        <StatCard label="Coupons" value={coupons.length} color="text-amber-400" />
+        <StatCard label="Categories" value={categories.length} color="text-purple-400" />
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-8">
+        <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings}>Settings</TabButton>
+        <TabButton active={activeTab === 'bikes'} onClick={() => setActiveTab('bikes')} icon={Bike}>Bikes</TabButton>
+        <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={Users}>Users</TabButton>
+        <TabButton active={activeTab === 'coupons'} onClick={() => setActiveTab('coupons')} icon={Tag}>Coupons</TabButton>
+        <TabButton active={activeTab === 'categories'} onClick={() => setActiveTab('categories')} icon={FolderOpen}>Categories</TabButton>
       </div>
 
       {activeTab === 'settings' && (
-        <div className="bg-white p-6 rounded shadow-md max-w-2xl">
-          <h2 className="text-xl font-bold mb-4">Global Fees & Pricing</h2>
+        <div className="glass p-6 rounded-2xl max-w-xl">
+          <h2 className="text-lg font-bold text-white mb-4">Global Pricing</h2>
           <form onSubmit={handleUpdateSettings} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Base Price Per Hour (TK)</label>
-              <input 
-                type="number" 
-                value={settings.basePricePerHour} 
-                onChange={e => setSettings({...settings, basePricePerHour: e.target.value})}
-                className="w-full border p-2 rounded"
-              />
+              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Base Price Per Hour (TK)</label>
+              <input type="number" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: e.target.value})} className="input-dark" />
             </div>
-            <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-              Save Changes
-            </button>
+            <button type="submit" className="btn-primary">Save Changes</button>
           </form>
         </div>
       )}
 
       {activeTab === 'bikes' && (
-        <div className="bg-white rounded shadow overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50">
+        <div className="glass rounded-2xl overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-white/10">
               <tr>
-                <th className="p-4">Bike</th>
-                <th className="p-4">Renter</th>
-                <th className="p-4">Price/hr</th>
-                <th className="p-4">Status</th>
+                <th className="p-4 font-medium text-gray-400">Vehicle</th>
+                <th className="p-4 font-medium text-gray-400">Category</th>
+                <th className="p-4 font-medium text-gray-400">Renter</th>
+                <th className="p-4 font-medium text-gray-400">Price</th>
+                <th className="p-4 font-medium text-gray-400">Status</th>
+                <th className="p-4 font-medium text-gray-400">Action</th>
               </tr>
             </thead>
             <tbody>
               {bikes.map(bike => (
-                <tr key={bike._id} className="border-t">
-                  <td className="p-4 font-medium">{bike.model}</td>
-                  <td className="p-4">{bike.renter?.name}</td>
-                  <td className="p-4">{bike.pricePerHour} TK</td>
+                <tr key={bike._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="p-4 font-medium text-white">{bike.model}</td>
+                  <td className="p-4 text-gray-400">{bike.category?.name || 'N/A'}</td>
+                  <td className="p-4 text-gray-400">{bike.renter?.name}</td>
+                  <td className="p-4 font-medium text-white">{bike.pricePerHour} TK</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs ${bike.availability ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${bike.availability ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                       {bike.availability ? 'Active' : 'Booked'}
                     </span>
+                  </td>
+                  <td className="p-4">
+                    <button onClick={() => toggleBikeVerification(bike._id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${bike.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                      {bike.isVerified ? 'Unverify' : 'Verify'}
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="glass rounded-2xl overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-white/10">
+              <tr>
+                <th className="p-4 font-medium text-gray-400">Name</th>
+                <th className="p-4 font-medium text-gray-400">Email</th>
+                <th className="p-4 font-medium text-gray-400">Role</th>
+                <th className="p-4 font-medium text-gray-400">Phone</th>
+                <th className="p-4 font-medium text-gray-400">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map(user => (
+                <tr key={user._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="p-4 font-medium text-white">{user.name}</td>
+                  <td className="p-4 text-gray-400">{user.email}</td>
+                  <td className="p-4">
+                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${user.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : user.role === 'Renter' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-white/5 text-gray-400 border border-white/10'}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="p-4 text-gray-400">{user.phoneNumber}</td>
+                  <td className="p-4">
+                    <button onClick={() => toggleUserVerification(user._id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                      {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {activeTab === 'coupons' && (
+        <div className="space-y-6">
+          <div className="glass p-6 rounded-2xl max-w-xl">
+            <h2 className="text-lg font-bold text-white mb-4">Create Coupon</h2>
+            <form onSubmit={handleCreateCoupon} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="text" value={newCoupon.code} onChange={e => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="CODE" className="input-dark text-sm" required />
+                <input type="number" value={newCoupon.discountPercent} onChange={e => setNewCoupon({...newCoupon, discountPercent: parseInt(e.target.value)})} min="1" max="100" placeholder="Discount %" className="input-dark text-sm" required />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="number" value={newCoupon.maxUses} onChange={e => setNewCoupon({...newCoupon, maxUses: parseInt(e.target.value)})} min="0" placeholder="Max uses (0=unlimited)" className="input-dark text-sm" />
+                <input type="datetime-local" value={newCoupon.expiresAt} onChange={e => setNewCoupon({...newCoupon, expiresAt: e.target.value})} className="input-dark text-sm" />
+              </div>
+              <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Create</button>
+            </form>
+          </div>
+          <div className="glass rounded-2xl overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-white/10">
+                <tr>
+                  <th className="p-4 font-medium text-gray-400">Code</th>
+                  <th className="p-4 font-medium text-gray-400">Discount</th>
+                  <th className="p-4 font-medium text-gray-400">Uses</th>
+                  <th className="p-4 font-medium text-gray-400">Status</th>
+                  <th className="p-4 font-medium text-gray-400">Expires</th>
+                  <th className="p-4 font-medium text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons.map(c => (
+                  <tr key={c._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="p-4 font-mono font-bold text-white">{c.code}</td>
+                    <td className="p-4 text-gray-400">{c.discountPercent}%</td>
+                    <td className="p-4 text-gray-400">{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${c.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                        {c.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-500">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
+                    <td className="p-4 space-x-2">
+                      <button onClick={() => toggleCouponActive(c._id, c.isActive)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                        {c.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button onClick={() => handleDeleteCoupon(c._id)} className="px-2 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'categories' && (
+        <div className="space-y-6">
+          <div className="glass p-6 rounded-2xl max-w-xl">
+            <h2 className="text-lg font-bold text-white mb-4">Add Category</h2>
+            <form onSubmit={handleCreateCategory} className="flex gap-3">
+              <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Microbus" className="input-dark flex-1 text-sm" required />
+              <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Add</button>
+            </form>
+          </div>
+          <div className="glass rounded-2xl overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-white/10">
+                <tr>
+                  <th className="p-4 font-medium text-gray-400">Name</th>
+                  <th className="p-4 font-medium text-gray-400">Slug</th>
+                  <th className="p-4 font-medium text-gray-400">Status</th>
+                  <th className="p-4 font-medium text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map(cat => (
+                  <tr key={cat._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="p-4 font-medium text-white">{cat.name}</td>
+                    <td className="p-4 text-gray-500">{cat.slug}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                        {cat.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="p-4 space-x-2">
+                      <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                        {cat.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button onClick={() => handleDeleteCategory(cat._id)} className="px-2 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
