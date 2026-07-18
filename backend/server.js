@@ -85,15 +85,18 @@ app.get('/api/seed-temp', async (req, res) => {
     }
 
     // Seed categories
-    const catCount = await Category.countDocuments();
-    if (catCount === 0) {
-      await Category.insertMany([
-        { name: 'Bike', slug: 'bike' },
-        { name: 'Car', slug: 'car' },
-        { name: 'Microbus', slug: 'microbus' },
-        { name: 'SUV', slug: 'suv' },
-        { name: 'Van', slug: 'van' }
-      ]);
+    const defaultCategories = [
+      { name: 'Bike', slug: 'bike' },
+      { name: 'Car', slug: 'car' },
+      { name: 'Microbus', slug: 'microbus' },
+      { name: 'SUV', slug: 'suv' },
+      { name: 'Van', slug: 'van' }
+    ];
+    for (const cat of defaultCategories) {
+      const exists = await Category.findOne({ slug: cat.slug });
+      if (!exists) {
+        await Category.create(cat);
+      }
     }
     const categories = await Category.find();
     const catMap = {};
