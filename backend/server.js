@@ -102,6 +102,8 @@ app.get('/api/seed-temp', async (req, res) => {
     const catMap = {};
     categories.forEach(c => { catMap[c.slug] = c._id; });
 
+    const debugInfo = { categoriesFound: categories.length, catMapKeys: Object.keys(catMap), bikeCount: await Bike.countDocuments() };
+
     // Seed bikes
     const bikeCount = await Bike.countDocuments();
     if (bikeCount < 5) {
@@ -122,7 +124,7 @@ app.get('/api/seed-temp', async (req, res) => {
       }
     }
 
-    res.json({ message: 'Seeded successfully! Admin: admin@rentbikecox.com / admin123' });
+    res.json({ message: 'Seeded successfully!', debug: debugInfo, admin: 'admin@rentbikecox.com / admin123' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
