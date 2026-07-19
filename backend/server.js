@@ -17,8 +17,19 @@ const app = express();
 // Security & Performance Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(compression());
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://rent-bike-cox.vercel.app',
+  'http://localhost:5173'
+].filter(Boolean);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true);
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
