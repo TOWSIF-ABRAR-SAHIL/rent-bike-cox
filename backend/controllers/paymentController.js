@@ -4,7 +4,7 @@ const Bike = require('../models/Bike');
 const mongoose = require('mongoose');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
-const store_passwd = process.env.SSLCOMMERZ_STORE_PASS;
+const store_passwd = process.env.SSLCOMMERZ_STORE_PASS || process.env.SSLCOMMERZ_STORE_PASSWORD;
 const is_live = process.env.SSLCOMMERZ_IS_LIVE === 'true';
 const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
