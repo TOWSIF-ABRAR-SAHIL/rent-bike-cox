@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Tent, ChevronRight } from 'lucide-react';
+import { useToast } from '../components/useToast';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -27,6 +28,7 @@ const Home = () => {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const { addToast } = useToast();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -34,8 +36,8 @@ const Home = () => {
   }, [search]);
 
   useEffect(() => {
-    api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => {});
-  }, []);
+    api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => addToast('Failed to load categories', 'error'));
+  }, [addToast]);
 
   useEffect(() => {
     const fetchBikes = async () => {
@@ -47,13 +49,13 @@ const Home = () => {
         const res = await api.get('/dashboard/bikes/available', { params });
         setBikes(res.data);
       } catch {
-        // silent
+        addToast('Failed to load available bikes', 'error');
       } finally {
         setLoading(false);
       }
     };
     fetchBikes();
-  }, [debouncedSearch, activeCategory]);
+  }, [debouncedSearch, activeCategory, addToast]);
 
   const handleCategoryClick = useCallback((slug) => {
     setActiveCategory(prev => prev === slug ? '' : slug);

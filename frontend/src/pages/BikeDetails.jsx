@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Clock, Fuel, Users, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
+import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 
 const BikeDetails = () => {
@@ -13,6 +14,7 @@ const BikeDetails = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const { addToast } = useToast();
 
   useEffect(() => {
     Promise.all([
@@ -21,8 +23,8 @@ const BikeDetails = () => {
     ]).then(([bikeRes, settingsRes]) => {
       setBike(bikeRes.data);
       setSettings(settingsRes.data);
-    }).catch(() => {}).finally(() => setLoading(false));
-  }, [id]);
+    }).catch(() => addToast('Failed to load bike details', 'error')).finally(() => setLoading(false));
+  }, [id, addToast]);
 
   const handleBooking = () => {
     navigate(token ? `/checkout/${id}` : '/login');
