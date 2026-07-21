@@ -26,10 +26,12 @@ const Checkout = () => {
   const [destination, setDestination] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
     Promise.all([
       api.get(`/dashboard/bikes/${bikeId}`),
       api.get('/dashboard/settings')
     ]).then(([bikeRes, settingsRes]) => {
+      if (cancelled) return;
       setBike(bikeRes.data);
       setSettings(settingsRes.data);
       const now = new Date();
@@ -37,10 +39,12 @@ const Checkout = () => {
       setStartTime(formatDateTime(now));
       setEndTime(formatDateTime(later));
     }).catch(() => {});
+    return () => { cancelled = true; };
   }, [bikeId]);
 
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
+    let cancelled = false;
     const createBooking = async () => {
       setError('');
       try {
@@ -53,13 +57,16 @@ const Checkout = () => {
         };
         if (selectedPackage !== null) payload.packageIndex = selectedPackage;
         const res = await api.post('/booking', payload);
+        if (cancelled) return;
         setBookingData(res.data);
       } catch (err) {
+        if (cancelled) return;
         setError(err.response?.data?.message || 'Failed to create booking');
         setBookingData(null);
       }
     };
     createBooking();
+    return () => { cancelled = true; };
   }, [startTime, endTime, couponCode, selectedPackage, bikeId, bike, destination]);
 
   const handlePayment = async () => {

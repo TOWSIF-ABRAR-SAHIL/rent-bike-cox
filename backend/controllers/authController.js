@@ -40,6 +40,10 @@ exports.register = async (req, res) => {
     res.status(201).json({ token, user: { id: user._id, name, email, role: user.role } });
   } catch (error) {
     if (error.code === 11000) return res.status(400).json({ message: 'Email or NID already exists' });
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ message: messages.join('. ') });
+    }
     res.status(500).json({ message: 'Registration failed. Please try again.' });
   }
 };

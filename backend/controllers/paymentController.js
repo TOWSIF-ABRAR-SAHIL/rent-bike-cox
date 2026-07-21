@@ -72,33 +72,36 @@ exports.initPayment = async (req, res) => {
         console.log('[SSLCommerz] Initializing payment:', { store_id, is_live, amount, tran_id });
 
         const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-        sslcz.init(data).then(apiResponse => {
-            console.log('[SSLCommerz] Response:', JSON.stringify(apiResponse, null, 2));
-
-            if (apiResponse.GatewayPageURL) {
-                res.json({ url: apiResponse.GatewayPageURL });
-            } else if (apiResponse.no_session_key || apiResponse.status === 'FAILED') {
-                console.error('[SSLCommerz] Payment init failed:', apiResponse);
-                booking.tranId = undefined;
-                booking.save();
-                res.status(400).json({ message: 'Payment gateway rejected the request' });
-            } else {
-                const redirectUrl = apiResponse.GatewayPageURL || apiResponse.redirectGatewayURL;
-                if (redirectUrl) {
-                    res.json({ url: redirectUrl });
-                } else {
-                    console.error('[SSLCommerz] No gateway URL in response');
-                    booking.tranId = undefined;
-                    booking.save();
-                    res.status(400).json({ message: 'Payment gateway did not return a URL' });
-                }
-            }
-        }).catch(err => {
+        let apiResponse;
+        try {
+            apiResponse = await sslcz.init(data);
+        } catch (err) {
             console.error('[SSLCommerz] init() error:', err.message || err);
             booking.tranId = undefined;
-            booking.save();
-            res.status(500).json({ message: 'Payment initialization failed' });
-        });
+            await booking.save();
+            return res.status(500).json({ message: 'Payment initialization failed' });
+        }
+
+        console.log('[SSLCommerz] Response:', JSON.stringify(apiResponse, null, 2));
+
+        if (apiResponse.GatewayPageURL) {
+            res.json({ url: apiResponse.GatewayPageURL });
+        } else if (apiResponse.no_session_key || apiResponse.status === 'FAILED') {
+            console.error('[SSLCommerz] Payment init failed:', apiResponse);
+            booking.tranId = undefined;
+            await booking.save();
+            res.status(400).json({ message: 'Payment gateway rejected the request' });
+        } else {
+            const redirectUrl = apiResponse.GatewayPageURL || apiResponse.redirectGatewayURL;
+            if (redirectUrl) {
+                res.json({ url: redirectUrl });
+            } else {
+                console.error('[SSLCommerz] No gateway URL in response');
+                booking.tranId = undefined;
+                await booking.save();
+                res.status(400).json({ message: 'Payment gateway did not return a URL' });
+            }
+        }
     } catch (error) {
         console.error('[Payment] initPayment error:', error.message);
         res.status(500).json({ message: 'Payment initialization failed' });
