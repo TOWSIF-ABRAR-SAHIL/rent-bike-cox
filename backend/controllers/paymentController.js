@@ -33,6 +33,9 @@ exports.initPayment = async (req, res) => {
 
         const tran_id = new mongoose.Types.ObjectId().toString();
 
+        booking.tranId = tran_id;
+        await booking.save();
+
         const hours = Math.ceil((new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60));
         const isShortRental = hours <= 24;
         const advancePercent = isShortRental ? 0.5 : 0.3;
@@ -76,6 +79,8 @@ exports.initPayment = async (req, res) => {
                 res.json({ url: apiResponse.GatewayPageURL });
             } else if (apiResponse.no_session_key || apiResponse.status === 'FAILED') {
                 console.error('[SSLCommerz] Payment init failed:', apiResponse);
+                booking.tranId = undefined;
+                booking.save();
                 res.status(400).json({ message: 'Payment gateway rejected the request' });
             } else {
                 const redirectUrl = apiResponse.GatewayPageURL || apiResponse.redirectGatewayURL;
@@ -83,11 +88,15 @@ exports.initPayment = async (req, res) => {
                     res.json({ url: redirectUrl });
                 } else {
                     console.error('[SSLCommerz] No gateway URL in response');
+                    booking.tranId = undefined;
+                    booking.save();
                     res.status(400).json({ message: 'Payment gateway did not return a URL' });
                 }
             }
         }).catch(err => {
             console.error('[SSLCommerz] init() error:', err.message || err);
+            booking.tranId = undefined;
+            booking.save();
             res.status(500).json({ message: 'Payment initialization failed' });
         });
     } catch (error) {
@@ -99,16 +108,30 @@ exports.initPayment = async (req, res) => {
 exports.paymentSuccess = async (req, res) => {
     try {
         const { bookingId, tranId } = req.params;
-        console.log('[SSLCommerz] Success callback hit:', { bookingId, tranId, method: req.method, body: req.body });
+        const val_id = req.body?.val_id || req.query?.val_id;
 
-        if (!bookingId || !tranId) {
-            console.error('[SSLCommerz] Missing bookingId or tranId');
+        if (!bookingId) {
             return res.redirect(`${frontendUrl}/payment-failed`);
         }
 
         const booking = await Booking.findById(bookingId);
         if (!booking) {
-            console.error('[SSLCommerz] Booking not found:', bookingId);
+            return res.redirect(`${frontendUrl}/payment-failed`);
+        }
+
+        if (booking.status === 'Confirmed' || booking.status === 'Completed') {
+            return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
+        }
+
+        if (val_id) {
+            const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+            const validation = await sslcz.validate({ val_id });
+            if (validation?.status !== 'VALID' && validation?.status !== 'VALIDATED') {
+                console.error('[SSLCommerz] Validation failed:', validation);
+                return res.redirect(`${frontendUrl}/payment-failed`);
+            }
+        } else if (booking.tranId && booking.tranId !== tranId) {
+            console.error('[SSLCommerz] Transaction ID mismatch');
             return res.redirect(`${frontendUrl}/payment-failed`);
         }
 
@@ -129,16 +152,10 @@ exports.paymentSuccess = async (req, res) => {
         await booking.save();
         await Bike.findByIdAndUpdate(booking.bike, { availability: false });
 
-        console.log('[SSLCommerz] Payment confirmed for booking:', bookingId);
         return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
     } catch (error) {
-        console.error('[Payment] success error:', error.message, error.stack);
-        try {
-            return res.redirect(`${frontendUrl}/payment-failed`);
-        } catch (redirectError) {
-            console.error('[Payment] redirect error:', redirectError.message);
-            return res.status(500).json({ message: 'Payment processing failed' });
-        }
+        console.error('[Payment] success error:', error.message);
+        return res.redirect(`${frontendUrl}/payment-failed`);
     }
 };
 
@@ -152,8 +169,44 @@ exports.paymentCancel = async (req, res) => {
 
 exports.paymentIPN = async (req, res) => {
     try {
-        const { val_id } = req.body;
-        console.log('[SSLCommerz] IPN received:', req.body);
+        const { val_id, tran_id, status } = req.body;
+
+        if (status !== 'VALID' || !val_id || !tran_id) {
+            return res.json({ status: 'IGNORED' });
+        }
+
+        const booking = await Booking.findOne({ tranId: tran_id });
+        if (!booking) {
+            return res.json({ status: 'BOOKING_NOT_FOUND' });
+        }
+
+        if (booking.status === 'Confirmed' || booking.status === 'Completed') {
+            return res.json({ status: 'OK' });
+        }
+
+        const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+        const validation = await sslcz.validate({ val_id });
+
+        if (validation?.status !== 'VALID' && validation?.status !== 'VALIDATED') {
+            return res.json({ status: 'VALIDATION_FAILED' });
+        }
+
+        const hours = Math.ceil((new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60));
+        const isShortRental = hours <= 24;
+        const advancePercent = isShortRental ? 0.5 : 0.3;
+
+        booking.status = 'Confirmed';
+        booking.paymentStatus = 'Partial';
+        booking.advancePaid = booking.totalPrice * advancePercent;
+        booking.paymentMethod = 'SSLCommerz';
+
+        if (!booking.invoiceNumber) {
+            booking.invoiceNumber = await generateInvoiceNumber();
+        }
+
+        await booking.save();
+        await Bike.findByIdAndUpdate(booking.bike, { availability: false });
+
         res.json({ status: 'OK' });
     } catch (error) {
         console.error('[Payment] IPN error:', error.message);

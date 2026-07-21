@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -13,7 +13,6 @@ const formatDateTime = (date) => {
 
 const Checkout = () => {
   const { bikeId } = useParams();
-  const navigate = useNavigate();
   const [bike, setBike] = useState(null);
   const [settings, setSettings] = useState(null);
   const [startTime, setStartTime] = useState('');
@@ -71,26 +70,11 @@ const Checkout = () => {
       if (response.data.url) {
         window.location.replace(response.data.url);
       } else {
-        setError('Payment gateway unavailable. Use "Confirm Booking" below for direct confirmation.');
+        setError('Payment gateway unavailable. Please try again or contact support.');
         setLoading(false);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Payment initialization failed');
-      setLoading(false);
-    }
-  };
-
-  const handleDirectConfirm = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await api.post('/booking/confirm', {
-        bookingId: bookingData.booking._id,
-        amountPaid: bookingData.minAdvance
-      });
-      navigate(`/invoice/${response.data.booking._id}`);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Confirmation failed');
       setLoading(false);
     }
   };
@@ -236,15 +220,6 @@ const Checkout = () => {
                 }`}>
                 {loading ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
                 {loading ? 'Processing...' : `Pay ${bookingData.minAdvance} TK via SSLCommerz`}
-              </button>
-              <button onClick={handleDirectConfirm} disabled={loading || !agreedToTerms}
-                className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center border-2 ${
-                  loading || !agreedToTerms
-                    ? 'border-white/10 text-gray-500 cursor-not-allowed'
-                    : 'border-green-500/50 text-green-400 hover:bg-green-500/10'
-                }`}>
-                <CheckCircle size={20} className="mr-2" />
-                {loading ? 'Processing...' : `Confirm Booking (${bookingData.minAdvance} TK Advance)`}
               </button>
               <p className="text-center text-xs text-gray-500">bKash / Nagad / Bank Transfer via secure SSLCommerz gateway</p>
               {!agreedToTerms && bookingData && (

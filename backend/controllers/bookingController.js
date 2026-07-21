@@ -81,15 +81,15 @@ exports.createBooking = async (req, res) => {
 
 exports.confirmPayment = async (req, res) => {
   try {
-    const { bookingId, amountPaid } = req.body;
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Only admins can manually confirm payments' });
+    }
+
+    const { bookingId } = req.body;
     if (!bookingId) return res.status(400).json({ message: 'Booking ID is required' });
 
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
-
-    if (booking.user.toString() !== req.user.id && req.user.role !== 'Admin') {
-      return res.status(403).json({ message: 'Not authorized to confirm this booking' });
-    }
 
     if (booking.status === 'Confirmed' || booking.status === 'Completed') {
       return res.status(400).json({ message: 'Booking is already confirmed or completed' });
@@ -120,9 +120,14 @@ exports.confirmPayment = async (req, res) => {
 exports.getBookingDetails = async (req, res) => {
     try {
         const booking = await Booking.findById(req.params.id)
-            .populate('user', 'name email nid license phoneNumber address')
+            .populate('user', 'name email phoneNumber')
             .populate('bike', 'model brand pricePerHour');
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+        if (booking.user._id.toString() !== req.user.id && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Not authorized to view this booking' });
+        }
+
         res.json(booking);
     } catch (error) {
         res.status(500).json({ message: 'Failed to fetch booking' });
