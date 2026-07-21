@@ -34,7 +34,7 @@ Complete guide for building, learning, and scaling this project.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/zaheen4/rent-bike-cox.git
+git clone https://github.com/TOWSIF-ABRAR-SAHIL/rent-bike-cox.git
 cd rent-bike-cox
 
 # 2. Backend setup
