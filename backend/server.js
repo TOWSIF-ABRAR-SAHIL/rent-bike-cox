@@ -20,32 +20,36 @@ app.use(compression());
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://rent-bike-cox.vercel.app',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  'https://sandbox.sslcommerz.com',
+  'https://sslcommerz.com'
 ].filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Temporary seed endpoint — will be removed after seeding
+// Temporary seed endpoint — only in development
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Category = require('./models/Category');
 const Bike = require('./models/Bike');
 
-app.get('/api/seed-temp', async (req, res) => {
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/seed-temp', async (req, res) => {
   try {
     // Seed admin
     const salt = await bcrypt.genSalt(10);
@@ -135,11 +139,12 @@ app.get('/api/seed-temp', async (req, res) => {
       }
     }
 
-    res.json({ message: 'Seeded successfully!', debug: debugInfo, admin: 'admin@rentbikecox.com / admin123' });
+    res.json({ message: 'Seeded successfully!' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Seeding failed' });
   }
 });
+}
 
 // Rate limiting on auth routes
 const authLimiter = rateLimit({
@@ -164,7 +169,16 @@ app.use('/api/{*splat}', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('[ERROR]', err.message);
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ message: 'Not allowed by CORS' });
+  }
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
+  }
+  if (err.message && err.message.includes('Only JPG')) {
+    return res.status(400).json({ message: err.message });
+  }
   res.status(500).json({ message: 'Internal server error' });
 });
 

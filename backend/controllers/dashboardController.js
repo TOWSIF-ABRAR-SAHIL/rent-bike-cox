@@ -31,6 +31,13 @@ const seedCategories = async () => {
 exports.addBike = async (req, res) => {
   try {
     const { model, brand, category, description, pricePerHour, videoUrl } = req.body;
+    if (!model || !brand || !category || !pricePerHour) {
+      return res.status(400).json({ message: 'Model, brand, category, and pricePerHour are required' });
+    }
+    const price = Number(pricePerHour);
+    if (isNaN(price) || price <= 0 || price > 100000) {
+      return res.status(400).json({ message: 'Price must be between 1 and 100,000 TK/hour' });
+    }
     const images = req.files ? req.files.map(file => file.path) : [];
 
     const bike = new Bike({
@@ -38,7 +45,7 @@ exports.addBike = async (req, res) => {
       brand,
       category,
       description,
-      pricePerHour,
+      pricePerHour: price,
       images,
       videoUrl: videoUrl || undefined,
       renter: req.user.id
@@ -46,7 +53,7 @@ exports.addBike = async (req, res) => {
     await bike.save();
     res.status(201).json(bike);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to add bike' });
   }
 };
 
@@ -56,7 +63,7 @@ exports.getRenterBikes = async (req, res) => {
     const bikes = await Bike.find({ renter: req.user.id }).populate('category', 'name slug');
     res.json(bikes);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -74,9 +81,10 @@ exports.getAvailableBikes = async (req, res) => {
     }
 
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { model: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } }
+        { model: { $regex: escapedSearch, $options: 'i' } },
+        { brand: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
 
@@ -85,7 +93,7 @@ exports.getAvailableBikes = async (req, res) => {
       .populate('category', 'name slug');
     res.json(bikes);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -97,7 +105,7 @@ exports.getBikeById = async (req, res) => {
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
     res.json(bike);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -109,7 +117,7 @@ exports.getCategories = async (req, res) => {
     const categories = await Category.find({ isActive: true });
     res.json(categories);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -120,7 +128,7 @@ exports.getAllCategories = async (req, res) => {
     const categories = await Category.find().sort({ createdAt: 1 });
     res.json(categories);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -136,7 +144,7 @@ exports.createCategory = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Category already exists' });
     }
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -157,7 +165,7 @@ exports.updateCategory = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Category name already exists' });
     }
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -172,7 +180,7 @@ exports.deleteCategory = async (req, res) => {
     if (!category) return res.status(404).json({ message: 'Category not found' });
     res.json({ message: 'Category deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -193,23 +201,28 @@ exports.getGlobalSettings = async (req, res) => {
     }
     res.json(settings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 exports.updateGlobalSettings = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
+    const { basePricePerHour, packages } = req.body;
     let settings = await Settings.findOne();
     if (!settings) {
-      settings = await Settings.create({ ...defaultSettings, ...req.body });
+      const newSettings = {};
+      if (basePricePerHour !== undefined) newSettings.basePricePerHour = basePricePerHour;
+      if (packages !== undefined) newSettings.packages = packages;
+      settings = await Settings.create({ ...defaultSettings, ...newSettings });
     } else {
-      Object.assign(settings, req.body);
+      if (basePricePerHour !== undefined) settings.basePricePerHour = basePricePerHour;
+      if (packages !== undefined) settings.packages = packages;
       await settings.save();
     }
     res.json(settings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to update settings' });
   }
 };
 
@@ -219,7 +232,7 @@ exports.getAllBikes = async (req, res) => {
     const bikes = await Bike.find().populate('renter', 'name email').populate('category', 'name');
     res.json(bikes);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -232,7 +245,7 @@ exports.toggleBikeVerification = async (req, res) => {
     await bike.save();
     res.json({ message: `Bike ${bike.isVerified ? 'verified' : 'unverified'}`, bike });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -242,7 +255,7 @@ exports.getAllUsers = async (req, res) => {
     const users = await User.find().select('-password');
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -255,7 +268,7 @@ exports.toggleUserVerification = async (req, res) => {
     await user.save();
     res.json({ message: `User ${user.isVerified ? 'verified' : 'unverified'}`, user });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -270,6 +283,6 @@ exports.toggleBikeAvailability = async (req, res) => {
     await bike.save();
     res.json({ message: `Bike ${bike.availability ? 'available' : 'unavailable'}`, bike });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };

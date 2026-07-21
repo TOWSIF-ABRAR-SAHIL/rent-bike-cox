@@ -75,21 +75,34 @@ exports.createBooking = async (req, res) => {
     await booking.save();
     res.status(201).json({ booking, minAdvance });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Booking creation failed' });
   }
 };
 
 exports.confirmPayment = async (req, res) => {
   try {
     const { bookingId, amountPaid } = req.body;
+    if (!bookingId) return res.status(400).json({ message: 'Booking ID is required' });
+
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    booking.advancePaid = amountPaid;
-    booking.paymentStatus = amountPaid >= booking.totalPrice ? 'Paid' : 'Partial';
+    if (booking.user.toString() !== req.user.id && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Not authorized to confirm this booking' });
+    }
+
+    if (booking.status === 'Confirmed' || booking.status === 'Completed') {
+      return res.status(400).json({ message: 'Booking is already confirmed or completed' });
+    }
+
+    const hours = Math.ceil((new Date(booking.endTime) - new Date(booking.startTime)) / (1000 * 60 * 60));
+    const isShortRental = hours <= 24;
+    const serverCalculatedAdvance = booking.totalPrice * (isShortRental ? 0.5 : 0.3);
+
+    booking.advancePaid = serverCalculatedAdvance;
+    booking.paymentStatus = 'Partial';
     booking.status = 'Confirmed';
     
-    // Generate invoice number if not already set
     if (!booking.invoiceNumber) {
       booking.invoiceNumber = await generateInvoiceNumber();
     }
@@ -100,7 +113,7 @@ exports.confirmPayment = async (req, res) => {
 
     res.json({ message: 'Payment confirmed', booking });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Payment confirmation failed' });
   }
 };
 
@@ -109,9 +122,10 @@ exports.getBookingDetails = async (req, res) => {
         const booking = await Booking.findById(req.params.id)
             .populate('user', 'name email nid license phoneNumber address')
             .populate('bike', 'model brand pricePerHour');
+        if (!booking) return res.status(404).json({ message: 'Booking not found' });
         res.json(booking);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Failed to fetch booking' });
     }
 };
 
@@ -139,7 +153,7 @@ exports.cancelBooking = async (req, res) => {
 
         res.json({ message: 'Booking cancelled successfully', booking });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Booking cancellation failed' });
     }
 };
 
@@ -152,12 +166,13 @@ exports.getMyBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to fetch bookings' });
   }
 };
 
 exports.getRenterBookings = async (req, res) => {
   try {
+    if (req.user.role !== 'Renter') return res.status(403).json({ message: 'Access denied' });
     const renterBikes = await Bike.find({ renter: req.user.id }).select('_id');
     const bikeIds = renterBikes.map(b => b._id);
     const bookings = await Booking.find({ bike: { $in: bikeIds } })
@@ -166,7 +181,7 @@ exports.getRenterBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to fetch renter bookings' });
   }
 };
 
@@ -179,7 +194,7 @@ exports.getAllBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to fetch all bookings' });
   }
 };
 
@@ -203,6 +218,6 @@ exports.completeBooking = async (req, res) => {
 
     res.json({ message: 'Booking completed', booking });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to complete booking' });
   }
 };

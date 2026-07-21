@@ -52,7 +52,7 @@ exports.getPublicPolicies = async (req, res) => {
     const policies = await Policy.find({ isActive: true }).sort({ sortOrder: 1 });
     res.json(policies);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -63,7 +63,7 @@ exports.getAllPolicies = async (req, res) => {
     const policies = await Policy.find().sort({ sortOrder: 1 });
     res.json(policies);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -75,18 +75,25 @@ exports.createPolicy = async (req, res) => {
     await policy.save();
     res.status(201).json(policy);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 exports.updatePolicy = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const policy = await Policy.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { title, content, type, sortOrder, isActive } = req.body;
+    const update = {};
+    if (title !== undefined) update.title = title;
+    if (content !== undefined) update.content = content;
+    if (type !== undefined) update.type = type;
+    if (sortOrder !== undefined) update.sortOrder = sortOrder;
+    if (isActive !== undefined) update.isActive = isActive;
+    const policy = await Policy.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!policy) return res.status(404).json({ message: 'Policy not found' });
     res.json(policy);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Failed to update policy' });
   }
 };
 
@@ -97,6 +104,6 @@ exports.deletePolicy = async (req, res) => {
     if (!policy) return res.status(404).json({ message: 'Policy not found' });
     res.json({ message: 'Policy deleted' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Server error' });
   }
 };

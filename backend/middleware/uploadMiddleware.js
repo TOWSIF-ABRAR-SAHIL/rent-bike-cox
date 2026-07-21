@@ -4,6 +4,9 @@ const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
 const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
+const ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 let storage;
 
 if (cloudName && apiKey && apiSecret && !cloudName.startsWith('your-')) {
@@ -37,6 +40,16 @@ if (cloudName && apiKey && apiSecret && !cloudName.startsWith('your-')) {
   storage = multer.memoryStorage();
 }
 
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: MAX_FILE_SIZE },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_MIMES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPG, JPEG, and PNG files are allowed'), false);
+    }
+  }
+});
 
 module.exports = upload;

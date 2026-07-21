@@ -59,6 +59,11 @@ const Home = () => {
     setActiveCategory(prev => prev === slug ? '' : slug);
   }, []);
 
+  const categoryCounts = categories.map(cat => ({
+    ...cat,
+    count: bikes.filter(b => b.category?.slug === cat.slug).length
+  }));
+
   return (
     <div>
       {/* Hero */}
@@ -102,11 +107,32 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Stats Bar */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
+        <div className="glass rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{bikes.length}</span>
+            <span className="text-gray-400">Vehicles</span>
+          </div>
+          <div className="w-px h-6 bg-white/10 hidden sm:block" />
+          {categoryCounts.map(cat => (
+            <div key={cat._id} className="flex items-center gap-2">
+              <span className="text-lg font-bold text-white">{cat.count}</span>
+              <span className="text-gray-400">{cat.name}{cat.count !== 1 ? 's' : ''}</span>
+            </div>
+          ))}
+          <div className="w-px h-6 bg-white/10 hidden sm:block" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-green-400 font-bold">From 200 TK/hr</span>
+          </div>
+        </div>
+      </section>
+
       {/* Category Cards */}
       {categories.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {categories.map(cat => {
+            {categoryCounts.map(cat => {
               const Icon = categoryIcons[cat.name] || Bike;
               return (
                 <button
@@ -125,7 +151,7 @@ const Home = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-white text-sm">{cat.name}s</h3>
-                    <p className="text-gray-500 text-xs">Browse all {cat.name.toLowerCase()}s</p>
+                    <p className="text-gray-500 text-xs">{cat.count} available</p>
                   </div>
                   <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-primary-400' : 'text-gray-600'}`} />
                 </button>
