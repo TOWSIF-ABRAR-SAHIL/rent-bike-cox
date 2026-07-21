@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Commit message format: type: description
+# Allowed types: feat, fix, docs, refactor, chore, test, style
+#
+# Examples:
+#   feat: add bike listing endpoint
+#   fix: correct payment amount calculation
+#   docs: update README setup instructions
+#   refactor: extract auth middleware into separate file
+#   chore: update dependencies
+#   test: add booking controller tests
+#   style: fix indentation in navbar
+
+msg_file="$1"
+msg=$(cat "$msg_file")
+
+# Skip merge commits and fixup/squash
+case "$msg" in
+  Merge*|fixup!*|squash!*) exit 0 ;;
+esac
+
+# Check format: type: description (lowercase, no leading/trailing space issues)
+if ! echo "$msg" | grep -qE '^(feat|fix|docs|refactor|chore|test|style): .+'; then
+  echo ""
+  echo "  Invalid commit message format."
+  echo ""
+  echo "  Expected: type: description"
+  echo "  Types:    feat, fix, docs, refactor, chore, test, style"
+  echo ""
+  echo "  Examples:"
+  echo "    feat: add bike listing endpoint"
+  echo "    fix: correct payment amount calculation"
+  echo "    docs: update README setup instructions"
+  echo ""
+  exit 1
+fi
+
+# Check description starts with lowercase
+if echo "$msg" | grep -qE '^(feat|fix|docs|refactor|chore|test|style): [A-Z]'; then
+  echo ""
+  echo "  Description should start with lowercase letter."
+  echo ""
+  exit 1
+fi
+
+# Check description length (subject line max 72 chars)
+length=$(echo "$msg" | wc -c)
+if [ "$length" -gt 73 ]; then
+  echo ""
+  echo "  Commit message subject line too long ($length chars). Max 72."
+  echo ""
+  exit 1
+fi
+
+exit 0

@@ -12,6 +12,9 @@ Each has its own `node_modules/` and `.env`. No shared tooling or workspace conf
 ## Commands
 
 ```bash
+# Setup (run once after clone)
+git config core.hooksPath .githooks   # enables commit-msg hook
+
 # Backend
 cd backend && npm run dev      # starts nodemon on port 5000
 
