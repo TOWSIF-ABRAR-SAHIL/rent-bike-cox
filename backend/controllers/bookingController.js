@@ -44,14 +44,33 @@ exports.createBooking = async (req, res) => {
       totalPrice = hours * bike.pricePerHour;
       isShortRental = hours <= 24;
     }
+
+    const overlap = await Booking.findOne({
+      bike: bikeId,
+      status: { $nin: ['Cancelled', 'Completed'] },
+      startTime: { $lt: new Date(endTime) },
+      endTime: { $gt: new Date(startTime) }
+    });
+    if (overlap) {
+      return res.status(409).json({ message: 'Bike is already booked for this time period' });
+    }
     
     if (couponCode) {
       const Coupon = require('../models/Coupon');
       const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
-      if (coupon && (!coupon.expiresAt || coupon.expiresAt > new Date()) && (coupon.maxUses === 0 || coupon.usedCount < coupon.maxUses)) {
-        totalPrice *= (1 - coupon.discountPercent / 100);
-        coupon.usedCount += 1;
-        await coupon.save();
+      if (coupon) {
+        const isExpired = coupon.expiresAt && coupon.expiresAt <= new Date();
+        const isExhausted = coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses;
+        if (!isExpired && !isExhausted) {
+          const updated = await Coupon.findOneAndUpdate(
+            { _id: coupon._id, usedCount: coupon.usedCount },
+            { $inc: { usedCount: 1 } },
+            { new: true }
+          );
+          if (updated) {
+            totalPrice *= (1 - updated.discountPercent / 100);
+          }
+        }
       }
     }
 
