@@ -43,7 +43,7 @@ const Invoice = () => {
   );
 
   const canCancel = (booking.status === 'Pending' || booking.status === 'Confirmed') && user;
-  const serialNo = `RBC-${new Date(booking.createdAt).getFullYear()}-${booking._id.slice(-4).toUpperCase()}`;
+  const serialNo = `RBC-${new Date(booking.createdAt).getFullYear()}-${(typeof booking._id === 'string' ? booking._id : String(booking._id)).slice(-4).toUpperCase()}`;
   const securityDeposit = booking.securityDeposit || 2000;
 
   const statusColors = {
@@ -77,13 +77,13 @@ const Invoice = () => {
             <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Renter & Trip Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
-                <p><span className="font-semibold text-gray-400">Rider Name:</span> <span className="text-white">{booking.user.name}</span></p>
-                <p><span className="font-semibold text-gray-400">Mobile No:</span> <span className="text-white">{booking.user.phoneNumber}</span></p>
+                <p><span className="font-semibold text-gray-400">Rider Name:</span> <span className="text-white">{booking.user?.name}</span></p>
+                <p><span className="font-semibold text-gray-400">Mobile No:</span> <span className="text-white">{booking.user?.phoneNumber}</span></p>
               </div>
               <div className="space-y-1.5">
                 <p><span className="font-semibold text-gray-400">Destination:</span> <span className="text-white">{booking.destination || 'Not specified'}</span></p>
                 <p><span className="font-semibold text-gray-400">Rental Date:</span> <span className="text-white">{new Date(booking.startTime).toLocaleDateString('en-BD', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></p>
-                <p><span className="font-semibold text-gray-400">Hourly Rate:</span> <span className="text-white">{booking.bike.pricePerHour} TK</span></p>
+                <p><span className="font-semibold text-gray-400">Hourly Rate:</span> <span className="text-white">{booking.bike?.pricePerHour} TK</span></p>
               </div>
             </div>
           </div>
@@ -93,9 +93,9 @@ const Invoice = () => {
             <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Payment & Vehicle Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
-                <p><span className="font-semibold text-gray-400">Vehicle:</span> <span className="text-white">{booking.bike.model} ({booking.bike.brand})</span></p>
-                <p><span className="font-semibold text-gray-400">NID No:</span> <span className="text-white">{booking.user.nid}</span></p>
-                <p><span className="font-semibold text-gray-400">License No:</span> <span className="text-white">{booking.user.license}</span></p>
+                <p><span className="font-semibold text-gray-400">Vehicle:</span> <span className="text-white">{booking.bike?.model} ({booking.bike?.brand})</span></p>
+                <p><span className="font-semibold text-gray-400">NID No:</span> <span className="text-white">{booking.user?.nid}</span></p>
+                <p><span className="font-semibold text-gray-400">License No:</span> <span className="text-white">{booking.user?.license}</span></p>
               </div>
               <div className="space-y-1.5">
                 <p><span className="font-semibold text-gray-400">Total Amount:</span> <span className="text-white font-bold">{booking.totalPrice} TK/-</span></p>

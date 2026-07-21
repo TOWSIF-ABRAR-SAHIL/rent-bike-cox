@@ -1,45 +1,46 @@
-import { createContext, useState, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 
 const AuthContext = createContext(null);
 export { AuthContext };
 
-function getInitialUser() {
+function getInitialAuth() {
   const token = localStorage.getItem('token');
-  if (!token) return null;
+  if (!token) return { user: null, token: null };
   try {
     const decoded = jwtDecode(token);
-    const currentTime = Date.now() / 1000;
-    if (decoded.exp < currentTime) {
+    if (decoded.exp < Date.now() / 1000) {
       localStorage.removeItem('token');
-      return null;
+      return { user: null, token: null };
     }
-    return decoded;
+    return { user: decoded, token };
   } catch {
     localStorage.removeItem('token');
-    return null;
+    return { user: null, token: null };
   }
 }
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(getInitialUser);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [loading] = useState(false);
+  const [{ user, token }, setAuth] = useState(getInitialAuth);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(false);
+  }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+    setAuth({ user: null, token: null });
   }, []);
 
   const login = useCallback((newToken) => {
     localStorage.setItem('token', newToken);
-    setToken(newToken);
     try {
       const decoded = jwtDecode(newToken);
-      setUser(decoded);
+      setAuth({ user: decoded, token: newToken });
     } catch {
-      setUser(null);
+      setAuth({ user: null, token: null });
     }
   }, []);
 
