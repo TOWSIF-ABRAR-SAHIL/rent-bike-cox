@@ -40,5 +40,9 @@ Frontend runs on `http://localhost:5173`, backend on `http://localhost:5000`.
 
 ## Project Docs
 
-- `RULES.md` — Business rules, fine policies, pricing
-- `PROJECT_PLAN.md` — Development roadmap, bug fixes, deployment checklist
+| File | Purpose |
+|---|---|
+| `AGENTS.md` | Architecture guide, commands, gotchas for AI agents & new devs |
+| `CONTRIBUTING.md` | Commit convention, branch protection, git hooks setup |
+| `RULES.md` | Business rules, fine policies, pricing |
+| `PROJECT_PLAN.md` | Remaining tasks (deployment) |
