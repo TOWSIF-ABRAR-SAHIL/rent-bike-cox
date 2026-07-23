@@ -8,7 +8,7 @@ import EmptyState from '../components/ui/EmptyState';
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
     className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-      active ? 'gradient-primary shadow-lg shadow-blue-500/25' : 'glass'
+      active ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'
     }`}
     style={active ? { color: 'var(--text-primary)' } : { color: 'var(--text-secondary)' }}
     onMouseEnter={!active ? e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text-primary)'; } : undefined}

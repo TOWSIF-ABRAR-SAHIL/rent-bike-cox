@@ -26,7 +26,7 @@ const PolicySection = ({ icon: Icon, title, children, color = 'primary' }) => {
 const Policies = () => (
   <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 animate-fade-in">
     <div className="text-center mb-10">
-      <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+      <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
         <FileText size={28} style={{ color: 'var(--text-primary)' }} />
       </div>
       <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Rental Policies & Terms</h1>
@@ -136,7 +136,7 @@ const Policies = () => (
     <div className="mt-8 gradient-primary rounded-2xl p-6 text-center" style={{ color: 'var(--text-primary)' }}>
       <Phone size={24} className="mx-auto mb-3 opacity-80" />
       <h3 className="font-bold text-lg mb-1">Questions?</h3>
-      <p className="text-blue-200 text-sm mb-3">Contact us anytime</p>
+      <p className="text-amber-200 text-sm mb-3">Contact us anytime</p>
       <div className="flex justify-center gap-4 text-sm">
         <span>01891154443</span>
         <span className="opacity-50">|</span>

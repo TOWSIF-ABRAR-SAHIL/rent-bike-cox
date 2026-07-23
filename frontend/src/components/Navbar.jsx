@@ -65,8 +65,8 @@ const Navbar = () => {
             <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center mr-2 group-hover:scale-105 transition-transform">
               <Bike size={20} className="text-white" />
             </div>
-            <span className="hidden sm:inline bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
-            <span className="sm:hidden bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">RBC</span>
+            <span className="hidden sm:inline bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
+            <span className="sm:hidden bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">RBC</span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-1 text-sm">

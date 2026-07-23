@@ -44,13 +44,13 @@ const Signup = () => {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-blue-500/15 rounded-full blur-[100px]" />
+        <div className="absolute top-20 left-20 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px]" />
         <div className="absolute bottom-10 right-10 w-72 h-72 bg-purple-500/10 rounded-full blur-[80px]" />
       </div>
       <div className="w-full max-w-lg animate-slide-up relative">
         <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+            <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
               <UserPlus size={24} style={{ color: 'var(--text-primary)' }} />
             </div>
             <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Create Account</h2>
@@ -107,11 +107,11 @@ const Signup = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>NID Copy</label>
-                    <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-[var(--accent-text)] hover:file:bg-primary-500/20" required={formData.role === 'Renter'} />
+                    <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" required={formData.role === 'Renter'} />
                   </div>
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>License Copy</label>
-                    <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-[var(--accent-text)] hover:file:bg-primary-500/20" required={formData.role === 'Renter'} />
+                    <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" required={formData.role === 'Renter'} />
                   </div>
                 </div>
               </>

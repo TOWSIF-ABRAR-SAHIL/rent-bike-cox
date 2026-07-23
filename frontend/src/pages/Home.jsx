@@ -73,7 +73,7 @@ const Home = () => {
       <section className="gradient-hero relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-[100px] animate-float" />
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px] animate-float hidden sm:block" style={{ animationDelay: '2s' }} />
+          <div className="absolute bottom-10 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] animate-float hidden sm:block" style={{ animationDelay: '2s' }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] animate-float" style={{ animationDelay: '4s' }} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 relative">
@@ -83,7 +83,7 @@ const Home = () => {
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6" style={{ color: 'var(--hero-text)' }}>
               Explore Cox's Bazar on{' '}
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Two Wheels</span>
+              <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Two Wheels</span>
             </h1>
             <p className="text-lg mb-8 max-w-lg leading-relaxed" style={{ color: 'var(--hero-sub)' }}>
               Rent bikes, cars & beach jeeps at the world's longest beach. Best prices, verified vehicles, secure online payment.
@@ -114,7 +114,7 @@ const Home = () => {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
         <div className="glass rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{bikes.length}</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{bikes.length}</span>
             <span style={{ color: 'var(--text-secondary)' }}>Vehicles</span>
           </div>
           <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
@@ -143,7 +143,7 @@ const Home = () => {
                   onClick={() => { handleCategoryClick(cat.slug); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
                   className={`glass rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 text-left ${
                     activeCategory === cat.slug
-                      ? 'border-primary-500/50 bg-primary-500/10 shadow-lg shadow-primary-500/10'
+                      ? 'border-amber-500/50 bg-amber-500/10 shadow-lg shadow-amber-500/10'
                       : ''
                   }`}
                   style={activeCategory !== cat.slug ? { '--hover-bg': 'var(--hover-bg)' } : undefined}
@@ -161,7 +161,7 @@ const Home = () => {
                     <h3 className="font-semibold text-sm" style={{ color: 'var(--card-title)' }}>{cat.name}s</h3>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{cat.count} available</p>
                   </div>
-                  <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-primary-400' : ''}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />
+                  <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-amber-400' : ''}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />
                 </button>
               );
             })}
@@ -182,7 +182,7 @@ const Home = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 aria-label="Search vehicles by model or brand"
-                className="w-full pl-12 pr-4 py-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 border-0"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 border-0"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-primary)' }}
               />
             </div>
@@ -196,7 +196,7 @@ const Home = () => {
               onClick={() => setActiveCategory('')}
               className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeCategory === ''
-                  ? 'gradient-primary text-white shadow-lg shadow-blue-500/25'
+                  ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
                   : 'glass'
               }`}
               style={activeCategory !== '' ? { color: 'var(--text-secondary)' } : undefined}
@@ -209,7 +209,7 @@ const Home = () => {
                 onClick={() => handleCategoryClick(cat.slug)}
                 className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   activeCategory === cat.slug
-                    ? 'gradient-primary text-white shadow-lg shadow-blue-500/25'
+                    ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
                     : 'glass'
                 }`}
                 style={activeCategory !== cat.slug ? { color: 'var(--text-secondary)' } : undefined}
@@ -231,7 +231,7 @@ const Home = () => {
             title={search || activeCategory ? 'No vehicles match your search' : 'No vehicles available yet'}
             description={search || activeCategory ? 'Try adjusting your filters' : 'Check back soon for new listings'}
             action={(search || activeCategory) && (
-              <button onClick={() => { setSearch(''); setActiveCategory(''); }} className="text-primary-400 hover:text-primary-300 text-sm font-medium min-h-11 px-4 py-2 rounded-lg transition-all" style={{ color: 'var(--accent-text)' }}>
+              <button onClick={() => { setSearch(''); setActiveCategory(''); }} className="text-amber-400 hover:text-amber-300 text-sm font-medium min-h-11 px-4 py-2 rounded-lg transition-all" style={{ color: 'var(--accent-text)' }}>
                 Clear filters
               </button>
             )}
@@ -270,7 +270,7 @@ const Home = () => {
                 <div className="p-5">
                   <h2 className="text-lg font-bold mb-1 truncate transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
                   <p className="text-sm mb-4" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
-                  <div className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold transition-all group-hover:border-primary-500/50 group-hover:text-primary-400"
+                  <div className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold transition-all group-hover:border-amber-500/50 group-hover:text-amber-400"
                     style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}
                   >
                     View Details
@@ -292,7 +292,7 @@ const Home = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((f, i) => (
             <div key={i} className="glass rounded-2xl p-4 sm:p-6 text-center card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+              <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
                 <f.icon size={24} className="text-white" />
               </div>
               <h3 className="font-semibold mb-2 text-sm" style={{ color: 'var(--section-title)' }}>{f.title}</h3>
@@ -311,7 +311,7 @@ const Home = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">
           {steps.map((s, i) => (
             <div key={i} className="text-center">
-              <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent mb-3">{s.num}</div>
+              <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-3">{s.num}</div>
               <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--section-title)' }}>{s.title}</h3>
               <p className="text-sm" style={{ color: 'var(--section-sub)' }}>{s.desc}</p>
             </div>

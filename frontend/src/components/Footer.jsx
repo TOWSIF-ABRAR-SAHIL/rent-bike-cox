@@ -4,7 +4,7 @@ import { memo } from 'react';
 
 const Footer = () => (
   <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
-    <div className="h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+    <div className="h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
         <div>
@@ -12,7 +12,7 @@ const Footer = () => (
             <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center mr-2">
               <Bike size={20} className="text-white" />
             </div>
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent font-bold text-lg">Rent Bike Cox's Bazar</span>
+            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent font-bold text-lg">Rent Bike Cox's Bazar</span>
           </div>
           <p className="text-sm leading-relaxed" style={{ color: 'var(--footer-text)' }}>
             Your trusted vehicle rental platform in Cox's Bazar. Bikes, cars & beach jeeps at the best prices with secure online payment.

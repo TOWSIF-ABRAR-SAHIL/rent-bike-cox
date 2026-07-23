@@ -78,7 +78,7 @@ const RenterDashboard = () => {
           <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
           <div className="md:col-span-2">
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Upload Vehicle Photos</label>
-            <input type="file" multiple className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-[var(--accent-text)] hover:file:bg-primary-500/20" onChange={e => setBikeFiles(e.target.files)} />
+            <input type="file" multiple className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" onChange={e => setBikeFiles(e.target.files)} />
           </div>
           <button type="submit" className="btn-primary md:col-span-2 flex items-center justify-center">
             <PlusCircle size={16} className="mr-2" /> Save Vehicle

@@ -71,10 +71,10 @@ const Invoice = () => {
       {/* Screen view: dark invoice */}
       <div className="glass rounded-3xl overflow-hidden" id="printable-invoice">
         {/* Header */}
-        <div className="text-center p-6 sm:p-8 border-b bg-gradient-to-r from-blue-500/10 to-cyan-500/10" style={{ borderColor: 'var(--border-base)' }}>
+        <div className="text-center p-6 sm:p-8 border-b bg-gradient-to-r from-amber-500/10 to-orange-500/10" style={{ borderColor: 'var(--border-base)' }}>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center justify-center">
             <Bike className="mr-2" style={{ color: 'var(--accent-text)' }} />
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
+            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
           </h1>
           <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>Official Rental Invoice</p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>

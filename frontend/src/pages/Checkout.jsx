@@ -144,8 +144,8 @@ const Checkout = () => {
                 <button key={index} onClick={() => handlePackageSelect(index)}
                   className={`p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                     selectedPackage === index
-                      ? 'border-primary-500 bg-primary-500/10 shadow-lg shadow-primary-500/10'
-                      : 'hover:border-primary-500/50'
+                      ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/10'
+                      : 'hover:border-amber-500/50'
                   }`}
                   style={selectedPackage !== index ? { borderColor: 'var(--border-base)' } : undefined}>
                   <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{pkg.name}</p>
@@ -172,9 +172,9 @@ const Checkout = () => {
 
         {/* Selected Package Info */}
         {selectedPackage !== null && settings.packages[selectedPackage] && (
-          <div className="glass p-4 rounded-xl flex items-center justify-between border border-primary-500/20">
+          <div className="glass p-4 rounded-xl flex items-center justify-between border border-amber-500/20">
             <div className="flex items-center">
-              <CheckCircle size={18} className="text-primary-400 mr-2" />
+              <CheckCircle size={18} className="text-amber-400 mr-2" />
               <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{settings.packages[selectedPackage].name}</span>
             </div>
             <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{settings.packages[selectedPackage].price} TK</span>
@@ -236,7 +236,7 @@ const Checkout = () => {
               </Link>
               <label className="flex items-start cursor-pointer">
                 <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 mr-2.5 h-4 w-4 text-primary-500 rounded focus:ring-primary-500"
+                  className="mt-0.5 mr-2.5 h-4 w-4 text-amber-500 rounded focus:ring-amber-500"
                   style={{ borderColor: 'var(--border-strong)' }} />
                 <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>I have read and agree to all terms and conditions.</span>
               </label>
@@ -248,7 +248,7 @@ const Checkout = () => {
                 className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center ${
                   loading || !agreedToTerms
                     ? 'cursor-not-allowed'
-                    : 'gradient-primary shadow-lg shadow-blue-500/25 hover:shadow-xl hover:-translate-y-0.5'
+                    : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
                 }`}
                 style={loading || !agreedToTerms ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}>
                 {loading ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}

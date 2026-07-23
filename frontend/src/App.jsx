@@ -25,7 +25,7 @@ const Loading = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
     <div className="relative w-12 h-12">
       <div className="absolute inset-0 rounded-full" style={{ border: '2px solid var(--border-base)' }} />
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-500 animate-spin" />
     </div>
   </div>
 );
