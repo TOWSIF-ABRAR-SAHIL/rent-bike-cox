@@ -78,7 +78,7 @@ const Navbar = () => {
                     <ChevronDown size={14} className={`ml-1 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {dropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 glass rounded-xl shadow-xl py-2 animate-slide-up">
+                    <div className="absolute right-0 top-full mt-2 w-48 glass rounded-xl shadow-xl py-2 animate-slide-up z-50">
                       <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--border-base)' }}>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
                         <p className="text-xs text-primary-400 font-medium">{user.role}</p>
