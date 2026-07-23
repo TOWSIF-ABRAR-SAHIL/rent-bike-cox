@@ -14,13 +14,13 @@ const Footer = () => (
             </div>
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent font-bold text-lg">Rent Bike Cox's Bazar</span>
           </div>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--footer-text)' }}>
             Your trusted vehicle rental platform in Cox's Bazar. Bikes, cars & beach jeeps at the best prices with secure online payment.
           </p>
         </div>
 
         <div>
-          <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide text-white">Quick Links</h3>
+          <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide" style={{ color: 'var(--footer-text)' }}>Quick Links</h3>
           <ul className="space-y-2.5">
             {[
               { to: '/', label: 'Home' },
@@ -28,20 +28,20 @@ const Footer = () => (
               { to: '/policies', label: 'Policies' },
             ].map(link => (
               <li key={link.label}>
-                <Link to={link.to} className="text-sm hover:text-cyan-400 transition-colors" style={{ color: 'var(--text-primary)' }}>{link.label}</Link>
+                <Link to={link.to} className="text-sm hover:text-cyan-400 transition-colors" style={{ color: 'var(--footer-text)' }}>{link.label}</Link>
               </li>
             ))}
           </ul>
         </div>
 
         <div>
-          <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide text-white">Contact</h3>
+          <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide" style={{ color: 'var(--footer-text)' }}>Contact</h3>
           <ul className="space-y-3">
-            <li className="flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
+            <li className="flex items-center text-sm" style={{ color: 'var(--footer-text)' }}>
               <Phone size={14} className="mr-3 text-cyan-400 flex-shrink-0" />
               01891-154443, 01764-466757
             </li>
-            <li className="flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
+            <li className="flex items-center text-sm" style={{ color: 'var(--footer-text)' }}>
               <MapPin size={14} className="mr-3 text-cyan-400 flex-shrink-0" />
               Cox's Bazar, Bangladesh
             </li>
@@ -49,9 +49,9 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="border-t mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--border-base)' }}>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>&copy; 2026 Rent Bike Cox's Bazar. All rights reserved.</p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Built with React, Express & MongoDB</p>
+      <div className="border-t mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--footer-border)' }}>
+        <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>&copy; 2026 Rent Bike Cox's Bazar. All rights reserved.</p>
+        <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>Built with React, Express & MongoDB</p>
       </div>
     </div>
   </footer>

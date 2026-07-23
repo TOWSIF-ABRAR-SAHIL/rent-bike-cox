@@ -52,6 +52,8 @@ html.dark {
   --section-sub: #94a3b8;
   --footer-bg: #0a0a0f;
   --footer-border: rgba(255, 255, 255, 0.05);
+  --footer-text: #e2e8f0;
+  --footer-muted: #94a3b8;
   --stat-number: #ffffff;
 }
 
@@ -89,6 +91,8 @@ html.light {
   --section-sub: #6b7280;
   --footer-bg: #374151;
   --footer-border: rgba(255, 255, 255, 0.08);
+  --footer-text: #e2e8f0;
+  --footer-muted: #94a3b8;
   --stat-number: #1f2937;
 }
 
