@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Clock, Fuel, Users, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Clock, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -13,6 +13,7 @@ const BikeDetails = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -21,7 +22,7 @@ const BikeDetails = () => {
     ]).then(([bikeRes, settingsRes]) => {
       setBike(bikeRes.data);
       setSettings(settingsRes.data);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => setFetchError('Failed to load vehicle details. Please try again.')).finally(() => setLoading(false));
   }, [id]);
 
   const handleBooking = () => {
@@ -29,15 +30,30 @@ const BikeDetails = () => {
   };
 
   if (loading) return <SkeletonPage />;
+  if (fetchError) return (
+    <div className="min-h-[60vh] flex items-center justify-center p-4">
+      <div className="text-center glass rounded-2xl p-8 max-w-md">
+        <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
+        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+      </div>
+    </div>
+  );
   if (!bike) return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Vehicle not found.</p>
+    <div className="min-h-[60vh] flex items-center justify-center p-4">
+      <div className="text-center glass rounded-2xl p-8 max-w-md">
+        <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
+        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Vehicle Not Found</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>The vehicle you're looking for doesn't exist or has been removed.</p>
+        <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+      </div>
     </div>
   );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-      <button onClick={() => navigate(-1)} className="flex items-center text-sm mb-6 transition-colors" style={{ color: 'var(--text-secondary)' }}>
+      <button onClick={() => navigate(-1)} className="flex items-center text-sm mb-6 transition-colors min-h-11 px-3 py-2 rounded-lg" style={{ color: 'var(--text-secondary)' }}>
         <ArrowLeft size={16} className="mr-1" /> Back
       </button>
 
@@ -80,9 +96,9 @@ const BikeDetails = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="px-3 py-1 glass rounded-lg text-xs font-medium" style={{ color: 'var(--pill-text)' }}>{bike.category?.name || 'Vehicle'}</span>
-              {bike.availability !== false && <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-xs font-medium text-green-400">Available</span>}
+              {bike.availability !== false && <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }}>Available</span>}
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold break-words" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
             <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>{bike.brand}</p>
           </div>
 
@@ -105,13 +121,13 @@ const BikeDetails = () => {
           {settings?.packages?.length > 0 && (
             <div className="glass rounded-2xl p-5">
               <h3 className="font-bold mb-3 flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
-                <Clock size={16} className="mr-2 text-cyan-400" /> Available Packages
+                <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Available Packages
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {settings.packages.map((pkg, i) => (
                   <div key={i} className="glass rounded-xl p-3" style={{ border: '1px solid var(--border-base)' }}>
                     <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{pkg.name}</p>
-                    <p className="font-bold text-cyan-400 text-sm">{pkg.price} TK</p>
+                    <p className="font-bold text-sm" style={{ color: 'var(--accent-text)' }}>{pkg.price} TK</p>
                   </div>
                 ))}
               </div>
@@ -119,27 +135,27 @@ const BikeDetails = () => {
           )}
 
           {/* Requirements */}
-          <div className="glass rounded-2xl p-5 border border-amber-500/10">
-            <h3 className="font-bold flex items-center mb-3 text-sm text-amber-400">
+          <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--warning-border)' }}>
+            <h3 className="font-bold flex items-center mb-3 text-sm" style={{ color: 'var(--warning-text)' }}>
               <ShieldCheck size={16} className="mr-2" /> Requirements
             </h3>
             <ul className="text-sm space-y-2" style={{ color: 'var(--text-secondary)' }}>
-              <li className="flex items-start"><span className="mr-2 text-amber-400">•</span> Original NID and Driving License required</li>
-              <li className="flex items-start"><span className="mr-2 text-amber-400">•</span> Minimum advance payment (50% short-term, 30% long-term)</li>
-              <li className="flex items-start"><span className="mr-2 text-amber-400">•</span> Petrol cost borne by the customer</li>
-              <li className="flex items-start"><span className="mr-2 text-amber-400">•</span> Max 2 persons per bike</li>
+              <li className="flex items-start"><span className="mr-2" style={{ color: 'var(--warning-text)' }}>•</span> Original NID and Driving License required</li>
+              <li className="flex items-start"><span className="mr-2" style={{ color: 'var(--warning-text)' }}>•</span> Minimum advance payment (50% short-term, 30% long-term)</li>
+              <li className="flex items-start"><span className="mr-2" style={{ color: 'var(--warning-text)' }}>•</span> Petrol cost borne by the customer</li>
+              <li className="flex items-start"><span className="mr-2" style={{ color: 'var(--warning-text)' }}>•</span> Max 2 persons per bike</li>
             </ul>
           </div>
 
           {/* Quick Info */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
-              { icon: Zap, label: 'Instant', value: 'Booking', color: 'text-blue-400' },
-              { icon: Fuel, label: 'Customer', value: 'Fuel', color: 'text-green-400' },
-              { icon: Users, label: 'Max', value: '2 Persons', color: 'text-amber-400' },
+              { icon: Zap, label: 'Instant', value: 'Booking', iconStyle: { color: 'var(--info-text)' } },
+              { icon: Fuel, label: 'Customer', value: 'Fuel', iconStyle: { color: 'var(--success-text)' } },
+              { icon: Users, label: 'Max', value: '2 Persons', iconStyle: { color: 'var(--warning-text)' } },
             ].map((item, i) => (
               <div key={i} className="glass rounded-xl p-3 text-center" style={{ border: '1px solid var(--border-base)' }}>
-                <item.icon size={20} className={`mx-auto mb-1 ${item.color}`} />
+                <item.icon size={20} className="mx-auto mb-1" style={item.iconStyle} />
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.label}</p>
                 <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{item.value}</p>
               </div>

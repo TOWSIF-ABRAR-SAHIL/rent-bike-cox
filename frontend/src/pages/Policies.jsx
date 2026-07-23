@@ -1,19 +1,19 @@
 import { ShieldCheck, AlertTriangle, Phone, FileText, CreditCard, Fuel, Scale, RotateCcw, Shield } from 'lucide-react';
 
 const PolicySection = ({ icon: Icon, title, children, color = 'primary' }) => {
-  const colors = {
-    primary: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    red: 'bg-red-500/10 text-red-400 border-red-500/20',
-    amber: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    green: 'bg-green-500/10 text-green-400 border-green-500/20',
-    blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  const colorStyles = {
+    primary: { background: 'var(--info-bg)', color: 'var(--info-text)', borderColor: 'var(--info-border)' },
+    red: { background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' },
+    amber: { background: 'var(--warning-bg)', color: 'var(--warning-text)', borderColor: 'var(--warning-border)' },
+    green: { background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' },
+    blue: { background: 'var(--info-bg)', color: 'var(--info-text)', borderColor: 'var(--info-border)' },
+    purple: { background: 'var(--purple-bg)', color: 'var(--purple-text)', borderColor: 'var(--purple-border)' },
   };
 
   return (
     <div className="glass rounded-2xl p-6 animate-slide-up border" style={{ borderColor: 'var(--border-base)' }}>
       <div className="flex items-center mb-4">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mr-3 border ${colors[color]}`}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center mr-3 border" style={colorStyles[color] || colorStyles.primary}>
           <Icon size={20} />
         </div>
         <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h2>
@@ -71,8 +71,8 @@ const Policies = () => (
             { amount: '5K', title: 'Boundary Violation', desc: 'Beyond Teknaf Marine Drive Zero Point' },
           ].map((fine, i) => (
             <div key={i} className="flex items-start gap-3 p-3 glass rounded-xl border" style={{ borderColor: 'var(--border-base)' }}>
-              <div className="w-8 h-8 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center shrink-0">
-                <span className="text-red-400 font-bold text-xs">{fine.amount}</span>
+              <div className="w-8 h-8 border rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)' }}>
+                <span className="font-bold text-xs" style={{ color: 'var(--danger-text)' }}>{fine.amount}</span>
               </div>
               <div>
                 <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{fine.title}</p>

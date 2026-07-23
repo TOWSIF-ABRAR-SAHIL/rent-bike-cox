@@ -58,7 +58,7 @@ const Signup = () => {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-6 text-sm">
+            <div className="border p-3 rounded-xl mb-6 text-sm" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
               {error}
             </div>
           )}
@@ -107,11 +107,11 @@ const Signup = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>NID Copy</label>
-                    <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required={formData.role === 'Renter'} />
+                    <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-[var(--accent-text)] hover:file:bg-primary-500/20" required={formData.role === 'Renter'} />
                   </div>
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>License Copy</label>
-                    <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required={formData.role === 'Renter'} />
+                    <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-[var(--accent-text)] hover:file:bg-primary-500/20" required={formData.role === 'Renter'} />
                   </div>
                 </div>
               </>
@@ -129,7 +129,7 @@ const Signup = () => {
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Already have an account?{' '}
-            <Link to="/login" className="text-cyan-400 font-semibold hover:text-cyan-300">Sign in</Link>
+            <Link to="/login" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Sign in</Link>
           </p>
         </div>
       </div>

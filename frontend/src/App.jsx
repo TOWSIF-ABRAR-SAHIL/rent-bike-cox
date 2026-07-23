@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const Home = lazy(() => import('./pages/Home'));
 const BikeDetails = lazy(() => import('./pages/BikeDetails'));
@@ -39,7 +40,8 @@ function App() {
               <Navbar />
               <main className="pt-16">
                 <Suspense fallback={<Loading />}>
-                  <Routes>
+                  <ErrorBoundary>
+                    <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/bike/:id" element={<BikeDetails />} />
                     <Route path="/login" element={<Login />} />
@@ -68,7 +70,8 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />
-                  </Routes>
+                    </Routes>
+                  </ErrorBoundary>
                 </Suspense>
               </main>
               <Footer />

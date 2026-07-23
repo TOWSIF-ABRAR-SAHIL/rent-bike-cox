@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen } from 'lucide-react';
 import { useToast } from '../components/useToast';
-import { SkeletonPage } from '../components/ui/Skeleton';
+import { SkeletonTable } from '../components/ui/Skeleton';
+import EmptyState from '../components/ui/EmptyState';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
@@ -16,10 +17,10 @@ const TabButton = ({ active, onClick, icon: Icon, children }) => (
   </button>
 );
 
-const StatCard = ({ label, value, color }) => (
+const StatCard = ({ label, value, colorStyle }) => (
   <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--border-base)' }}>
     <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
-    <p className={`text-2xl font-bold ${color}`}>{value}</p>
+    <p className="text-2xl font-bold" style={colorStyle}>{value}</p>
   </div>
 );
 
@@ -34,6 +35,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
   const [newCategory, setNewCategory] = useState('');
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -48,7 +50,10 @@ const AdminDashboard = () => {
       setUsers(usersRes.data);
       setCoupons(couponsRes.data);
       setCategories(categoriesRes.data);
-    }).catch(() => addToast('Failed to fetch data', 'error'))
+    }).catch(() => {
+      addToast('Failed to fetch data', 'error');
+      setFetchError('Failed to load dashboard data. Please try again.');
+    })
       .finally(() => setLoading(false));
   }, [addToast]);
 
@@ -130,7 +135,22 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
-  if (loading) return <SkeletonPage />;
+  if (loading) return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="skeleton h-8 rounded-lg w-48" />
+      <div className="skeleton h-4 rounded-lg w-full max-w-96" />
+      <SkeletonTable rows={4} cols={5} />
+    </div>
+  );
+
+  if (fetchError) return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
@@ -140,10 +160,10 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <StatCard label="Total Vehicles" value={bikes.length} color="text-blue-400" />
-        <StatCard label="Users" value={users.length} color="text-green-400" />
-        <StatCard label="Coupons" value={coupons.length} color="text-amber-400" />
-        <StatCard label="Categories" value={categories.length} color="text-purple-400" />
+        <StatCard label="Total Vehicles" value={bikes.length} colorStyle={{ color: 'var(--info-text)' }} />
+        <StatCard label="Users" value={users.length} colorStyle={{ color: 'var(--success-text)' }} />
+        <StatCard label="Coupons" value={coupons.length} colorStyle={{ color: 'var(--warning-text)' }} />
+        <StatCard label="Categories" value={categories.length} colorStyle={{ color: 'var(--purple-text)' }} />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8">
@@ -168,141 +188,187 @@ const AdminDashboard = () => {
       )}
 
       {activeTab === 'bikes' && (
-        <>
-        <div className="md:hidden space-y-3 p-4">
-          {bikes.map(bike => (
-            <div key={bike._id} className="glass rounded-xl p-4 space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{bike.model}</span>
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${bike.availability ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                  {bike.availability ? 'Active' : 'Booked'}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-                <span>{bike.category?.name || 'N/A'}</span>
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</span>
-              </div>
-              <div className="pt-1">
-                <button onClick={() => toggleBikeVerification(bike._id)}
-                  className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${bike.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
-                  {bike.isVerified ? 'Unverify' : 'Verify'}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="hidden md:block glass rounded-2xl overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
-              <tr>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Vehicle</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Category</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Renter</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Price</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
+        bikes.length === 0 ? (
+          <EmptyState
+            icon={Bike}
+            title="No vehicles yet"
+            description="No vehicles have been added to the platform yet."
+          />
+        ) : (
+          <>
+            <div className="md:hidden space-y-3 p-4">
               {bikes.map(bike => (
-                <tr key={bike._id} className="border-b transition-colors"
-                  style={{ borderColor: 'var(--border-base)' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
-                  <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.model}</td>
-                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.category?.name || 'N/A'}</td>
-                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.renter?.name}</td>
-                  <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</td>
-                  <td className="p-4">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${bike.availability ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                <div key={bike._id} className="glass rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{bike.model}</span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                      style={{
+                        background: bike.availability ? 'var(--success-bg)' : 'var(--danger-bg)',
+                        color: bike.availability ? 'var(--success-text)' : 'var(--danger-text)',
+                        borderColor: bike.availability ? 'var(--success-border)' : 'var(--danger-border)',
+                      }}>
                       {bike.availability ? 'Active' : 'Booked'}
                     </span>
-                  </td>
-                  <td className="p-4">
+                  </div>
+                  <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <span>{bike.category?.name || 'N/A'}</span>
+                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</span>
+                  </div>
+                  <div className="pt-1">
                     <button onClick={() => toggleBikeVerification(bike._id)}
-                      className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${bike.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                      className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
+                      style={{
+                        background: bike.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
+                        color: bike.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
+                        borderColor: bike.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
+                      }}>
                       {bike.isVerified ? 'Unverify' : 'Verify'}
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-        </>
+            </div>
+            <div className="hidden md:block glass rounded-2xl overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
+                  <tr>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Vehicle</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Category</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Renter</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Price</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bikes.map(bike => (
+                    <tr key={bike._id} className="border-b transition-colors"
+                      style={{ borderColor: 'var(--border-base)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                      <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.model}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.category?.name || 'N/A'}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.renter?.name}</td>
+                      <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                          style={{
+                            background: bike.availability ? 'var(--success-bg)' : 'var(--danger-bg)',
+                            color: bike.availability ? 'var(--success-text)' : 'var(--danger-text)',
+                            borderColor: bike.availability ? 'var(--success-border)' : 'var(--danger-border)',
+                          }}>
+                          {bike.availability ? 'Active' : 'Booked'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <button onClick={() => toggleBikeVerification(bike._id)}
+                          className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
+                          style={{
+                            background: bike.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
+                            color: bike.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
+                            borderColor: bike.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
+                          }}>
+                          {bike.isVerified ? 'Unverify' : 'Verify'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )
       )}
 
       {activeTab === 'users' && (
-        <>
-        <div className="md:hidden space-y-3 p-4">
-          {users.map(user => (
-            <div key={user._id} className="glass rounded-xl p-4 space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</span>
-                <span
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                    user.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                    : user.role === 'Renter' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                    : 'border'
-                  }`}
-                  style={user.role !== 'Admin' && user.role !== 'Renter' ? { background: 'var(--hover-bg)', color: 'var(--text-secondary)', borderColor: 'var(--border-base)' } : undefined}>
-                  {user.role}
-                </span>
-              </div>
-              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.email}</div>
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</span>
-                <button onClick={() => toggleUserVerification(user._id)}
-                  className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
-                  {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="hidden md:block glass rounded-2xl overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
-              <tr>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Email</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Role</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Phone</th>
-                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
+        users.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No users yet"
+            description="No users have registered yet."
+          />
+        ) : (
+          <>
+            <div className="md:hidden space-y-3 p-4">
               {users.map(user => (
-                <tr key={user._id} className="border-b transition-colors"
-                  style={{ borderColor: 'var(--border-base)' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
-                  <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</td>
-                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.email}</td>
-                  <td className="p-4">
+                <div key={user._id} className="glass rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user.name}</span>
                     <span
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
-                        user.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                        : user.role === 'Renter' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                        : 'border'
-                      }`}
-                      style={user.role !== 'Admin' && user.role !== 'Renter' ? { background: 'var(--hover-bg)', color: 'var(--text-secondary)', borderColor: 'var(--border-base)' } : undefined}>
+                      className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                      style={{
+                        background: user.role === 'Admin' ? 'var(--purple-bg)' : user.role === 'Renter' ? 'var(--info-bg)' : 'var(--hover-bg)',
+                        color: user.role === 'Admin' ? 'var(--purple-text)' : user.role === 'Renter' ? 'var(--info-text)' : 'var(--text-secondary)',
+                        borderColor: user.role === 'Admin' ? 'var(--purple-border)' : user.role === 'Renter' ? 'var(--info-border)' : 'var(--border-base)',
+                      }}>
                       {user.role}
                     </span>
-                  </td>
-                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</td>
-                  <td className="p-4">
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.email}</div>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</span>
                     <button onClick={() => toggleUserVerification(user._id)}
-                      className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                      className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
+                      style={{
+                        background: user.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
+                        color: user.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
+                        borderColor: user.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
+                      }}>
                       {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
                     </button>
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-        </>
+            </div>
+            <div className="hidden md:block glass rounded-2xl overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
+                  <tr>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Email</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Role</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Phone</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => (
+                    <tr key={user._id} className="border-b transition-colors"
+                      style={{ borderColor: 'var(--border-base)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                      <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.email}</td>
+                      <td className="p-4">
+                        <span
+                          className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                          style={{
+                            background: user.role === 'Admin' ? 'var(--purple-bg)' : user.role === 'Renter' ? 'var(--info-bg)' : 'var(--hover-bg)',
+                            color: user.role === 'Admin' ? 'var(--purple-text)' : user.role === 'Renter' ? 'var(--info-text)' : 'var(--text-secondary)',
+                            borderColor: user.role === 'Admin' ? 'var(--purple-border)' : user.role === 'Renter' ? 'var(--info-border)' : 'var(--border-base)',
+                          }}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</td>
+                      <td className="p-4">
+                        <button onClick={() => toggleUserVerification(user._id)}
+                          className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
+                          style={{
+                            background: user.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
+                            color: user.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
+                            borderColor: user.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
+                          }}>
+                          {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )
       )}
 
       {activeTab === 'coupons' && (
@@ -322,72 +388,106 @@ const AdminDashboard = () => {
             </form>
           </div>
           <>
-          <div className="md:hidden space-y-3 p-4">
-            {coupons.map(c => (
-              <div key={c._id} className="glass rounded-xl p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</span>
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${c.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                    {c.isActive ? 'Active' : 'Inactive'}
-                  </span>
+          {coupons.length === 0 ? (
+            <EmptyState
+              icon={Tag}
+              title="No coupons yet"
+              description="Create your first coupon to offer discounts."
+            />
+          ) : (
+            <>
+            <div className="md:hidden space-y-3 p-4">
+              {coupons.map(c => (
+                <div key={c._id} className="glass rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                      style={{
+                        background: c.isActive ? 'var(--success-bg)' : 'var(--danger-bg)',
+                        color: c.isActive ? 'var(--success-text)' : 'var(--danger-text)',
+                        borderColor: c.isActive ? 'var(--success-border)' : 'var(--danger-border)',
+                      }}>
+                      {c.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <span>{c.discountPercent}% off</span>
+                    <span>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''} uses</span>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => toggleCouponActive(c._id, c.isActive)}
+                      className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
+                      style={{
+                        background: c.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
+                        color: c.isActive ? 'var(--warning-text)' : 'var(--success-text)',
+                        borderColor: c.isActive ? 'var(--warning-border)' : 'var(--success-border)',
+                      }}>
+                      {c.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button onClick={() => handleDeleteCoupon(c._id)}
+                      className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
+                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span>{c.discountPercent}% off</span>
-                  <span>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''} uses</span>
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => toggleCouponActive(c._id, c.isActive)}
-                    className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                    {c.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button onClick={() => handleDeleteCoupon(c._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="hidden md:block glass rounded-2xl overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
-                <tr>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Code</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Discount</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Uses</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Expires</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coupons.map(c => (
-                  <tr key={c._id} className="border-b transition-colors"
-                    style={{ borderColor: 'var(--border-base)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
-                    <td className="p-4 font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</td>
-                    <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.discountPercent}%</td>
-                    <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${c.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                        {c.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="p-4" style={{ color: 'var(--text-muted)' }}>{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
-                    <td className="p-4 space-x-2">
-                      <button onClick={() => toggleCouponActive(c._id, c.isActive)}
-                        className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                        {c.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button onClick={() => handleDeleteCoupon(c._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
+              ))}
+            </div>
+            <div className="hidden md:block glass rounded-2xl overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
+                  <tr>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Code</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Discount</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Uses</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Expires</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {coupons.map(c => (
+                    <tr key={c._id} className="border-b transition-colors"
+                      style={{ borderColor: 'var(--border-base)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                      <td className="p-4 font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.discountPercent}%</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''}</td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                          style={{
+                            background: c.isActive ? 'var(--success-bg)' : 'var(--danger-bg)',
+                            color: c.isActive ? 'var(--success-text)' : 'var(--danger-text)',
+                            borderColor: c.isActive ? 'var(--success-border)' : 'var(--danger-border)',
+                          }}>
+                          {c.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-4" style={{ color: 'var(--text-muted)' }}>{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
+                      <td className="p-4 space-x-2">
+                        <button onClick={() => toggleCouponActive(c._id, c.isActive)}
+                          className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
+                          style={{
+                            background: c.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
+                            color: c.isActive ? 'var(--warning-text)' : 'var(--success-text)',
+                            borderColor: c.isActive ? 'var(--warning-border)' : 'var(--success-border)',
+                          }}>
+                          {c.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button onClick={() => handleDeleteCoupon(c._id)}
+                          className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
+                          style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
           </>
         </div>
       )}
@@ -402,65 +502,99 @@ const AdminDashboard = () => {
             </form>
           </div>
           <>
-          <div className="md:hidden space-y-3 p-4">
-            {categories.map(cat => (
-              <div key={cat._id} className="glass rounded-xl p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{cat.name}</span>
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                    {cat.isActive ? 'Active' : 'Inactive'}
-                  </span>
+          {categories.length === 0 ? (
+            <EmptyState
+              icon={FolderOpen}
+              title="No categories yet"
+              description="Add categories to organize your vehicles."
+            />
+          ) : (
+            <>
+            <div className="md:hidden space-y-3 p-4">
+              {categories.map(cat => (
+                <div key={cat._id} className="glass rounded-xl p-4 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{cat.name}</span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                      style={{
+                        background: cat.isActive ? 'var(--success-bg)' : 'var(--danger-bg)',
+                        color: cat.isActive ? 'var(--success-text)' : 'var(--danger-text)',
+                        borderColor: cat.isActive ? 'var(--success-border)' : 'var(--danger-border)',
+                      }}>
+                      {cat.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{cat.slug}</div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
+                      className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
+                      style={{
+                        background: cat.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
+                        color: cat.isActive ? 'var(--warning-text)' : 'var(--success-text)',
+                        borderColor: cat.isActive ? 'var(--warning-border)' : 'var(--success-border)',
+                      }}>
+                      {cat.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button onClick={() => handleDeleteCategory(cat._id)}
+                      className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
+                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{cat.slug}</div>
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
-                    className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${cat.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                    {cat.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button onClick={() => handleDeleteCategory(cat._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="hidden md:block glass rounded-2xl overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
-                <tr>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Slug</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
-                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map(cat => (
-                  <tr key={cat._id} className="border-b transition-colors"
-                    style={{ borderColor: 'var(--border-base)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
-                    <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{cat.name}</td>
-                    <td className="p-4" style={{ color: 'var(--text-muted)' }}>{cat.slug}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                        {cat.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="p-4 space-x-2">
-                      <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
-                        className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${cat.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                        {cat.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button onClick={() => handleDeleteCategory(cat._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
+              ))}
+            </div>
+            <div className="hidden md:block glass rounded-2xl overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
+                  <tr>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Slug</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                    <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {categories.map(cat => (
+                    <tr key={cat._id} className="border-b transition-colors"
+                      style={{ borderColor: 'var(--border-base)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                      <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{cat.name}</td>
+                      <td className="p-4" style={{ color: 'var(--text-muted)' }}>{cat.slug}</td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
+                          style={{
+                            background: cat.isActive ? 'var(--success-bg)' : 'var(--danger-bg)',
+                            color: cat.isActive ? 'var(--success-text)' : 'var(--danger-text)',
+                            borderColor: cat.isActive ? 'var(--success-border)' : 'var(--danger-border)',
+                          }}>
+                          {cat.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-4 space-x-2">
+                        <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
+                          className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
+                          style={{
+                            background: cat.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
+                            color: cat.isActive ? 'var(--warning-text)' : 'var(--success-text)',
+                            borderColor: cat.isActive ? 'var(--warning-border)' : 'var(--success-border)',
+                          }}>
+                          {cat.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button onClick={() => handleDeleteCategory(cat._id)}
+                          className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
+                          style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            </>
+          )}
           </>
         </div>
       )}

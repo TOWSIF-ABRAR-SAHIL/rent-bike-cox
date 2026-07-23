@@ -90,11 +90,11 @@ const Home = () => {
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
               <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm" style={{ color: 'var(--pill-text)' }}>
-                <Clock size={16} className="mr-2 text-cyan-400" />
+                <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} />
                 Starting from 200 TK/hr
               </div>
               <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm" style={{ color: 'var(--pill-text)' }}>
-                <MapPin size={16} className="mr-2 text-green-400" />
+                <MapPin size={16} className="mr-2" style={{ color: 'var(--success-text)' }} />
                 {bikes.length} vehicles available
               </div>
             </div>
@@ -126,7 +126,7 @@ const Home = () => {
           ))}
           <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
           <div className="flex items-center gap-1.5">
-            <span className="text-green-400 font-bold">From 200 TK/hr</span>
+            <span className="font-bold" style={{ color: 'var(--success-text)' }}>From 200 TK/hr</span>
           </div>
         </div>
       </section>
@@ -231,7 +231,7 @@ const Home = () => {
             title={search || activeCategory ? 'No vehicles match your search' : 'No vehicles available yet'}
             description={search || activeCategory ? 'Try adjusting your filters' : 'Check back soon for new listings'}
             action={(search || activeCategory) && (
-              <button onClick={() => { setSearch(''); setActiveCategory(''); }} className="text-primary-400 hover:text-primary-300 text-sm font-medium">
+              <button onClick={() => { setSearch(''); setActiveCategory(''); }} className="text-primary-400 hover:text-primary-300 text-sm font-medium min-h-11 px-4 py-2 rounded-lg transition-all" style={{ color: 'var(--accent-text)' }}>
                 Clear filters
               </button>
             )}
@@ -268,7 +268,7 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="p-5">
-                  <h2 className="text-lg font-bold mb-1 group-hover:text-cyan-300 transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
+                  <h2 className="text-lg font-bold mb-1 truncate transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
                   <p className="text-sm mb-4" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
                   <div className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold transition-all group-hover:border-primary-500/50 group-hover:text-primary-400"
                     style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}

@@ -28,7 +28,7 @@ const Footer = () => (
               { to: '/policies', label: 'Policies' },
             ].map(link => (
               <li key={link.label}>
-                <Link to={link.to} className="text-sm hover:text-cyan-400 transition-colors py-1.5" style={{ color: 'var(--footer-text)' }}>{link.label}</Link>
+                <Link to={link.to} className="text-sm transition-colors py-1.5" style={{ color: 'var(--footer-text)' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-text)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--footer-text)'}>{link.label}</Link>
               </li>
             ))}
           </ul>
@@ -38,11 +38,11 @@ const Footer = () => (
           <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide" style={{ color: 'var(--footer-text)' }}>Contact</h3>
           <ul className="space-y-3">
             <li className="flex items-center text-sm" style={{ color: 'var(--footer-text)' }}>
-              <Phone size={14} className="mr-3 text-cyan-400 flex-shrink-0" />
+              <Phone size={14} className="mr-3 flex-shrink-0" style={{ color: 'var(--accent-text)' }} />
               01891-154443, 01764-466757
             </li>
             <li className="flex items-center text-sm" style={{ color: 'var(--footer-text)' }}>
-              <MapPin size={14} className="mr-3 text-cyan-400 flex-shrink-0" />
+              <MapPin size={14} className="mr-3 flex-shrink-0" style={{ color: 'var(--accent-text)' }} />
               Cox's Bazar, Bangladesh
             </li>
           </ul>

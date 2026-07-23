@@ -22,19 +22,20 @@ export function ToastProvider({ children }) {
   }, []);
 
   const styles = {
-    success: 'bg-green-500/10 border-green-500/20 text-green-400',
-    error: 'bg-red-500/10 border-red-500/20 text-red-400',
-    info: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+    success: { background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' },
+    error: { background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' },
+    info: { background: 'var(--info-bg)', borderColor: 'var(--info-border)', color: 'var(--info-text)' },
   };
 
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed top-20 right-4 z-50 space-y-2">
+      <div className="fixed top-20 right-4 z-[300] space-y-2 w-[calc(100vw-2rem)] max-w-sm">
         {toasts.map(toast => (
           <div
             key={toast.id}
-            className={`flex items-center p-4 rounded-xl glass shadow-xl max-w-sm animate-slide-in border ${styles[toast.type] || styles.info}`}
+            className={`flex items-center p-4 rounded-xl glass shadow-xl border ${styles[toast.type] ? '' : ''}`}
+            style={styles[toast.type] || styles.info}
           >
             {toast.type === 'success' && <CheckCircle className="mr-3 flex-shrink-0" size={18} />}
             {toast.type === 'error' && <XCircle className="mr-3 flex-shrink-0" size={18} />}

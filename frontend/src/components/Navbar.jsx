@@ -12,6 +12,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const mobileMenuRef = useRef(null);
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
 
@@ -24,14 +25,30 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!dropdownOpen) return;
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
   }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handler = (e) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target) && !e.target.closest('button[aria-label]')) setMobileOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    if (!dropdownOpen && !mobileOpen) return;
+    const handler = (e) => { if (e.key === 'Escape') closeMenus(); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [dropdownOpen, mobileOpen]);
 
   const handleLogout = () => {
     logout();
@@ -54,12 +71,12 @@ const Navbar = () => {
 
           <div className="hidden md:flex items-center space-x-1 text-sm">
             <div className="flex items-center px-3 py-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <Phone size={14} className="mr-1.5 text-cyan-400" />
+              <Phone size={14} className="mr-1.5" style={{ color: 'var(--accent-text)' }} />
               <span className="text-xs">01891154443</span>
             </div>
             <div className="w-px h-4" style={{ background: 'var(--border-base)' }}></div>
             <div className="flex items-center px-3 py-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <Phone size={14} className="mr-1.5 text-cyan-400" />
+              <Phone size={14} className="mr-1.5" style={{ color: 'var(--accent-text)' }} />
               <span className="text-xs">01764466757</span>
             </div>
           </div>
@@ -94,10 +111,10 @@ const Navbar = () => {
                       <div className="px-4 py-3 flex flex-col gap-0.5" style={{ borderBottom: '1px solid var(--border-base)' }}>
                         <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
-                        <span className="inline-block mt-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md w-fit">{user.role}</span>
+                        <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-md w-fit" style={{ color: 'var(--accent-text)', background: 'var(--accent-bg)' }}>{user.role}</span>
                       </div>
                       <div className="py-1">
-                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm text-red-400 hover:text-red-300 px-4 py-3 transition-all" onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = ''}>
+                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
                           <LogOut size={14} className="mr-2" /> Logout
                         </button>
                       </div>
@@ -120,37 +137,37 @@ const Navbar = () => {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden glass-dark border-t animate-slide-up" style={{ borderColor: 'var(--border-base)' }}>
-          <div className="px-4 py-4 space-y-2">
-            <div className="flex items-center text-sm px-3 py-2" style={{ color: 'var(--text-muted)' }}>
-              <Phone size={14} className="mr-2 text-cyan-400" />
+        <div ref={mobileMenuRef} className="md:hidden glass-dark border-t animate-slide-up" style={{ borderColor: 'var(--border-base)' }}>
+          <div className="px-4 py-4 space-y-1">
+            <div className="flex items-center text-sm px-3 py-2.5 min-h-11" style={{ color: 'var(--text-muted)' }}>
+              <Phone size={14} className="mr-2" style={{ color: 'var(--accent-text)' }} />
               01891154443 | 01764466757
             </div>
-            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-3 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }}>
+            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }}>
               <ThemeIcon size={16} className="mr-2" /> Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}
             </button>
-            <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-3 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+            <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
               <ShieldCheck size={16} className="mr-2" /> Policies
             </Link>
             {user ? (
               <>
-                <div className="px-3 py-2 border-t mt-2 pt-3" style={{ borderColor: 'var(--border-base)' }}>
+                <div className="px-3 py-2.5 border-t mt-2 pt-3 min-h-11" style={{ borderColor: 'var(--border-base)' }}>
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
-                  <p className="text-xs text-primary-400">{user.role}</p>
+                  <p className="text-xs" style={{ color: 'var(--accent-text)' }}>{user.role}</p>
                 </div>
                 {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to={user.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard'} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-3 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Link to={user.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard'} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                     <LayoutDashboard size={16} className="mr-2" /> Dashboard
                   </Link>
                 )}
-                <button onClick={handleLogout} className="flex items-center text-red-400 hover:text-red-300 text-sm px-3 py-3 rounded-lg transition-all w-full text-left">
+                <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>
               </>
             ) : (
               <div className="flex space-x-2 pt-2">
-                <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-3 text-sm flex-1 text-center">Login</Link>
-                <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-3 text-sm flex-1 text-center">Sign Up</Link>
+                <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Login</Link>
+                <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Sign Up</Link>
               </div>
             )}
           </div>
