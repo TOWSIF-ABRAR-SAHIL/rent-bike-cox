@@ -19,11 +19,14 @@ const defaultSettings = {
   ]
 };
 
+let categoriesSeeded = false;
 const seedCategories = async () => {
+  if (categoriesSeeded) return;
   const count = await Category.countDocuments();
   if (count === 0) {
     await Category.insertMany(defaultCategories);
   }
+  categoriesSeeded = true;
 };
 
 // --- Renter Actions ---
@@ -88,6 +91,7 @@ exports.getAvailableBikes = async (req, res) => {
       ];
     }
 
+    res.set('Cache-Control', 'public, max-age=60');
     const bikes = await Bike.find(filter)
       .populate('renter', 'name')
       .populate('category', 'name slug');
@@ -99,6 +103,7 @@ exports.getAvailableBikes = async (req, res) => {
 
 exports.getBikeById = async (req, res) => {
   try {
+    res.set('Cache-Control', 'public, max-age=120');
     const bike = await Bike.findById(req.params.id)
       .populate('renter', 'name')
       .populate('category', 'name slug');
@@ -114,6 +119,7 @@ exports.getBikeById = async (req, res) => {
 exports.getCategories = async (req, res) => {
   try {
     await seedCategories();
+    res.set('Cache-Control', 'public, max-age=300');
     const categories = await Category.find({ isActive: true });
     res.json(categories);
   } catch (error) {
@@ -199,6 +205,7 @@ exports.getGlobalSettings = async (req, res) => {
         await settings.save();
       }
     }
+    res.set('Cache-Control', 'public, max-age=600');
     res.json(settings);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -229,8 +236,11 @@ exports.updateGlobalSettings = async (req, res) => {
 exports.getAllBikes = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const bikes = await Bike.find().populate('renter', 'name email').populate('category', 'name');
-    res.json(bikes);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const total = await Bike.countDocuments();
+    const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name');
+    res.json({ bikes, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -252,8 +262,11 @@ exports.toggleBikeVerification = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const users = await User.find().select('-password');
-    res.json(users);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const total = await User.countDocuments();
+    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password');
+    res.json({ users, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -276,6 +289,9 @@ exports.deleteBike = async (req, res) => {
   try {
     const bike = await Bike.findById(req.params.id);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    if (req.user.role !== 'Admin' && !(req.user.role === 'Renter' && bike.renter.toString() === req.user.id)) {
+      return res.status(403).json({ message: 'Not authorized to delete this bike' });
+    }
     await Bike.findByIdAndDelete(req.params.id);
     res.json({ message: 'Bike deleted' });
   } catch (error) {

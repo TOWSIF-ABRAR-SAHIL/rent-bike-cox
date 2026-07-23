@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useToast } from '../components/useToast';
@@ -27,7 +27,7 @@ const RenterDashboard = () => {
       .finally(() => setLoading(false));
   }, [addToast]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     const formDataToSend = new FormData();
     Object.keys(newBike).forEach(key => { if (newBike[key]) formDataToSend.append(key, newBike[key]); });
@@ -41,15 +41,15 @@ const RenterDashboard = () => {
       setBikes(res.data);
       addToast('Bike added successfully!', 'success');
     } catch { addToast('Failed to add bike', 'error'); }
-  };
+  }, [newBike, bikeFiles, categories, addToast]);
 
-  const toggleAvailability = async (bikeId) => {
+  const toggleAvailability = useCallback(async (bikeId) => {
     try {
       const res = await api.put(`/dashboard/bikes/${bikeId}/availability`);
       setBikes(bikes.map(bike => bike._id === bikeId ? { ...bike, availability: res.data.bike.availability } : bike));
       addToast(`Bike is now ${res.data.bike.availability ? 'available' : 'unavailable'}`, 'success');
     } catch { addToast('Failed to update availability', 'error'); }
-  };
+  }, [bikes, addToast]);
 
   if (loading) return <SkeletonPage />;
 
@@ -98,7 +98,7 @@ const RenterDashboard = () => {
           {bikes.map(bike => (
             <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover">
               {bike.images?.[0] && (
-                <img src={bike.images[0]} alt={bike.model} className="w-full h-48 object-cover" onError={(e) => { e.target.src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
+                <img src={bike.images[0]} alt={bike.model} width="400" height="300" className="w-full h-48 object-cover" loading="lazy" onError={(e) => { e.target.src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
               )}
               <div className="p-5">
                 <div className="flex items-center justify-between mb-3">

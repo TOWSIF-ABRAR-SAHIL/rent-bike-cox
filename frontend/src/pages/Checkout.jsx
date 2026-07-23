@@ -42,7 +42,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
-    const createBooking = async () => {
+    const timer = setTimeout(async () => {
       setError('');
       try {
         const payload = {
@@ -59,8 +59,8 @@ const Checkout = () => {
         setError(err.response?.data?.message || 'Failed to create booking');
         setBookingData(null);
       }
-    };
-    createBooking();
+    }, 500);
+    return () => clearTimeout(timer);
   }, [startTime, endTime, couponCode, selectedPackage, bikeId, bike, destination]);
 
   const handlePayment = async () => {

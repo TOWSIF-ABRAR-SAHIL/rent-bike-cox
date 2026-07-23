@@ -175,11 +175,15 @@ exports.getRenterBookings = async (req, res) => {
     if (req.user.role !== 'Renter') return res.status(403).json({ message: 'Access denied' });
     const renterBikes = await Bike.find({ renter: req.user.id }).select('_id');
     const bikeIds = renterBikes.map(b => b._id);
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const total = await Booking.countDocuments({ bike: { $in: bikeIds } });
     const bookings = await Booking.find({ bike: { $in: bikeIds } })
+      .skip((page - 1) * limit).limit(limit)
       .populate('user', 'name email phoneNumber')
       .populate('bike', 'model brand pricePerHour')
       .sort({ createdAt: -1 });
-    res.json(bookings);
+    res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch renter bookings' });
   }
@@ -188,11 +192,14 @@ exports.getRenterBookings = async (req, res) => {
 exports.getAllBookings = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const bookings = await Booking.find()
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const total = await Booking.countDocuments();
+    const bookings = await Booking.find().skip((page - 1) * limit).limit(limit)
       .populate('user', 'name email phoneNumber')
       .populate('bike', 'model brand pricePerHour')
       .sort({ createdAt: -1 });
-    res.json(bookings);
+    res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch all bookings' });
   }

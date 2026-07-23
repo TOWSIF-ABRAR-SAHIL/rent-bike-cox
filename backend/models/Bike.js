@@ -16,5 +16,6 @@ const bikeSchema = new mongoose.Schema({
 bikeSchema.index({ availability: 1, isVerified: 1 });
 bikeSchema.index({ renter: 1 });
 bikeSchema.index({ category: 1 });
+bikeSchema.index({ model: 'text', brand: 'text' });
 
 module.exports = mongoose.model('Bike', bikeSchema);

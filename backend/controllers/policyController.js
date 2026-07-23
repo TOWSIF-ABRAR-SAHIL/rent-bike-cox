@@ -39,16 +39,20 @@ const defaultPolicies = [
   }
 ];
 
+let policiesSeeded = false;
 const seedPolicies = async () => {
+  if (policiesSeeded) return;
   const count = await Policy.countDocuments();
   if (count === 0) {
     await Policy.insertMany(defaultPolicies);
   }
+  policiesSeeded = true;
 };
 
 exports.getPublicPolicies = async (req, res) => {
   try {
     await seedPolicies();
+    res.set('Cache-Control', 'public, max-age=300');
     const policies = await Policy.find({ isActive: true }).sort({ sortOrder: 1 });
     res.json(policies);
   } catch (error) {

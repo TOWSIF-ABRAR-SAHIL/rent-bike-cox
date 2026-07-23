@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 const EmptyState = ({ icon: Icon, title, description, action, className = '' }) => (
   <div className={`text-center py-16 ${className}`}>
     {Icon && (
@@ -11,4 +13,4 @@ const EmptyState = ({ icon: Icon, title, description, action, className = '' }) 
   </div>
 );
 
-export default EmptyState;
+export default memo(EmptyState);

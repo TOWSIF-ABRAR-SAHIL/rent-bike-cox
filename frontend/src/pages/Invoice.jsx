@@ -154,14 +154,6 @@ const Invoice = () => {
         )}
       </div>
 
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white !important; color: black !important; }
-          #printable-invoice { background: white !important; border: 1px solid #ddd !important; box-shadow: none !important; margin: 0 !important; padding: 20px !important; border-radius: 0 !important; }
-          #printable-invoice * { color: #111 !important; border-color: #ddd !important; background: transparent !important; }
-        }
-      `}</style>
     </div>
   );
 };

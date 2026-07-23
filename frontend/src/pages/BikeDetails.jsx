@@ -65,7 +65,7 @@ const BikeDetails = () => {
                 <button key={index} onClick={() => setSelectedImage(index)}
                   className={`rounded-xl overflow-hidden aspect-square border-2 transition-all ${selectedImage === index ? 'border-primary-500 shadow-lg shadow-primary-500/20' : 'hover:border-primary-500/50'}`}
                   style={selectedImage !== index ? { borderColor: 'var(--border-base)' } : undefined}>
-                  <img src={img || 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'} alt={`Angle ${index + 1}`} className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
+                  <img src={img || 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'} alt={`Angle ${index + 1}`} width="80" height="60" className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
                 </button>
               ))}
             </div>

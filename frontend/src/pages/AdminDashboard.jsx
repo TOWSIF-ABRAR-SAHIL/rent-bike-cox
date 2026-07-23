@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen } from 'lucide-react';
 import { useToast } from '../components/useToast';
@@ -52,31 +52,31 @@ const AdminDashboard = () => {
       .finally(() => setLoading(false));
   }, [addToast]);
 
-  const handleUpdateSettings = async (e) => {
+  const handleUpdateSettings = useCallback(async (e) => {
     e.preventDefault();
     try {
       await api.put('/dashboard/admin/settings', settings);
       addToast('Settings updated!', 'success');
     } catch { addToast('Failed to update settings', 'error'); }
-  };
+  }, [settings, addToast]);
 
-  const toggleBikeVerification = async (bikeId) => {
+  const toggleBikeVerification = useCallback(async (bikeId) => {
     try {
       await api.put(`/dashboard/admin/bikes/${bikeId}/verify`);
       setBikes(bikes.map(b => b._id === bikeId ? { ...b, isVerified: !b.isVerified } : b));
       addToast('Bike updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  };
+  }, [bikes, addToast]);
 
-  const toggleUserVerification = async (userId) => {
+  const toggleUserVerification = useCallback(async (userId) => {
     try {
       await api.put(`/dashboard/admin/users/${userId}/verify`);
       setUsers(users.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u));
       addToast('User updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  };
+  }, [users, addToast]);
 
-  const handleCreateCoupon = async (e) => {
+  const handleCreateCoupon = useCallback(async (e) => {
     e.preventDefault();
     try {
       const res = await api.post('/coupons', newCoupon);
@@ -84,26 +84,26 @@ const AdminDashboard = () => {
       setNewCoupon({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
       addToast('Coupon created!', 'success');
     } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
-  };
+  }, [newCoupon, coupons, addToast]);
 
-  const handleDeleteCoupon = async (id) => {
+  const handleDeleteCoupon = useCallback(async (id) => {
     if (!window.confirm('Delete this coupon?')) return;
     try {
       await api.delete(`/coupons/${id}`);
       setCoupons(coupons.filter(c => c._id !== id));
       addToast('Deleted', 'success');
     } catch { addToast('Failed', 'error'); }
-  };
+  }, [coupons, addToast]);
 
-  const toggleCouponActive = async (id, isActive) => {
+  const toggleCouponActive = useCallback(async (id, isActive) => {
     try {
       await api.put(`/coupons/${id}`, { isActive: !isActive });
       setCoupons(coupons.map(c => c._id === id ? { ...c, isActive: !isActive } : c));
       addToast('Updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  };
+  }, [coupons, addToast]);
 
-  const handleCreateCategory = async (e) => {
+  const handleCreateCategory = useCallback(async (e) => {
     e.preventDefault();
     try {
       const res = await api.post('/dashboard/admin/categories', { name: newCategory });
@@ -111,24 +111,24 @@ const AdminDashboard = () => {
       setNewCategory('');
       addToast('Category added!', 'success');
     } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
-  };
+  }, [newCategory, categories, addToast]);
 
-  const handleDeleteCategory = async (id) => {
+  const handleDeleteCategory = useCallback(async (id) => {
     if (!window.confirm('Delete?')) return;
     try {
       await api.delete(`/dashboard/admin/categories/${id}`);
       setCategories(categories.filter(c => c._id !== id));
       addToast('Deleted', 'success');
     } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
-  };
+  }, [categories, addToast]);
 
-  const toggleCategoryActive = async (id, isActive) => {
+  const toggleCategoryActive = useCallback(async (id, isActive) => {
     try {
       const res = await api.put(`/dashboard/admin/categories/${id}`, { isActive: !isActive });
       setCategories(categories.map(c => c._id === id ? res.data : c));
       addToast('Updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  };
+  }, [categories, addToast]);
 
   if (loading) return <SkeletonPage />;
 

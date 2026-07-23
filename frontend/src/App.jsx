@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/Toast';
@@ -32,54 +31,52 @@ const Loading = () => (
 
 function App() {
   return (
-    <HelmetProvider>
-      <Router>
-        <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
-                <Navbar />
-                <main className="pt-16">
-                  <Suspense fallback={<Loading />}>
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/bike/:id" element={<BikeDetails />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/signup" element={<Signup />} />
-                      <Route path="/payment-failed" element={<PaymentFailed />} />
-                      <Route path="/payment-cancelled" element={<PaymentCancelled />} />
-                      <Route path="/policies" element={<Policies />} />
-                      <Route path="/checkout/:bikeId" element={
-                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                          <Checkout />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/invoice/:bookingId" element={
-                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                          <Invoice />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/renter-dashboard" element={
-                        <ProtectedRoute roles={['Renter', 'Admin']}>
-                          <RenterDashboard />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/admin-dashboard" element={
-                        <ProtectedRoute roles={['Admin']}>
-                          <AdminDashboard />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </ToastProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </Router>
-    </HelmetProvider>
+    <Router>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+              <Navbar />
+              <main className="pt-16">
+                <Suspense fallback={<Loading />}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/bike/:id" element={<BikeDetails />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/payment-failed" element={<PaymentFailed />} />
+                    <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    <Route path="/policies" element={<Policies />} />
+                    <Route path="/checkout/:bikeId" element={
+                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                        <Checkout />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/invoice/:bookingId" element={
+                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                        <Invoice />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/renter-dashboard" element={
+                      <ProtectedRoute roles={['Renter', 'Admin']}>
+                        <RenterDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin-dashboard" element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </main>
+              <Footer />
+            </div>
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </Router>
   );
 }
 

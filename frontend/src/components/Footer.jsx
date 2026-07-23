@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Bike, Phone, MapPin } from 'lucide-react';
+import { memo } from 'react';
 
 const Footer = () => (
   <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
@@ -56,4 +57,4 @@ const Footer = () => (
   </footer>
 );
 
-export default Footer;
+export default memo(Footer);

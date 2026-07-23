@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight } from 'lucide-react';
@@ -59,10 +59,13 @@ const Home = () => {
     setActiveCategory(prev => prev === slug ? '' : slug);
   }, []);
 
-  const categoryCounts = categories.map(cat => ({
-    ...cat,
-    count: bikes.filter(b => b.category?.slug === cat.slug).length
-  }));
+  const categoryCounts = useMemo(() =>
+    categories.map(cat => ({
+      ...cat,
+      count: bikes.filter(b => b.category?.slug === cat.slug).length
+    })),
+    [categories, bikes]
+  );
 
   return (
     <div>
@@ -245,6 +248,8 @@ const Home = () => {
                   <img
                     src={bike.images?.[0] || 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'}
                     alt={bike.model}
+                    width="400"
+                    height="300"
                     className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                     onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }}
