@@ -87,8 +87,8 @@ const Signup = () => {
             </div>
 
             <select name="role" onChange={handleChange} className="input-dark !py-2.5 text-sm" style={{ background: 'var(--hover-bg)' }}>
-              <option value="User" className="bg-[#111118]">User (Customer)</option>
-              <option value="Renter" className="bg-[#111118]">Renter (Bike Owner)</option>
+              <option value="User" style={{ background: 'var(--bg-surface)' }}>User (Customer)</option>
+              <option value="Renter" style={{ background: 'var(--bg-surface)' }}>Renter (Bike Owner)</option>
             </select>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

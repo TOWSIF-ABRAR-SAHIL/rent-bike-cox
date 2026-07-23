@@ -119,8 +119,8 @@ const RenterDashboard = () => {
                     </button>
                   ) : (
                     <button onClick={() => toggleAvailability(bike._id)}
-                      className="flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-gray-400"
-                      style={{ background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }}>
+                      className="flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                      style={{ color: 'var(--text-muted)', background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }}>
                       <ToggleLeft size={14} className="mr-1" /> Unavailable
                     </button>
                   )}

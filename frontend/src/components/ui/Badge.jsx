@@ -8,7 +8,7 @@ const variants = {
 };
 
 const defaultBadgeStyle = {
-  backgroundColor: 'rgba(255,255,255,0.05)',
+  backgroundColor: 'var(--hover-bg)',
   color: 'var(--text-secondary)',
   borderColor: 'var(--border-base)',
 };
