@@ -13,7 +13,7 @@ const Footer = () => (
             </div>
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent font-bold text-lg">Rent Bike Cox's Bazar</span>
           </div>
-          <p className="text-sm leading-relaxed text-slate-400">
+          <p className="text-sm leading-relaxed text-slate-200">
             Your trusted vehicle rental platform in Cox's Bazar. Bikes, cars & beach jeeps at the best prices with secure online payment.
           </p>
         </div>
@@ -27,7 +27,7 @@ const Footer = () => (
               { to: '/policies', label: 'Policies' },
             ].map(link => (
               <li key={link.label}>
-                <Link to={link.to} className="text-sm text-slate-400 hover:text-cyan-400 transition-colors">{link.label}</Link>
+                <Link to={link.to} className="text-sm text-slate-200 hover:text-cyan-400 transition-colors">{link.label}</Link>
               </li>
             ))}
           </ul>
@@ -36,11 +36,11 @@ const Footer = () => (
         <div>
           <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide text-white">Contact</h3>
           <ul className="space-y-3">
-            <li className="flex items-center text-sm text-slate-400">
+            <li className="flex items-center text-sm text-slate-200">
               <Phone size={14} className="mr-3 text-cyan-400 flex-shrink-0" />
               01891-154443, 01764-466757
             </li>
-            <li className="flex items-center text-sm text-slate-400">
+            <li className="flex items-center text-sm text-slate-200">
               <MapPin size={14} className="mr-3 text-cyan-400 flex-shrink-0" />
               Cox's Bazar, Bangladesh
             </li>
@@ -48,9 +48,9 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="border-t border-white/8 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-slate-500">&copy; 2026 Rent Bike Cox's Bazar. All rights reserved.</p>
-        <p className="text-xs text-slate-600">Built with React, Express & MongoDB</p>
+      <div className="border-t border-white/10 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p className="text-xs text-slate-300">&copy; 2026 Rent Bike Cox's Bazar. All rights reserved.</p>
+        <p className="text-xs text-slate-300">Built with React, Express & MongoDB</p>
       </div>
     </div>
   </footer>
