@@ -10,8 +10,8 @@ const PaymentFailed = () => (
       <div className="w-20 h-20 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto mb-6">
         <XCircle size={40} className="text-red-400" />
       </div>
-      <h1 className="text-2xl font-bold text-white mb-2">Payment Failed</h1>
-      <p className="text-gray-400 mb-8">Something went wrong with your payment. Please try again.</p>
+      <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Payment Failed</h1>
+      <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>Something went wrong with your payment. Please try again.</p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link to="/" className="btn-primary flex-1 flex items-center justify-center">
           <Home size={18} className="mr-2" /> Go Home

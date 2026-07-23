@@ -102,7 +102,7 @@ const Checkout = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">
-      <h1 className="text-3xl font-bold text-white mb-8">Checkout</h1>
+      <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 text-sm">
@@ -112,11 +112,11 @@ const Checkout = () => {
 
       <div className="glass rounded-3xl p-6 sm:p-8 space-y-6">
         {/* Bike Info */}
-        <div className="flex items-center gap-4 pb-5 border-b border-white/10">
+        <div className="flex items-center gap-4 pb-5 border-b" style={{ borderColor: 'var(--border-base)' }}>
           {bike.images?.[0] && <img src={bike.images[0]} alt={bike.model} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />}
           <div>
-            <h2 className="text-lg font-bold text-white">{bike.model}</h2>
-            <p className="text-gray-400 text-sm">{bike.brand} - {bike.category?.name || 'N/A'}</p>
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model}</h2>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand} - {bike.category?.name || 'N/A'}</p>
             <p className="text-cyan-400 font-bold text-sm mt-0.5">{bike.pricePerHour} TK / Hour</p>
           </div>
         </div>
@@ -124,16 +124,17 @@ const Checkout = () => {
         {/* Package Selection */}
         {settings.packages?.length > 0 && (
           <div>
-            <h3 className="font-bold text-white mb-3 text-sm uppercase tracking-wide">Choose a Package</h3>
+            <h3 className="font-bold mb-3 text-sm uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>Choose a Package</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {settings.packages.map((pkg, index) => (
                 <button key={index} onClick={() => handlePackageSelect(index)}
                   className={`p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                     selectedPackage === index
                       ? 'border-primary-500 bg-primary-500/10 shadow-lg shadow-primary-500/10'
-                      : 'border-white/10 hover:border-white/20'
-                  }`}>
-                  <p className="font-bold text-sm text-white">{pkg.name}</p>
+                      : 'hover:border-primary-500/50'
+                  }`}
+                  style={selectedPackage !== index ? { borderColor: 'var(--border-base)' } : undefined}>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{pkg.name}</p>
                   <p className="text-cyan-400 font-semibold text-sm">{pkg.price} TK</p>
                 </button>
               ))}
@@ -145,11 +146,11 @@ const Checkout = () => {
         {selectedPackage === null && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Start Time</label>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Start Time</label>
               <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">End Time</label>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>End Time</label>
               <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="input-dark text-sm" />
             </div>
           </div>
@@ -160,7 +161,7 @@ const Checkout = () => {
           <div className="glass p-4 rounded-xl flex items-center justify-between border border-primary-500/20">
             <div className="flex items-center">
               <CheckCircle size={18} className="text-primary-400 mr-2" />
-              <span className="font-bold text-white">{settings.packages[selectedPackage].name}</span>
+              <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{settings.packages[selectedPackage].name}</span>
             </div>
             <span className="font-bold text-cyan-400">{settings.packages[selectedPackage].price} TK</span>
           </div>
@@ -168,7 +169,7 @@ const Checkout = () => {
 
         {/* Coupon */}
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
             <Tag size={12} className="inline mr-1" /> Coupon Code (optional)
           </label>
           <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="input-dark text-sm" />
@@ -176,7 +177,7 @@ const Checkout = () => {
 
         {/* Destination */}
         <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">
+          <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
             <MapPin size={12} className="inline mr-1" /> Destination / Trip Plan
           </label>
           <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Cox's Bazar Beach, Inani, Himchari" className="input-dark text-sm" />
@@ -187,14 +188,14 @@ const Checkout = () => {
           <>
             <div className="glass rounded-2xl p-5 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Total Price</span>
-                <span className="font-bold text-lg text-white">{bookingData.booking.totalPrice} TK</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Total Price</span>
+                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{bookingData.booking.totalPrice} TK</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400">Advance Required</span>
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Advance Required</span>
                 <span className="font-bold text-xl text-cyan-400">{bookingData.minAdvance} TK</span>
               </div>
-              <div className="text-xs text-gray-500 space-y-0.5 pt-2 border-t border-white/10">
+              <div className="text-xs space-y-0.5 pt-2 border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}>
                 {selectedPackage !== null ? (
                   <p className="flex items-center"><Clock size={12} className="mr-1" /> Package: {settings.packages[selectedPackage]?.name}</p>
                 ) : (
@@ -206,10 +207,10 @@ const Checkout = () => {
 
             {/* Terms */}
             <div className="glass rounded-2xl p-5 border border-amber-500/10">
-              <h3 className="font-bold text-amber-300 flex items-center mb-3 text-sm">
+              <h3 className="font-bold text-amber-400 flex items-center mb-3 text-sm">
                 <AlertTriangle size={16} className="mr-2" /> Terms & Conditions
               </h3>
-              <ul className="text-xs text-gray-400 space-y-1.5 mb-4">
+              <ul className="text-xs space-y-1.5 mb-4" style={{ color: 'var(--text-secondary)' }}>
                 <li>• Petrol cost borne by the customer</li>
                 <li>• Beach sand: <strong className="text-amber-400">1,000 TK fine</strong></li>
                 <li>• Lost helmet: <strong className="text-amber-400">2,000 TK fine</strong></li>
@@ -221,8 +222,9 @@ const Checkout = () => {
               </Link>
               <label className="flex items-start cursor-pointer">
                 <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 mr-2.5 h-4 w-4 text-primary-500 rounded border-white/20 bg-white/5 focus:ring-primary-500" />
-                <span className="text-xs text-gray-400">I have read and agree to all terms and conditions.</span>
+                  className="mt-0.5 mr-2.5 h-4 w-4 text-primary-500 rounded focus:ring-primary-500"
+                  style={{ borderColor: 'var(--border-strong)' }} />
+                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>I have read and agree to all terms and conditions.</span>
               </label>
             </div>
 
@@ -231,22 +233,24 @@ const Checkout = () => {
               <button onClick={handlePayment} disabled={loading || !agreedToTerms}
                 className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center ${
                   loading || !agreedToTerms
-                    ? 'bg-white/10 cursor-not-allowed text-gray-500'
+                    ? 'cursor-not-allowed'
                     : 'gradient-primary shadow-lg shadow-blue-500/25 hover:shadow-xl hover:-translate-y-0.5'
-                }`}>
+                }`}
+                style={loading || !agreedToTerms ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}>
                 {loading ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
                 {loading ? 'Processing...' : `Pay ${bookingData.minAdvance} TK via SSLCommerz`}
               </button>
               <button onClick={handleDirectConfirm} disabled={loading || !agreedToTerms}
                 className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center border-2 ${
                   loading || !agreedToTerms
-                    ? 'border-white/10 text-gray-500 cursor-not-allowed'
+                    ? 'cursor-not-allowed'
                     : 'border-green-500/50 text-green-400 hover:bg-green-500/10'
-                }`}>
+                }`}
+                style={loading || !agreedToTerms ? { borderColor: 'var(--border-base)', color: 'var(--text-muted)' } : undefined}>
                 <CheckCircle size={20} className="mr-2" />
                 {loading ? 'Processing...' : `Confirm Booking (${bookingData.minAdvance} TK Advance)`}
               </button>
-              <p className="text-center text-xs text-gray-500">bKash / Nagad / Bank Transfer via secure SSLCommerz gateway</p>
+              <p className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>bKash / Nagad / Bank Transfer via secure SSLCommerz gateway</p>
               {!agreedToTerms && bookingData && (
                 <p className="text-xs text-red-400 text-center">Please agree to terms to proceed</p>
               )}
@@ -254,7 +258,7 @@ const Checkout = () => {
           </>
         )}
 
-        <p className="text-center text-xs text-gray-500 pt-2">
+        <p className="text-center text-xs pt-2" style={{ color: 'var(--text-muted)' }}>
           Booking confirmed only after successful advance payment
         </p>
       </div>

@@ -10,8 +10,8 @@ const PaymentCancelled = () => (
       <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6">
         <XCircle size={40} className="text-amber-400" />
       </div>
-      <h1 className="text-2xl font-bold text-white mb-2">Payment Cancelled</h1>
-      <p className="text-gray-400 mb-8">You cancelled the payment. Your booking is not confirmed.</p>
+      <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Payment Cancelled</h1>
+      <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>You cancelled the payment. Your booking is not confirmed.</p>
       <div className="flex flex-col sm:flex-row gap-3">
         <Link to="/" className="btn-primary flex-1 flex items-center justify-center">
           <Home size={18} className="mr-2" /> Go Home

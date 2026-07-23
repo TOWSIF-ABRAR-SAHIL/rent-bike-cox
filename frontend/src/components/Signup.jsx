@@ -51,10 +51,10 @@ const Signup = () => {
         <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="text-center mb-8">
             <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
-              <UserPlus size={24} className="text-white" />
+              <UserPlus size={24} style={{ color: 'var(--text-primary)' }} />
             </div>
-            <h2 className="text-2xl font-bold text-white">Create Account</h2>
-            <p className="text-gray-400 text-sm mt-1">Join Rent Bike Cox's Bazar</p>
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Create Account</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Join Rent Bike Cox's Bazar</p>
           </div>
 
           {error && (
@@ -66,55 +66,55 @@ const Signup = () => {
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="relative">
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input type="text" name="name" placeholder="Full Name" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input type="email" name="email" placeholder="Email" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input type="password" name="password" placeholder="Password" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
               <div className="relative">
-                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input type="text" name="phoneNumber" placeholder="Phone Number" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
             </div>
 
-            <select name="role" onChange={handleChange} className="input-dark !py-2.5 text-sm bg-white/5">
+            <select name="role" onChange={handleChange} className="input-dark !py-2.5 text-sm" style={{ background: 'var(--hover-bg)' }}>
               <option value="User" className="bg-[#111118]">User (Customer)</option>
               <option value="Renter" className="bg-[#111118]">Renter (Bike Owner)</option>
             </select>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="relative">
-                <CreditCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <CreditCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input type="text" name="nid" placeholder="NID Number" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
               <div className="relative">
-                <CreditCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <CreditCard size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
                 <input type="text" name="license" placeholder="License Number" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-500 mb-1 block">NID Copy</label>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>NID Copy</label>
                 <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-500 mb-1 block">License Copy</label>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>License Copy</label>
                 <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required />
               </div>
             </div>
 
             <div className="relative">
-              <MapPin size={16} className="absolute left-3.5 top-3 text-gray-500" />
+              <MapPin size={16} className="absolute left-3.5 top-3" style={{ color: 'var(--text-muted)' }} />
               <textarea name="address" placeholder="Address" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm min-h-[60px] resize-none"></textarea>
             </div>
 
@@ -123,7 +123,7 @@ const Signup = () => {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-400 mt-6">
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Already have an account?{' '}
             <Link to="/login" className="text-cyan-400 font-semibold hover:text-cyan-300">Sign in</Link>
           </p>

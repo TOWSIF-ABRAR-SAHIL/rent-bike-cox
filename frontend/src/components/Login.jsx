@@ -38,10 +38,10 @@ const Login = () => {
         <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="text-center mb-8">
             <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
-              <LogIn size={24} className="text-white" />
+              <LogIn size={24} style={{ color: 'var(--text-primary)' }} />
             </div>
-            <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
-            <p className="text-gray-400 text-sm mt-1">Sign in to your account</p>
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Welcome Back</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Sign in to your account</p>
           </div>
 
           {error && (
@@ -52,11 +52,11 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
               <input type="email" name="email" placeholder="Email address" onChange={handleChange} className="input-dark !pl-11" required />
             </div>
             <div className="relative">
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
               <input type="password" name="password" placeholder="Password" onChange={handleChange} className="input-dark !pl-11" required />
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
@@ -64,7 +64,7 @@ const Login = () => {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-400 mt-6">
+          <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Don't have an account?{' '}
             <Link to="/signup" className="text-cyan-400 font-semibold hover:text-cyan-300">Create one</Link>
           </p>

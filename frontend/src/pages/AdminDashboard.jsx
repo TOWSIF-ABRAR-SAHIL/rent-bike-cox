@@ -7,15 +7,18 @@ import { SkeletonPage } from '../components/ui/Skeleton';
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
     className={`flex items-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-      active ? 'gradient-primary text-white shadow-lg shadow-blue-500/25' : 'glass text-gray-400 hover:text-white hover:bg-white/5'
-    }`}>
+      active ? 'gradient-primary shadow-lg shadow-blue-500/25' : 'glass'
+    }`}
+    style={active ? { color: 'var(--text-primary)' } : { color: 'var(--text-secondary)' }}
+    onMouseEnter={!active ? e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text-primary)'; } : undefined}
+    onMouseLeave={!active ? e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = ''; } : undefined}>
     <Icon className="mr-2" size={16} /> {children}
   </button>
 );
 
 const StatCard = ({ label, value, color }) => (
-  <div className="glass rounded-2xl p-5 border border-white/5">
-    <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{label}</p>
+  <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--border-base)' }}>
+    <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
     <p className={`text-2xl font-bold ${color}`}>{value}</p>
   </div>
 );
@@ -132,8 +135,8 @@ const AdminDashboard = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-1">Admin Dashboard</h1>
-        <p className="text-gray-400 text-sm">Manage your rental platform</p>
+        <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Admin Dashboard</h1>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Manage your rental platform</p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
@@ -153,10 +156,10 @@ const AdminDashboard = () => {
 
       {activeTab === 'settings' && (
         <div className="glass p-6 rounded-2xl max-w-xl">
-          <h2 className="text-lg font-bold text-white mb-4">Global Pricing</h2>
+          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Global Pricing</h2>
           <form onSubmit={handleUpdateSettings} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wide">Base Price Per Hour (TK)</label>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Base Price Per Hour (TK)</label>
               <input type="number" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: e.target.value})} className="input-dark" />
             </div>
             <button type="submit" className="btn-primary">Save Changes</button>
@@ -167,23 +170,26 @@ const AdminDashboard = () => {
       {activeTab === 'bikes' && (
         <div className="glass rounded-2xl overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10">
+            <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
               <tr>
-                <th className="p-4 font-medium text-gray-400">Vehicle</th>
-                <th className="p-4 font-medium text-gray-400">Category</th>
-                <th className="p-4 font-medium text-gray-400">Renter</th>
-                <th className="p-4 font-medium text-gray-400">Price</th>
-                <th className="p-4 font-medium text-gray-400">Status</th>
-                <th className="p-4 font-medium text-gray-400">Action</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Vehicle</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Category</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Renter</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Price</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {bikes.map(bike => (
-                <tr key={bike._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="p-4 font-medium text-white">{bike.model}</td>
-                  <td className="p-4 text-gray-400">{bike.category?.name || 'N/A'}</td>
-                  <td className="p-4 text-gray-400">{bike.renter?.name}</td>
-                  <td className="p-4 font-medium text-white">{bike.pricePerHour} TK</td>
+                <tr key={bike._id} className="border-b transition-colors"
+                  style={{ borderColor: 'var(--border-base)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                  <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.model}</td>
+                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.category?.name || 'N/A'}</td>
+                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.renter?.name}</td>
+                  <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</td>
                   <td className="p-4">
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${bike.availability ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                       {bike.availability ? 'Active' : 'Booked'}
@@ -205,26 +211,35 @@ const AdminDashboard = () => {
       {activeTab === 'users' && (
         <div className="glass rounded-2xl overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-white/10">
+            <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
               <tr>
-                <th className="p-4 font-medium text-gray-400">Name</th>
-                <th className="p-4 font-medium text-gray-400">Email</th>
-                <th className="p-4 font-medium text-gray-400">Role</th>
-                <th className="p-4 font-medium text-gray-400">Phone</th>
-                <th className="p-4 font-medium text-gray-400">Action</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Email</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Role</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Phone</th>
+                <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {users.map(user => (
-                <tr key={user._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="p-4 font-medium text-white">{user.name}</td>
-                  <td className="p-4 text-gray-400">{user.email}</td>
+                <tr key={user._id} className="border-b transition-colors"
+                  style={{ borderColor: 'var(--border-base)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                  <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</td>
+                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.email}</td>
                   <td className="p-4">
-                    <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${user.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : user.role === 'Renter' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-white/5 text-gray-400 border border-white/10'}`}>
+                    <span
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                        user.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                        : user.role === 'Renter' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                        : 'border'
+                      }`}
+                      style={user.role !== 'Admin' && user.role !== 'Renter' ? { background: 'var(--hover-bg)', color: 'var(--text-secondary)', borderColor: 'var(--border-base)' } : undefined}>
                       {user.role}
                     </span>
                   </td>
-                  <td className="p-4 text-gray-400">{user.phoneNumber}</td>
+                  <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</td>
                   <td className="p-4">
                     <button onClick={() => toggleUserVerification(user._id)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
@@ -241,7 +256,7 @@ const AdminDashboard = () => {
       {activeTab === 'coupons' && (
         <div className="space-y-6">
           <div className="glass p-6 rounded-2xl max-w-xl">
-            <h2 className="text-lg font-bold text-white mb-4">Create Coupon</h2>
+            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Create Coupon</h2>
             <form onSubmit={handleCreateCoupon} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="text" value={newCoupon.code} onChange={e => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="CODE" className="input-dark text-sm" required />
@@ -256,28 +271,31 @@ const AdminDashboard = () => {
           </div>
           <div className="glass rounded-2xl overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10">
+              <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
                 <tr>
-                  <th className="p-4 font-medium text-gray-400">Code</th>
-                  <th className="p-4 font-medium text-gray-400">Discount</th>
-                  <th className="p-4 font-medium text-gray-400">Uses</th>
-                  <th className="p-4 font-medium text-gray-400">Status</th>
-                  <th className="p-4 font-medium text-gray-400">Expires</th>
-                  <th className="p-4 font-medium text-gray-400">Actions</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Code</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Discount</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Uses</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Expires</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {coupons.map(c => (
-                  <tr key={c._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="p-4 font-mono font-bold text-white">{c.code}</td>
-                    <td className="p-4 text-gray-400">{c.discountPercent}%</td>
-                    <td className="p-4 text-gray-400">{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''}</td>
+                  <tr key={c._id} className="border-b transition-colors"
+                    style={{ borderColor: 'var(--border-base)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                    <td className="p-4 font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</td>
+                    <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.discountPercent}%</td>
+                    <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''}</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${c.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                         {c.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="p-4 text-gray-500">{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
+                    <td className="p-4" style={{ color: 'var(--text-muted)' }}>{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
                     <td className="p-4 space-x-2">
                       <button onClick={() => toggleCouponActive(c._id, c.isActive)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
@@ -298,7 +316,7 @@ const AdminDashboard = () => {
       {activeTab === 'categories' && (
         <div className="space-y-6">
           <div className="glass p-6 rounded-2xl max-w-xl">
-            <h2 className="text-lg font-bold text-white mb-4">Add Category</h2>
+            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Add Category</h2>
             <form onSubmit={handleCreateCategory} className="flex gap-3">
               <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Microbus" className="input-dark flex-1 text-sm" required />
               <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Add</button>
@@ -306,19 +324,22 @@ const AdminDashboard = () => {
           </div>
           <div className="glass rounded-2xl overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10">
+              <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
                 <tr>
-                  <th className="p-4 font-medium text-gray-400">Name</th>
-                  <th className="p-4 font-medium text-gray-400">Slug</th>
-                  <th className="p-4 font-medium text-gray-400">Status</th>
-                  <th className="p-4 font-medium text-gray-400">Actions</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Slug</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Status</th>
+                  <th className="p-4 font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {categories.map(cat => (
-                  <tr key={cat._id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="p-4 font-medium text-white">{cat.name}</td>
-                    <td className="p-4 text-gray-500">{cat.slug}</td>
+                  <tr key={cat._id} className="border-b transition-colors"
+                    style={{ borderColor: 'var(--border-base)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
+                    <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{cat.name}</td>
+                    <td className="p-4" style={{ color: 'var(--text-muted)' }}>{cat.slug}</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                         {cat.isActive ? 'Active' : 'Inactive'}

@@ -4,11 +4,20 @@ const variants = {
   danger: 'bg-red-500/10 text-red-400 border-red-500/20',
   info: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  default: 'bg-white/5 text-gray-400 border-white/10',
+  default: '',
+};
+
+const defaultBadgeStyle = {
+  backgroundColor: 'rgba(255,255,255,0.05)',
+  color: 'var(--text-secondary)',
+  borderColor: 'var(--border-base)',
 };
 
 const Badge = ({ children, variant = 'default', glow, className = '' }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${variants[variant]} ${glow ? 'shadow-lg' : ''} ${className}`}>
+  <span
+    className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${variants[variant]} ${glow ? 'shadow-lg' : ''} ${className}`}
+    style={variant === 'default' ? defaultBadgeStyle : undefined}
+  >
     {children}
   </span>
 );
