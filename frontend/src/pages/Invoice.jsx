@@ -86,7 +86,7 @@ const Invoice = () => {
             <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Payment & Vehicle Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Vehicle:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.bike.model} ({booking.bike.brand})</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Vehicle:</span> <span className="break-words" style={{ color: 'var(--text-primary)' }}>{booking.bike.model} ({booking.bike.brand})</span></p>
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>NID No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user.nid}</span></p>
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>License No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user.license}</span></p>
               </div>
@@ -131,11 +131,11 @@ const Invoice = () => {
           {/* Signatures */}
           <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row justify-between px-4 sm:px-8 gap-8">
             <div className="text-center">
-              <div className="w-48 border-t mb-2" style={{ borderColor: 'var(--border-strong)' }}></div>
+              <div className="w-full max-w-48 border-t mb-2" style={{ borderColor: 'var(--border-strong)' }}></div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>Owner's Signature</p>
             </div>
             <div className="text-center">
-              <div className="w-48 border-t mb-2" style={{ borderColor: 'var(--border-strong)' }}></div>
+              <div className="w-full max-w-48 border-t mb-2" style={{ borderColor: 'var(--border-strong)' }}></div>
               <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>Renter's (User) Signature</p>
             </div>
           </div>

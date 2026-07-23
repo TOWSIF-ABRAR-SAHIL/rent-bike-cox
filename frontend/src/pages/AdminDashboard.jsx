@@ -6,7 +6,7 @@ import { SkeletonPage } from '../components/ui/Skeleton';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
-    className={`flex items-center px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+    className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
       active ? 'gradient-primary shadow-lg shadow-blue-500/25' : 'glass'
     }`}
     style={active ? { color: 'var(--text-primary)' } : { color: 'var(--text-secondary)' }}
@@ -133,7 +133,7 @@ const AdminDashboard = () => {
   if (loading) return <SkeletonPage />;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Admin Dashboard</h1>
         <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Manage your rental platform</p>
@@ -168,7 +168,30 @@ const AdminDashboard = () => {
       )}
 
       {activeTab === 'bikes' && (
-        <div className="glass rounded-2xl overflow-x-auto">
+        <>
+        <div className="md:hidden space-y-3 p-4">
+          {bikes.map(bike => (
+            <div key={bike._id} className="glass rounded-xl p-4 space-y-2">
+              <div className="flex justify-between items-start">
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{bike.model}</span>
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${bike.availability ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                  {bike.availability ? 'Active' : 'Booked'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <span>{bike.category?.name || 'N/A'}</span>
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</span>
+              </div>
+              <div className="pt-1">
+                <button onClick={() => toggleBikeVerification(bike._id)}
+                  className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${bike.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                  {bike.isVerified ? 'Unverify' : 'Verify'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden md:block glass rounded-2xl overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
               <tr>
@@ -197,7 +220,7 @@ const AdminDashboard = () => {
                   </td>
                   <td className="p-4">
                     <button onClick={() => toggleBikeVerification(bike._id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${bike.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                      className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${bike.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
                       {bike.isVerified ? 'Unverify' : 'Verify'}
                     </button>
                   </td>
@@ -206,10 +229,38 @@ const AdminDashboard = () => {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {activeTab === 'users' && (
-        <div className="glass rounded-2xl overflow-x-auto">
+        <>
+        <div className="md:hidden space-y-3 p-4">
+          {users.map(user => (
+            <div key={user._id} className="glass rounded-xl p-4 space-y-2">
+              <div className="flex justify-between items-start">
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</span>
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium ${
+                    user.role === 'Admin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                    : user.role === 'Renter' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    : 'border'
+                  }`}
+                  style={user.role !== 'Admin' && user.role !== 'Renter' ? { background: 'var(--hover-bg)', color: 'var(--text-secondary)', borderColor: 'var(--border-base)' } : undefined}>
+                  {user.role}
+                </span>
+              </div>
+              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.email}</div>
+              <div className="flex justify-between items-center pt-1">
+                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</span>
+                <button onClick={() => toggleUserVerification(user._id)}
+                  className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                  {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="hidden md:block glass rounded-2xl overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
               <tr>
@@ -242,7 +293,7 @@ const AdminDashboard = () => {
                   <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</td>
                   <td className="p-4">
                     <button onClick={() => toggleUserVerification(user._id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
+                      className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium transition-all ${user.isVerified ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 hover:bg-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'}`}>
                       {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
                     </button>
                   </td>
@@ -251,6 +302,7 @@ const AdminDashboard = () => {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {activeTab === 'coupons' && (
@@ -269,7 +321,33 @@ const AdminDashboard = () => {
               <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Create</button>
             </form>
           </div>
-          <div className="glass rounded-2xl overflow-x-auto">
+          <>
+          <div className="md:hidden space-y-3 p-4">
+            {coupons.map(c => (
+              <div key={c._id} className="glass rounded-xl p-4 space-y-2">
+                <div className="flex justify-between items-start">
+                  <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${c.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    {c.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <span>{c.discountPercent}% off</span>
+                  <span>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''} uses</span>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={() => toggleCouponActive(c._id, c.isActive)}
+                    className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                    {c.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button onClick={() => handleDeleteCoupon(c._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block glass rounded-2xl overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
                 <tr>
@@ -298,10 +376,10 @@ const AdminDashboard = () => {
                     <td className="p-4" style={{ color: 'var(--text-muted)' }}>{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
                     <td className="p-4 space-x-2">
                       <button onClick={() => toggleCouponActive(c._id, c.isActive)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                        className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${c.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
                         {c.isActive ? 'Deactivate' : 'Activate'}
                       </button>
-                      <button onClick={() => handleDeleteCoupon(c._id)} className="px-2 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                      <button onClick={() => handleDeleteCoupon(c._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -310,6 +388,7 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
+          </>
         </div>
       )}
 
@@ -322,7 +401,30 @@ const AdminDashboard = () => {
               <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Add</button>
             </form>
           </div>
-          <div className="glass rounded-2xl overflow-x-auto">
+          <>
+          <div className="md:hidden space-y-3 p-4">
+            {categories.map(cat => (
+              <div key={cat._id} className="glass rounded-xl p-4 space-y-2">
+                <div className="flex justify-between items-start">
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{cat.name}</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                    {cat.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{cat.slug}</div>
+                <div className="flex gap-2 pt-1">
+                  <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
+                    className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${cat.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                    {cat.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                  <button onClick={() => handleDeleteCategory(cat._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block glass rounded-2xl overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b" style={{ borderColor: 'var(--border-base)' }}>
                 <tr>
@@ -347,10 +449,10 @@ const AdminDashboard = () => {
                     </td>
                     <td className="p-4 space-x-2">
                       <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium ${cat.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                        className={`px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium ${cat.isActive ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
                         {cat.isActive ? 'Deactivate' : 'Activate'}
                       </button>
-                      <button onClick={() => handleDeleteCategory(cat._id)} className="px-2 py-1.5 rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
+                      <button onClick={() => handleDeleteCategory(cat._id)} className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20">
                         <Trash2 size={14} />
                       </button>
                     </td>
@@ -359,6 +461,7 @@ const AdminDashboard = () => {
               </tbody>
             </table>
           </div>
+          </>
         </div>
       )}
     </div>

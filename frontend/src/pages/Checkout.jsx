@@ -102,7 +102,7 @@ const Checkout = () => {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">
-      <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl mb-6 text-sm">
@@ -199,7 +199,7 @@ const Checkout = () => {
                 {selectedPackage !== null ? (
                   <p className="flex items-center"><Clock size={12} className="mr-1" /> Package: {settings.packages[selectedPackage]?.name}</p>
                 ) : (
-                  <p className="flex items-center"><Clock size={12} className="mr-1" /> {formatDisplayDate(startTime)} → {formatDisplayDate(endTime)}</p>
+                  <p className="flex items-center flex-wrap"><Clock size={12} className="mr-1" /> {formatDisplayDate(startTime)} → {formatDisplayDate(endTime)}</p>
                 )}
                 {couponCode && <p className="text-green-400">Coupon: {couponCode} applied</p>}
               </div>
@@ -241,7 +241,7 @@ const Checkout = () => {
                 {loading ? 'Processing...' : `Pay ${bookingData.minAdvance} TK via SSLCommerz`}
               </button>
               <button onClick={handleDirectConfirm} disabled={loading || !agreedToTerms}
-                className={`w-full py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center border-2 ${
+                className={`w-full py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center border-2 ${
                   loading || !agreedToTerms
                     ? 'cursor-not-allowed'
                     : 'border-green-500/50 text-green-400 hover:bg-green-500/10'

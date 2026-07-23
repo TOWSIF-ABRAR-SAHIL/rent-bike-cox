@@ -97,7 +97,7 @@ const Navbar = () => {
                         <span className="inline-block mt-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md w-fit">{user.role}</span>
                       </div>
                       <div className="py-1">
-                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm text-red-400 hover:text-red-300 px-4 py-2.5 transition-all" onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = ''}>
+                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm text-red-400 hover:text-red-300 px-4 py-3 transition-all" onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = ''}>
                           <LogOut size={14} className="mr-2" /> Logout
                         </button>
                       </div>
@@ -126,10 +126,10 @@ const Navbar = () => {
               <Phone size={14} className="mr-2 text-cyan-400" />
               01891154443 | 01764466757
             </div>
-            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-2.5 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }}>
+            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-3 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }}>
               <ThemeIcon size={16} className="mr-2" /> Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}
             </button>
-            <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+            <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-3 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
               <ShieldCheck size={16} className="mr-2" /> Policies
             </Link>
             {user ? (
@@ -139,18 +139,18 @@ const Navbar = () => {
                   <p className="text-xs text-primary-400">{user.role}</p>
                 </div>
                 {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to={user.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard'} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Link to={user.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard'} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-3 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                     <LayoutDashboard size={16} className="mr-2" /> Dashboard
                   </Link>
                 )}
-                <button onClick={handleLogout} className="flex items-center text-red-400 hover:text-red-300 text-sm px-3 py-2.5 rounded-lg transition-all w-full text-left">
+                <button onClick={handleLogout} className="flex items-center text-red-400 hover:text-red-300 text-sm px-3 py-3 rounded-lg transition-all w-full text-left">
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>
               </>
             ) : (
               <div className="flex space-x-2 pt-2">
-                <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-2 text-sm flex-1 text-center">Login</Link>
-                <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-2 text-sm flex-1 text-center">Sign Up</Link>
+                <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-3 text-sm flex-1 text-center">Login</Link>
+                <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-3 text-sm flex-1 text-center">Sign Up</Link>
               </div>
             )}
           </div>

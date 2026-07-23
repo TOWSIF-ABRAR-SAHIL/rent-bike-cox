@@ -25,7 +25,7 @@ const Modal = ({ open, onClose, title, children, className = '' }) => {
           <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{title}</h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg transition-colors"
+            className="p-3 rounded-lg transition-colors"
             style={closeBtnStyle}
             onMouseEnter={() => setCloseHovered(true)}
             onMouseLeave={() => setCloseHovered(false)}

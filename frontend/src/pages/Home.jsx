@@ -73,7 +73,7 @@ const Home = () => {
       <section className="gradient-hero relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-[100px] animate-float" />
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px] animate-float" style={{ animationDelay: '2s' }} />
+          <div className="absolute bottom-10 right-20 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px] animate-float hidden sm:block" style={{ animationDelay: '2s' }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] animate-float" style={{ animationDelay: '4s' }} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 relative">
@@ -285,12 +285,12 @@ const Home = () => {
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Why Choose Us</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Why Choose Us</h2>
           <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">The best vehicle rental experience in Cox's Bazar</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((f, i) => (
-            <div key={i} className="glass rounded-2xl p-6 text-center card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+            <div key={i} className="glass rounded-2xl p-4 sm:p-6 text-center card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
               <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
                 <f.icon size={24} className="text-white" />
               </div>
@@ -304,7 +304,7 @@ const Home = () => {
       {/* How It Works */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t" style={{ borderColor: 'var(--divider)' }}>
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>How It Works</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>How It Works</h2>
           <p style={{ color: 'var(--section-sub)' }}>Three simple steps to your ride</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">

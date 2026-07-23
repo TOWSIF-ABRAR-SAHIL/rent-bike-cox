@@ -105,11 +105,11 @@ const Signup = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>NID Copy</label>
-                <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required />
+                <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required />
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>License Copy</label>
-                <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required />
+                <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" required />
               </div>
             </div>
 

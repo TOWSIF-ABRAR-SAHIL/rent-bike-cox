@@ -29,7 +29,7 @@ const Policies = () => (
       <div className="w-16 h-16 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
         <FileText size={28} style={{ color: 'var(--text-primary)' }} />
       </div>
-      <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Rental Policies & Terms</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Rental Policies & Terms</h1>
       <p style={{ color: 'var(--text-secondary)' }}>Rent Bike Cox's Bazar — All rules and regulations</p>
     </div>
 
@@ -64,7 +64,7 @@ const Policies = () => (
       </PolicySection>
 
       <PolicySection icon={AlertTriangle} title="Fine Policies" color="red">
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { amount: '1K', title: 'Beach Sand Violation', desc: 'Taking bike onto beach sand — strictly prohibited' },
             { amount: '2K', title: 'Helmet Violation', desc: 'Lost or damaged helmet replacement fee' },

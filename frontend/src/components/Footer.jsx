@@ -28,7 +28,7 @@ const Footer = () => (
               { to: '/policies', label: 'Policies' },
             ].map(link => (
               <li key={link.label}>
-                <Link to={link.to} className="text-sm hover:text-cyan-400 transition-colors" style={{ color: 'var(--footer-text)' }}>{link.label}</Link>
+                <Link to={link.to} className="text-sm hover:text-cyan-400 transition-colors py-1.5" style={{ color: 'var(--footer-text)' }}>{link.label}</Link>
               </li>
             ))}
           </ul>

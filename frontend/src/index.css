@@ -187,7 +187,7 @@ html.light {
   }
 
   .input-dark {
-    @apply w-full px-4 py-3 rounded-xl text-sm transition-all duration-200;
+    @apply w-full px-4 py-3.5 rounded-xl text-sm transition-all duration-200 min-h-11;
     background: var(--input-bg);
     border: 1px solid var(--input-border);
     color: var(--text-primary);
@@ -204,7 +204,7 @@ html.light {
   }
 
   .btn-primary {
-    @apply px-6 py-3 text-white font-semibold rounded-xl
+    @apply px-6 py-3.5 text-white font-semibold rounded-xl min-h-11
       transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0
       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
     background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
@@ -216,7 +216,7 @@ html.light {
   }
 
   .btn-ghost {
-    @apply px-6 py-3 font-semibold rounded-xl transition-all duration-300;
+    @apply px-6 py-3.5 font-semibold rounded-xl min-h-11 transition-all duration-300;
     color: var(--text-secondary);
     border: 1px solid var(--border-base);
   }
@@ -228,7 +228,7 @@ html.light {
   }
 
   .btn-danger {
-    @apply px-6 py-3 text-white font-semibold rounded-xl
+    @apply px-6 py-3.5 text-white font-semibold rounded-xl min-h-11
       transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0
       disabled:opacity-50 disabled:cursor-not-allowed;
     background: linear-gradient(135deg, #ef4444, #dc2626);

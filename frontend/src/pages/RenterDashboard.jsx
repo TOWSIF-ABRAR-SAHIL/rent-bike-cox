@@ -54,10 +54,10 @@ const RenterDashboard = () => {
   if (loading) return <SkeletonPage />;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Renter Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Renter Dashboard</h1>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Manage your vehicles</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center">
@@ -114,12 +114,12 @@ const RenterDashboard = () => {
                   </span>
                   {bike.availability ? (
                     <button onClick={() => toggleAvailability(bike._id)}
-                      className="flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20">
+                      className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20">
                       <ToggleRight size={14} className="mr-1" /> Available
                     </button>
                   ) : (
                     <button onClick={() => toggleAvailability(bike._id)}
-                      className="flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                      className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all"
                       style={{ color: 'var(--text-muted)', background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }}>
                       <ToggleLeft size={14} className="mr-1" /> Unavailable
                     </button>

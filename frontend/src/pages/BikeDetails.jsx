@@ -49,11 +49,11 @@ const BikeDetails = () => {
             {bike.images?.length > 1 && (
               <>
                 <button onClick={() => setSelectedImage(prev => prev === 0 ? bike.images.length - 1 : prev - 1)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 glass rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <ChevronLeft size={20} style={{ color: 'var(--text-primary)' }} />
                 </button>
                 <button onClick={() => setSelectedImage(prev => prev === bike.images.length - 1 ? 0 : prev + 1)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 glass rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <ChevronRight size={20} style={{ color: 'var(--text-primary)' }} />
                 </button>
               </>
@@ -84,7 +84,7 @@ const BikeDetails = () => {
           </div>
 
           <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{bike.pricePerHour}</span>
+            <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{bike.pricePerHour}</span>
             <span className="text-lg" style={{ color: 'var(--text-secondary)' }}>TK / hour</span>
           </div>
 
