@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
@@ -11,6 +11,7 @@ const Navbar = () => {
   const { theme, cycle } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
 
@@ -20,6 +21,17 @@ const Navbar = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     closeMenus();
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
 
   const handleLogout = () => {
     logout();
@@ -69,7 +81,7 @@ const Navbar = () => {
                     Dashboard
                   </Link>
                 )}
-                <div className="relative">
+                <div className="relative" ref={dropdownRef}>
                   <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                     <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-2">
                       <User size={14} className="text-white" />
