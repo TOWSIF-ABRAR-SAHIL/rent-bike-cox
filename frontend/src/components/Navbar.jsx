@@ -78,14 +78,17 @@ const Navbar = () => {
                     <ChevronDown size={14} className={`ml-1 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {dropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 glass rounded-xl shadow-xl py-2 animate-slide-up z-50">
-                      <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--border-base)' }}>
+                    <div className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-2xl animate-slide-up z-[100] overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
+                      <div className="px-4 py-3 flex flex-col gap-0.5" style={{ borderBottom: '1px solid var(--border-base)' }}>
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
-                        <p className="text-xs text-primary-400 font-medium">{user.role}</p>
+                        <span className="inline-block mt-1 text-xs font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md w-fit">{user.role}</span>
                       </div>
-                      <button onClick={handleLogout} className="flex items-center w-full text-left text-sm text-red-400 hover:text-red-300 px-4 py-2.5 transition-all" style={{ '--hover-bg': 'var(--hover-bg)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = ''}>
-                        <LogOut size={14} className="mr-2" /> Logout
-                      </button>
+                      <div className="py-1">
+                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm text-red-400 hover:text-red-300 px-4 py-2.5 transition-all" onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = ''}>
+                          <LogOut size={14} className="mr-2" /> Logout
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
