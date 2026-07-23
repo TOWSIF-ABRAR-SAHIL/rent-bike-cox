@@ -17,6 +17,81 @@
   --color-surface-dim: #0a0a0f;
 }
 
+/* Theme variables */
+html.dark {
+  --bg-base: #0a0a0f;
+  --bg-surface: #111118;
+  --bg-card: #0d0d14;
+  --bg-elevated: #16162a;
+  --border-base: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #f0f0f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-strong: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-strong: rgba(255, 255, 255, 0.1);
+  --glass-nav: rgba(10, 10, 15, 0.8);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --skeleton-from: rgba(255,255,255,0.04);
+  --skeleton-via: rgba(255,255,255,0.08);
+  --hero-gradient: linear-gradient(135deg, #0a0a0f 0%, #111118 30%, #0f172a 70%, #1a1a2e 100%);
+  --hero-text: #ffffff;
+  --hero-sub: #94a3b8;
+  --pill-text: #e2e8f0;
+  --pill-border: rgba(255, 255, 255, 0.1);
+  --badge-bg: rgba(255, 255, 255, 0.12);
+  --card-title: #ffffff;
+  --card-sub: #94a3b8;
+  --divider: rgba(255, 255, 255, 0.05);
+  --section-title: #ffffff;
+  --section-sub: #94a3b8;
+  --footer-bg: #0a0a0f;
+  --footer-border: rgba(255, 255, 255, 0.05);
+  --stat-number: #ffffff;
+}
+
+html.light {
+  --bg-base: #e5e7eb;
+  --bg-surface: #f0f1f4;
+  --bg-card: #f0f1f4;
+  --bg-elevated: #dcdfe4;
+  --border-base: rgba(0, 0, 0, 0.07);
+  --border-strong: rgba(0, 0, 0, 0.1);
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --glass-bg: rgba(240, 241, 244, 0.7);
+  --glass-bg-strong: rgba(240, 241, 244, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-border-strong: rgba(0, 0, 0, 0.07);
+  --glass-nav: rgba(240, 241, 244, 0.88);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --input-border: rgba(0, 0, 0, 0.1);
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --shadow-color: rgba(0, 0, 0, 0.05);
+  --skeleton-from: rgba(0,0,0,0.04);
+  --skeleton-via: rgba(0,0,0,0.07);
+  --hero-gradient: linear-gradient(135deg, #d5d9e2 0%, #dce1ea 30%, #dfe6ef 70%, #e8ecf3 100%);
+  --hero-text: #1f2937;
+  --hero-sub: #4b5563;
+  --pill-text: #374151;
+  --pill-border: rgba(0, 0, 0, 0.06);
+  --badge-bg: rgba(255, 255, 255, 0.75);
+  --card-title: #1f2937;
+  --card-sub: #6b7280;
+  --divider: rgba(0, 0, 0, 0.06);
+  --section-title: #1f2937;
+  --section-sub: #6b7280;
+  --footer-bg: #374151;
+  --footer-border: rgba(255, 255, 255, 0.08);
+  --stat-number: #1f2937;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -26,8 +101,9 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #0a0a0f;
-    color: #f0f0f5;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   * {
@@ -38,24 +114,28 @@
 
 @layer utilities {
   .glass {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+  }
+
+  html.light .glass {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   }
 
   .glass-light {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--glass-bg-strong);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border-strong);
   }
 
   .glass-dark {
-    background: rgba(10, 10, 15, 0.8);
+    background: var(--glass-nav);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
   }
 
   .gradient-primary {
@@ -75,7 +155,7 @@
   }
 
   .gradient-hero {
-    background: linear-gradient(135deg, #0a0a0f 0%, #111118 30%, #0f172a 70%, #1a1a2e 100%);
+    background: var(--hero-gradient);
   }
 
   .text-gradient {
@@ -99,13 +179,24 @@
   .card-hover:hover {
     transform: translateY(-4px);
     border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 0 30px rgba(99, 102, 241, 0.1), 0 20px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.1), 0 20px 40px var(--shadow-color);
   }
 
   .input-dark {
-    @apply w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white
-      placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/50
-      transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-xl text-sm transition-all duration-200;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--text-primary);
+  }
+
+  .input-dark::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-dark:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
   }
 
   .btn-primary {
@@ -121,8 +212,15 @@
   }
 
   .btn-ghost {
-    @apply px-6 py-3 text-gray-300 font-semibold rounded-xl border border-white/10
-      hover:bg-white/5 hover:text-white hover:border-white/20 transition-all duration-300;
+    @apply px-6 py-3 font-semibold rounded-xl transition-all duration-300;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-base);
+  }
+
+  .btn-ghost:hover {
+    background: var(--hover-bg);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
   }
 
   .btn-danger {
@@ -154,7 +252,7 @@
   }
 
   .skeleton-dark {
-    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-via) 50%, var(--skeleton-from) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }
@@ -197,7 +295,7 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+  background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-via) 50%, var(--skeleton-from) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }

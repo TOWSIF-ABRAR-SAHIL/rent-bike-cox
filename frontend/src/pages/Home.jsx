@@ -75,22 +75,22 @@ const Home = () => {
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 relative">
           <div className="max-w-2xl animate-fade-in">
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full glass text-cyan-300 text-xs font-medium mb-6">
+            <div className="inline-flex items-center px-4 py-1.5 rounded-full glass text-xs font-medium mb-6" style={{ color: 'var(--pill-text)', borderColor: 'var(--pill-border)' }}>
               <MapPin size={12} className="mr-1.5" /> Cox's Bazar, Bangladesh
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6" style={{ color: 'var(--hero-text)' }}>
               Explore Cox's Bazar on{' '}
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Two Wheels</span>
             </h1>
-            <p className="text-gray-400 text-lg mb-8 max-w-lg leading-relaxed">
+            <p className="text-lg mb-8 max-w-lg leading-relaxed" style={{ color: 'var(--hero-sub)' }}>
               Rent bikes, cars & beach jeeps at the world's longest beach. Best prices, verified vehicles, secure online payment.
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
-              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-white text-sm">
+              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm" style={{ color: 'var(--pill-text)' }}>
                 <Clock size={16} className="mr-2 text-cyan-400" />
                 Starting from 200 TK/hr
               </div>
-              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-white text-sm">
+              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm" style={{ color: 'var(--pill-text)' }}>
                 <MapPin size={16} className="mr-2 text-green-400" />
                 {bikes.length} vehicles available
               </div>
@@ -112,16 +112,16 @@ const Home = () => {
         <div className="glass rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{bikes.length}</span>
-            <span className="text-gray-400">Vehicles</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Vehicles</span>
           </div>
-          <div className="w-px h-6 bg-white/10 hidden sm:block" />
+          <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
           {categoryCounts.map(cat => (
             <div key={cat._id} className="flex items-center gap-2">
-              <span className="text-lg font-bold text-white">{cat.count}</span>
-              <span className="text-gray-400">{cat.name}{cat.count !== 1 ? 's' : ''}</span>
+              <span className="text-lg font-bold" style={{ color: 'var(--stat-number)' }}>{cat.count}</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{cat.name}{cat.count !== 1 ? 's' : ''}</span>
             </div>
           ))}
-          <div className="w-px h-6 bg-white/10 hidden sm:block" />
+          <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
           <div className="flex items-center gap-1.5">
             <span className="text-green-400 font-bold">From 200 TK/hr</span>
           </div>
@@ -141,19 +141,24 @@ const Home = () => {
                   className={`glass rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 text-left ${
                     activeCategory === cat.slug
                       ? 'border-primary-500/50 bg-primary-500/10 shadow-lg shadow-primary-500/10'
-                      : 'hover:bg-white/5 hover:border-white/10'
+                      : ''
                   }`}
+                  style={activeCategory !== cat.slug ? { '--hover-bg': 'var(--hover-bg)' } : undefined}
+                  onMouseEnter={e => { if (activeCategory !== cat.slug) e.currentTarget.style.background = 'var(--hover-bg)'; }}
+                  onMouseLeave={e => { if (activeCategory !== cat.slug) e.currentTarget.style.background = ''; }}
                 >
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    activeCategory === cat.slug ? 'gradient-primary' : 'bg-white/5'
-                  }`}>
-                    <Icon size={22} className={activeCategory === cat.slug ? 'text-white' : 'text-gray-400'} />
+                    activeCategory === cat.slug ? 'gradient-primary' : ''
+                  }`}
+                    style={activeCategory !== cat.slug ? { background: 'var(--hover-bg)' } : undefined}
+                  >
+                    <Icon size={22} className={activeCategory === cat.slug ? 'text-white' : ''} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white text-sm">{cat.name}s</h3>
-                    <p className="text-gray-500 text-xs">{cat.count} available</p>
+                    <h3 className="font-semibold text-sm" style={{ color: 'var(--card-title)' }}>{cat.name}s</h3>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{cat.count} available</p>
                   </div>
-                  <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-primary-400' : 'text-gray-600'}`} />
+                  <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-primary-400' : ''}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />
                 </button>
               );
             })}
@@ -167,13 +172,14 @@ const Home = () => {
         <div className="relative mb-6 max-w-lg">
           <div className="glass rounded-2xl p-1">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2" size={20} style={{ color: 'var(--text-muted)' }} />
               <input
                 type="text"
                 placeholder="Search by model or brand..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-4 py-3.5 bg-white/5 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 text-sm border-0"
+                className="w-full pl-12 pr-4 py-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 border-0"
+                style={{ background: 'var(--input-bg)', color: 'var(--text-primary)' }}
               />
             </div>
           </div>
@@ -187,8 +193,9 @@ const Home = () => {
               className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeCategory === ''
                   ? 'gradient-primary text-white shadow-lg shadow-blue-500/25'
-                  : 'glass text-gray-400 hover:text-white hover:bg-white/5'
+                  : 'glass'
               }`}
+              style={activeCategory !== '' ? { color: 'var(--text-secondary)' } : undefined}
             >
               All Vehicles
             </button>
@@ -199,8 +206,9 @@ const Home = () => {
                 className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   activeCategory === cat.slug
                     ? 'gradient-primary text-white shadow-lg shadow-blue-500/25'
-                    : 'glass text-gray-400 hover:text-white hover:bg-white/5'
+                    : 'glass'
                 }`}
+                style={activeCategory !== cat.slug ? { color: 'var(--text-secondary)' } : undefined}
               >
                 {cat.name}s
               </button>
@@ -243,7 +251,7 @@ const Home = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1 glass rounded-lg text-xs font-medium text-white">
+                    <span className="px-3 py-1 rounded-lg text-xs font-medium" style={{ background: 'var(--badge-bg)', color: 'var(--pill-text)' }}>
                       {bike.category?.name || 'Vehicle'}
                     </span>
                   </div>
@@ -254,9 +262,11 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="p-5">
-                  <h2 className="text-lg font-bold text-white mb-1 group-hover:text-cyan-300 transition-colors">{bike.model}</h2>
-                  <p className="text-gray-400 text-sm mb-4">{bike.brand}</p>
-                  <div className="flex items-center justify-center w-full py-2.5 border border-white/10 rounded-xl text-sm font-semibold text-gray-300 group-hover:border-primary-500/50 group-hover:text-primary-400 group-hover:bg-primary-500/5 transition-all">
+                  <h2 className="text-lg font-bold mb-1 group-hover:text-cyan-300 transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
+                  <p className="text-sm mb-4" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
+                  <div className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold transition-all group-hover:border-primary-500/50 group-hover:text-primary-400"
+                    style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}
+                  >
                     View Details
                     <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -270,8 +280,8 @@ const Home = () => {
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-3">Why Choose Us</h2>
-          <p className="text-gray-400 max-w-lg mx-auto">The best vehicle rental experience in Cox's Bazar</p>
+          <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Why Choose Us</h2>
+          <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">The best vehicle rental experience in Cox's Bazar</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((f, i) => (
@@ -279,25 +289,25 @@ const Home = () => {
               <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
                 <f.icon size={24} className="text-white" />
               </div>
-              <h3 className="font-semibold text-white mb-2 text-sm">{f.title}</h3>
-              <p className="text-gray-400 text-xs leading-relaxed">{f.desc}</p>
+              <h3 className="font-semibold mb-2 text-sm" style={{ color: 'var(--section-title)' }}>{f.title}</h3>
+              <p className="text-xs leading-relaxed" style={{ color: 'var(--section-sub)' }}>{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-white/5">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t" style={{ borderColor: 'var(--divider)' }}>
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white mb-3">How It Works</h2>
-          <p className="text-gray-400">Three simple steps to your ride</p>
+          <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>How It Works</h2>
+          <p style={{ color: 'var(--section-sub)' }}>Three simple steps to your ride</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">
           {steps.map((s, i) => (
             <div key={i} className="text-center">
               <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent mb-3">{s.num}</div>
-              <h3 className="font-bold text-white text-lg mb-1">{s.title}</h3>
-              <p className="text-gray-400 text-sm">{s.desc}</p>
+              <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--section-title)' }}>{s.title}</h3>
+              <p className="text-sm" style={{ color: 'var(--section-sub)' }}>{s.desc}</p>
             </div>
           ))}
         </div>
