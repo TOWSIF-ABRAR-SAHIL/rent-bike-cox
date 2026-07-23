@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Tent, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
-const categoryIcons = { Bike, Car, Jeep: Tent };
+const categoryIcons = { Bike, Car, Jeep: Truck };
 
 const features = [
   { icon: Shield, title: 'Verified Vehicles', desc: 'Every vehicle is inspected and verified before listing' },
@@ -130,7 +130,7 @@ const Home = () => {
 
       {/* Category Cards */}
       {categories.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 relative z-10">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {categoryCounts.map(cat => {
               const Icon = categoryIcons[cat.name] || Bike;
@@ -235,10 +235,11 @@ const Home = () => {
               >
                 <div className="relative overflow-hidden">
                   <img
-                    src={bike.images?.[0]}
+                    src={bike.images?.[0] || 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'}
                     alt={bike.model}
                     className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
+                    onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <div className="absolute top-3 left-3">

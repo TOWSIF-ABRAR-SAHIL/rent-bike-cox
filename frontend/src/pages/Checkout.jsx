@@ -113,7 +113,7 @@ const Checkout = () => {
       <div className="glass rounded-3xl p-6 sm:p-8 space-y-6">
         {/* Bike Info */}
         <div className="flex items-center gap-4 pb-5 border-b border-white/10">
-          {bike.images?.[0] && <img src={bike.images[0]} alt={bike.model} className="w-16 h-16 rounded-xl object-cover" />}
+          {bike.images?.[0] && <img src={bike.images[0]} alt={bike.model} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />}
           <div>
             <h2 className="text-lg font-bold text-white">{bike.model}</h2>
             <p className="text-gray-400 text-sm">{bike.brand} - {bike.category?.name || 'N/A'}</p>
