@@ -46,10 +46,10 @@ const RenterDashboard = () => {
   const toggleAvailability = useCallback(async (bikeId) => {
     try {
       const res = await api.put(`/dashboard/bikes/${bikeId}/availability`);
-      setBikes(bikes.map(bike => bike._id === bikeId ? { ...bike, availability: res.data.bike.availability } : bike));
+      setBikes(prev => prev.map(bike => bike._id === bikeId ? { ...bike, availability: res.data.bike.availability } : bike));
       addToast(`Bike is now ${res.data.bike.availability ? 'available' : 'unavailable'}`, 'success');
     } catch { addToast('Failed to update availability', 'error'); }
-  }, [bikes, addToast]);
+  }, [addToast]);
 
   if (loading) return <SkeletonPage />;
 
@@ -72,7 +72,7 @@ const RenterDashboard = () => {
           <select className="input-dark text-sm" value={newBike.category} onChange={e => setNewBike({...newBike, category: e.target.value})} required>
             {categories.map(cat => <option key={cat._id} value={cat._id} style={{ background: 'var(--bg-surface)' }}>{cat.name}</option>)}
           </select>
-          <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: e.target.value})} required />
+          <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required />
           <textarea placeholder="Description" className="input-dark text-sm md:col-span-2 min-h-[80px] resize-none" value={newBike.description} onChange={e => setNewBike({...newBike, description: e.target.value})} required />
           <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
           <div className="md:col-span-2">

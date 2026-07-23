@@ -42,6 +42,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setError('');
       try {
@@ -53,14 +54,16 @@ const Checkout = () => {
           destination
         };
         if (selectedPackage !== null) payload.packageIndex = selectedPackage;
-        const res = await api.post('/booking', payload);
+        const res = await api.post('/booking', payload, { signal: controller.signal });
         setBookingData(res.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to create booking');
-        setBookingData(null);
+        if (err.name !== 'AbortError') {
+          setError(err.response?.data?.message || 'Failed to create booking');
+          setBookingData(null);
+        }
       }
     }, 500);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [startTime, endTime, couponCode, selectedPackage, bikeId, bike, destination]);
 
   const handlePayment = async () => {
@@ -113,11 +116,11 @@ const Checkout = () => {
       <div className="glass rounded-3xl p-6 sm:p-8 space-y-6">
         {/* Bike Info */}
         <div className="flex items-center gap-4 pb-5 border-b" style={{ borderColor: 'var(--border-base)' }}>
-          {bike.images?.[0] && <img src={bike.images[0]} alt={bike.model} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />}
+          {bike.images?.[0] && <img src={bike.images[0]} alt={bike.model || 'Unknown'} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />}
           <div>
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model}</h2>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand} - {bike.category?.name || 'N/A'}</p>
-            <p className="text-cyan-400 font-bold text-sm mt-0.5">{bike.pricePerHour} TK / Hour</p>
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model || 'Unknown'}</h2>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand || 'Unknown'} - {bike.category?.name || 'N/A'}</p>
+            <p className="text-cyan-400 font-bold text-sm mt-0.5">{bike.pricePerHour || 0} TK / Hour</p>
           </div>
         </div>
 

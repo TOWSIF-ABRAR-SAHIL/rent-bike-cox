@@ -40,7 +40,7 @@ export function ToastProvider({ children }) {
             {toast.type === 'error' && <XCircle className="mr-3 flex-shrink-0" size={18} />}
             {toast.type === 'info' && <Info className="mr-3 flex-shrink-0" size={18} />}
             <span className="flex-1 text-sm">{toast.message}</span>
-            <button onClick={() => removeToast(toast.id)} className="ml-3 flex-shrink-0 hover:opacity-70 p-2 min-w-9 min-h-9 flex items-center justify-center">
+            <button onClick={() => removeToast(toast.id)} aria-label="Dismiss notification" className="ml-3 flex-shrink-0 hover:opacity-70 p-2 min-w-9 min-h-9 flex items-center justify-center">
               <X size={14} />
             </button>
           </div>

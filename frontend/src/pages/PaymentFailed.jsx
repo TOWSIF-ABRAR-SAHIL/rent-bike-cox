@@ -1,7 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { XCircle, Home, RefreshCw } from 'lucide-react';
 
-const PaymentFailed = () => (
+const PaymentFailed = () => {
+  const navigate = useNavigate();
+
+  return (
   <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
     <div className="absolute inset-0 opacity-20">
       <div className="absolute top-20 left-20 w-96 h-96 bg-red-500 rounded-full blur-[120px]" />
@@ -16,12 +19,13 @@ const PaymentFailed = () => (
         <Link to="/" className="btn-primary flex-1 flex items-center justify-center">
           <Home size={18} className="mr-2" /> Go Home
         </Link>
-        <button onClick={() => window.history.back()} className="btn-ghost flex-1 flex items-center justify-center">
+        <button onClick={() => navigate(-1)} className="btn-ghost flex-1 flex items-center justify-center">
           <RefreshCw size={18} className="mr-2" /> Try Again
         </button>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default PaymentFailed;

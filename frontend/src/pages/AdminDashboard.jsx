@@ -63,72 +63,72 @@ const AdminDashboard = () => {
   const toggleBikeVerification = useCallback(async (bikeId) => {
     try {
       await api.put(`/dashboard/admin/bikes/${bikeId}/verify`);
-      setBikes(bikes.map(b => b._id === bikeId ? { ...b, isVerified: !b.isVerified } : b));
+      setBikes(prev => prev.map(b => b._id === bikeId ? { ...b, isVerified: !b.isVerified } : b));
       addToast('Bike updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [bikes, addToast]);
+  }, [addToast]);
 
   const toggleUserVerification = useCallback(async (userId) => {
     try {
       await api.put(`/dashboard/admin/users/${userId}/verify`);
-      setUsers(users.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u));
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u));
       addToast('User updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [users, addToast]);
+  }, [addToast]);
 
   const handleCreateCoupon = useCallback(async (e) => {
     e.preventDefault();
     try {
       const res = await api.post('/coupons', newCoupon);
-      setCoupons([res.data, ...coupons]);
+      setCoupons(prev => [res.data, ...prev]);
       setNewCoupon({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
       addToast('Coupon created!', 'success');
     } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
-  }, [newCoupon, coupons, addToast]);
+  }, [newCoupon, addToast]);
 
   const handleDeleteCoupon = useCallback(async (id) => {
     if (!window.confirm('Delete this coupon?')) return;
     try {
       await api.delete(`/coupons/${id}`);
-      setCoupons(coupons.filter(c => c._id !== id));
+      setCoupons(prev => prev.filter(c => c._id !== id));
       addToast('Deleted', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [coupons, addToast]);
+  }, [addToast]);
 
   const toggleCouponActive = useCallback(async (id, isActive) => {
     try {
       await api.put(`/coupons/${id}`, { isActive: !isActive });
-      setCoupons(coupons.map(c => c._id === id ? { ...c, isActive: !isActive } : c));
+      setCoupons(prev => prev.map(c => c._id === id ? { ...c, isActive: !isActive } : c));
       addToast('Updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [coupons, addToast]);
+  }, [addToast]);
 
   const handleCreateCategory = useCallback(async (e) => {
     e.preventDefault();
     try {
       const res = await api.post('/dashboard/admin/categories', { name: newCategory });
-      setCategories([...categories, res.data]);
+      setCategories(prev => [...prev, res.data]);
       setNewCategory('');
       addToast('Category added!', 'success');
     } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
-  }, [newCategory, categories, addToast]);
+  }, [newCategory, addToast]);
 
   const handleDeleteCategory = useCallback(async (id) => {
     if (!window.confirm('Delete?')) return;
     try {
       await api.delete(`/dashboard/admin/categories/${id}`);
-      setCategories(categories.filter(c => c._id !== id));
+      setCategories(prev => prev.filter(c => c._id !== id));
       addToast('Deleted', 'success');
     } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
-  }, [categories, addToast]);
+  }, [addToast]);
 
   const toggleCategoryActive = useCallback(async (id, isActive) => {
     try {
       const res = await api.put(`/dashboard/admin/categories/${id}`, { isActive: !isActive });
-      setCategories(categories.map(c => c._id === id ? res.data : c));
+      setCategories(prev => prev.map(c => c._id === id ? res.data : c));
       addToast('Updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [categories, addToast]);
+  }, [addToast]);
 
   if (loading) return <SkeletonPage />;
 
@@ -160,7 +160,7 @@ const AdminDashboard = () => {
           <form onSubmit={handleUpdateSettings} className="space-y-4">
             <div>
               <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Base Price Per Hour (TK)</label>
-              <input type="number" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: e.target.value})} className="input-dark" />
+              <input type="number" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Number(e.target.value) || 0})} className="input-dark" />
             </div>
             <button type="submit" className="btn-primary">Save Changes</button>
           </form>
@@ -312,10 +312,10 @@ const AdminDashboard = () => {
             <form onSubmit={handleCreateCoupon} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="text" value={newCoupon.code} onChange={e => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="CODE" className="input-dark text-sm" required />
-                <input type="number" value={newCoupon.discountPercent} onChange={e => setNewCoupon({...newCoupon, discountPercent: parseInt(e.target.value)})} min="1" max="100" placeholder="Discount %" className="input-dark text-sm" required />
+                <input type="number" value={newCoupon.discountPercent} onChange={e => setNewCoupon({...newCoupon, discountPercent: parseInt(e.target.value, 10) || 0})} min="1" max="100" placeholder="Discount %" className="input-dark text-sm" required />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="number" value={newCoupon.maxUses} onChange={e => setNewCoupon({...newCoupon, maxUses: parseInt(e.target.value)})} min="0" placeholder="Max uses (0=unlimited)" className="input-dark text-sm" />
+                <input type="number" value={newCoupon.maxUses} onChange={e => setNewCoupon({...newCoupon, maxUses: parseInt(e.target.value, 10) || 0})} min="0" placeholder="Max uses (0=unlimited)" className="input-dark text-sm" />
                 <input type="datetime-local" value={newCoupon.expiresAt} onChange={e => setNewCoupon({...newCoupon, expiresAt: e.target.value})} className="input-dark text-sm" />
               </div>
               <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Create</button>

@@ -49,10 +49,12 @@ const BikeDetails = () => {
             {bike.images?.length > 1 && (
               <>
                 <button onClick={() => setSelectedImage(prev => prev === 0 ? bike.images.length - 1 : prev - 1)}
+                  aria-label="Previous image"
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <ChevronLeft size={20} style={{ color: 'var(--text-primary)' }} />
                 </button>
                 <button onClick={() => setSelectedImage(prev => prev === bike.images.length - 1 ? 0 : prev + 1)}
+                  aria-label="Next image"
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <ChevronRight size={20} style={{ color: 'var(--text-primary)' }} />
                 </button>
@@ -63,6 +65,7 @@ const BikeDetails = () => {
             <div className="grid grid-cols-4 gap-2">
               {bike.images.map((img, index) => (
                 <button key={index} onClick={() => setSelectedImage(index)}
+                  aria-label={`View image ${index + 1}`}
                   className={`rounded-xl overflow-hidden aspect-square border-2 transition-all ${selectedImage === index ? 'border-primary-500 shadow-lg shadow-primary-500/20' : 'hover:border-primary-500/50'}`}
                   style={selectedImage !== index ? { borderColor: 'var(--border-base)' } : undefined}>
                   <img src={img || 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'} alt={`Angle ${index + 1}`} width="80" height="60" className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
@@ -93,7 +96,7 @@ const BikeDetails = () => {
           {bike.videoUrl && (
             <div className="rounded-2xl overflow-hidden glass">
               <div className="relative aspect-video flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
-                <iframe src={bike.videoUrl} className="w-full h-full" allowFullScreen title="Vehicle video" />
+                <iframe src={bike.videoUrl} className="w-full h-full" allowFullScreen title="Vehicle video" sandbox="allow-scripts allow-presentation" />
               </div>
             </div>
           )}

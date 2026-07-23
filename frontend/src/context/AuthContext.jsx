@@ -24,8 +24,6 @@ function getInitialUser() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getInitialUser);
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [loading] = useState(false);
-
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     setToken(null);
@@ -44,7 +42,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

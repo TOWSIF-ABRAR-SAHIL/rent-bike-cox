@@ -70,13 +70,13 @@ const Invoice = () => {
             <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Renter & Trip Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Rider Name:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user.name}</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Mobile No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user.phoneNumber}</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Rider Name:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user?.name || 'N/A'}</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Mobile No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user?.phoneNumber || 'N/A'}</span></p>
               </div>
               <div className="space-y-1.5">
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Destination:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.destination || 'Not specified'}</span></p>
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Rental Date:</span> <span style={{ color: 'var(--text-primary)' }}>{new Date(booking.startTime).toLocaleDateString('en-BD', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Hourly Rate:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.bike.pricePerHour} TK</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Hourly Rate:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.bike?.pricePerHour || 0} TK</span></p>
               </div>
             </div>
           </div>
@@ -86,9 +86,9 @@ const Invoice = () => {
             <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Payment & Vehicle Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Vehicle:</span> <span className="break-words" style={{ color: 'var(--text-primary)' }}>{booking.bike.model} ({booking.bike.brand})</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>NID No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user.nid}</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>License No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user.license}</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Vehicle:</span> <span className="break-words" style={{ color: 'var(--text-primary)' }}>{booking.bike?.model || 'N/A'} ({booking.bike?.brand || 'N/A'})</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>NID No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user?.nid || 'N/A'}</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>License No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user?.license || 'N/A'}</span></p>
               </div>
               <div className="space-y-1.5">
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Total Amount:</span> <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{booking.totalPrice} TK/-</span></p>

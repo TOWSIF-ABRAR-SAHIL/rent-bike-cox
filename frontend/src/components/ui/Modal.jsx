@@ -11,6 +11,13 @@ const Modal = ({ open, onClose, title, children, className = '' }) => {
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const closeBtnStyle = closeHovered
@@ -18,7 +25,7 @@ const Modal = ({ open, onClose, title, children, className = '' }) => {
     : { color: 'var(--text-secondary)' };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative glass rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto animate-slide-up ${className}`}>
         <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-base)' }}>
@@ -27,6 +34,7 @@ const Modal = ({ open, onClose, title, children, className = '' }) => {
             onClick={onClose}
             className="p-3 rounded-lg transition-colors"
             style={closeBtnStyle}
+            aria-label="Close"
             onMouseEnter={() => setCloseHovered(true)}
             onMouseLeave={() => setCloseHovered(false)}
           >

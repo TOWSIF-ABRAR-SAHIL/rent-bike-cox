@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight } from 'lucide-react';
@@ -55,9 +55,9 @@ const Home = () => {
     fetchBikes();
   }, [debouncedSearch, activeCategory]);
 
-  const handleCategoryClick = useCallback((slug) => {
+  const handleCategoryClick = (slug) => {
     setActiveCategory(prev => prev === slug ? '' : slug);
-  }, []);
+  };
 
   const categoryCounts = useMemo(() =>
     categories.map(cat => ({
@@ -181,6 +181,7 @@ const Home = () => {
                 placeholder="Search by model or brand..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search vehicles by model or brand"
                 className="w-full pl-12 pr-4 py-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/50 border-0"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-primary)' }}
               />

@@ -82,7 +82,7 @@ const Navbar = () => {
                   </Link>
                 )}
                 <div className="relative" ref={dropdownRef}>
-                  <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="User menu" aria-expanded={dropdownOpen} aria-haspopup="true">
                     <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-2">
                       <User size={14} className="text-white" />
                     </div>
@@ -113,7 +113,7 @@ const Navbar = () => {
             )}
           </div>
 
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-lg transition-all" style={{ color: 'var(--text-primary)' }}>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-lg transition-all" style={{ color: 'var(--text-primary)' }} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
