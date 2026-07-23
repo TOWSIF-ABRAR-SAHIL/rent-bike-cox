@@ -45,7 +45,7 @@ const BikeDetails = () => {
         {/* Image Gallery */}
         <div className="space-y-3">
           <div className="rounded-2xl overflow-hidden glass aspect-[4/3] relative group">
-            <img src={bike.images?.[selectedImage]} alt={bike.model} className="w-full h-full object-cover transition-transform duration-300" />
+            <img src={bike.images?.[selectedImage] || 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'} alt={bike.model} className="w-full h-full object-cover transition-transform duration-300" onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }} />
             {bike.images?.length > 1 && (
               <>
                 <button onClick={() => setSelectedImage(prev => prev === 0 ? bike.images.length - 1 : prev - 1)}
@@ -64,7 +64,7 @@ const BikeDetails = () => {
               {bike.images.map((img, index) => (
                 <button key={index} onClick={() => setSelectedImage(index)}
                   className={`rounded-xl overflow-hidden aspect-square border-2 transition-all ${selectedImage === index ? 'border-primary-500 shadow-lg shadow-primary-500/20' : 'border-white/10 hover:border-white/20'}`}>
-                  <img src={img} alt={`Angle ${index + 1}`} className="w-full h-full object-cover" />
+                  <img src={img || 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'} alt={`Angle ${index + 1}`} className="w-full h-full object-cover" onError={(e) => { e.target.src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
                 </button>
               ))}
             </div>

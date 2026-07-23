@@ -17,7 +17,8 @@ const {
   getAllCategories,
   createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  deleteBike
 } = require('../controllers/dashboardController');
 
 const upload = require('../middleware/uploadMiddleware');
@@ -35,6 +36,7 @@ router.put('/bikes/:id/availability', auth, toggleBikeAvailability);
 
 // Admin routes
 router.get('/admin/bikes', auth, getAllBikes);
+router.delete('/admin/bikes/:id', auth, deleteBike);
 router.put('/admin/settings', auth, updateGlobalSettings);
 router.put('/admin/bikes/:id/verify', auth, toggleBikeVerification);
 router.get('/admin/users', auth, getAllUsers);

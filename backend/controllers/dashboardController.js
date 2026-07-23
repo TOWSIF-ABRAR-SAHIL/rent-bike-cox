@@ -272,6 +272,17 @@ exports.toggleUserVerification = async (req, res) => {
   }
 };
 
+exports.deleteBike = async (req, res) => {
+  try {
+    const bike = await Bike.findById(req.params.id);
+    if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    await Bike.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Bike deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 exports.toggleBikeAvailability = async (req, res) => {
   try {
     const bike = await Bike.findById(req.params.id);

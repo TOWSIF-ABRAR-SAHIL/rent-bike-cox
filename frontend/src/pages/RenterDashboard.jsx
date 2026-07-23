@@ -98,7 +98,7 @@ const RenterDashboard = () => {
           {bikes.map(bike => (
             <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover">
               {bike.images?.[0] && (
-                <img src={bike.images[0]} alt={bike.model} className="w-full h-48 object-cover" />
+                <img src={bike.images[0]} alt={bike.model} className="w-full h-48 object-cover" onError={(e) => { e.target.src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
               )}
               <div className="p-5">
                 <div className="flex items-center justify-between mb-3">
