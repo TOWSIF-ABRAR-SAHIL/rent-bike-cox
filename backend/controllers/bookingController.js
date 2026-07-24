@@ -34,7 +34,7 @@ exports.createBooking = async (req, res) => {
     const bike = await Bike.findById(bikeId);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
-    const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, packageIndex);
+    const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, packageIndex, bike.packages);
 
     let couponDoc = null;
     if (couponCode) {

@@ -243,17 +243,26 @@ async function seedDemoData() {
 
   // Create demo bikes
   for (const bikeData of demoBikes) {
+    const pph = bikeData.pricePerHour;
+    const packages = [
+      { label: '1 Hour', durationType: 'hour', durationValue: 1, price: pph },
+      { label: '2 Hours', durationType: 'hour', durationValue: 2, price: pph * 2 },
+      { label: '4 Hours', durationType: 'hour', durationValue: 4, price: pph * 4 },
+      { label: '1 Day', durationType: 'day', durationValue: 1, price: Math.round(pph * 10) },
+      { label: '1 Week', durationType: 'week', durationValue: 1, price: Math.round(pph * 50) },
+    ];
     await Bike.create({
       model: bikeData.model,
       brand: bikeData.brand,
       category: catMap[bikeData.categorySlug],
       description: bikeData.description,
-      pricePerHour: bikeData.pricePerHour,
+      pricePerHour: pph,
       images: bikeData.images,
       videoUrl: bikeData.videoUrl,
       availability: bikeData.availability,
       isVerified: bikeData.isVerified,
-      renter: renter._id
+      renter: renter._id,
+      packages
     });
     console.log(`Created: ${bikeData.brand} ${bikeData.model}`);
   }

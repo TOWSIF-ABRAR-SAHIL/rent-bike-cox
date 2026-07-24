@@ -152,7 +152,15 @@ if (process.env.NODE_ENV !== 'production') {
         { model: 'Toyota Premio 2017', brand: 'Toyota', categorySlug: 'car', description: 'Reliable fuel-efficient sedan. Automatic, AC, power windows.', pricePerHour: 750, images: ['https://images.unsplash.com/photo-1502877338535-766e1452684a?w=800&h=600&fit=crop','https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?w=800&h=600&fit=crop'] }
       ];
       for (const b of demoBikes) {
-        await Bike.create({ ...b, category: catMap[b.categorySlug], availability: true, isVerified: true, renter: renter._id });
+        const pph = b.pricePerHour;
+        const packages = [
+          { label: '1 Hour', durationType: 'hour', durationValue: 1, price: pph },
+          { label: '2 Hours', durationType: 'hour', durationValue: 2, price: pph * 2 },
+          { label: '4 Hours', durationType: 'hour', durationValue: 4, price: pph * 4 },
+          { label: '1 Day', durationType: 'day', durationValue: 1, price: Math.round(pph * 10) },
+          { label: '1 Week', durationType: 'week', durationValue: 1, price: Math.round(pph * 50) },
+        ];
+        await Bike.create({ ...b, category: catMap[b.categorySlug], availability: true, isVerified: true, renter: renter._id, packages });
       }
     }
 

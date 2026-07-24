@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Clock, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Package } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -10,19 +10,15 @@ const BikeDetails = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
   const [bike, setBike] = useState(null);
-  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
-    Promise.allSettled([
-      api.get(`/dashboard/bikes/${id}`),
-      api.get('/dashboard/settings')
-    ]).then(([bikeRes, settingsRes]) => {
-      if (bikeRes.status === 'fulfilled') setBike(bikeRes.value.data);
-      else setFetchError('Failed to load vehicle details. Please try again.');
-      if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
+    api.get(`/dashboard/bikes/${id}`).then(res => {
+      setBike(res.data);
+    }).catch(() => {
+      setFetchError('Failed to load vehicle details. Please try again.');
     }).finally(() => setLoading(false));
   }, [id]);
 
@@ -119,17 +115,19 @@ const BikeDetails = () => {
           )}
 
           {/* Packages */}
-          {settings?.packages?.length > 0 && (
+          {bike.packages?.length > 0 && (
             <div className="glass rounded-2xl p-5">
               <h3 className="font-bold mb-3 flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
-                <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Available Packages
+                <Package size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Available Packages
               </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {settings.packages.map((pkg, i) => (
-                  <div key={i} className="glass rounded-xl p-3" style={{ border: '1px solid var(--border-base)' }}>
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{pkg.name}</p>
-                    <p className="font-bold text-sm" style={{ color: 'var(--accent-text)' }}>{pkg.price} TK</p>
-                  </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {bike.packages.map((pkg, i) => (
+                  <button key={i} onClick={() => navigate(token ? `/checkout/${id}?package=${i}` : '/login')}
+                    className="glass rounded-xl p-3 text-left transition-all duration-200 hover:shadow-lg hover:shadow-amber-500/10 hover:border-amber-500/50 group"
+                    style={{ border: '1px solid var(--border-base)' }}>
+                    <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{pkg.label}</p>
+                    <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--accent-text)' }}>{pkg.price} TK</p>
+                  </button>
                 ))}
               </div>
             </div>

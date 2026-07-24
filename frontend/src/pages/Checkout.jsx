@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -14,8 +14,8 @@ const formatDateTime = (date) => {
 const Checkout = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [bike, setBike] = useState(null);
-  const [settings, setSettings] = useState(null);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -28,22 +28,20 @@ const Checkout = () => {
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
-    Promise.allSettled([
-      api.get(`/dashboard/bikes/${bikeId}`),
-      api.get('/dashboard/settings')
-    ]).then(([bikeRes, settingsRes]) => {
-      if (bikeRes.status === 'fulfilled') {
-        setBike(bikeRes.value.data);
-        const now = new Date();
-        const later = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-        setStartTime(formatDateTime(now));
-        setEndTime(formatDateTime(later));
-      } else {
-        setFetchError('Failed to load booking details. Please try again.');
+    api.get(`/dashboard/bikes/${bikeId}`).then(res => {
+      setBike(res.data);
+      const pkgIndex = searchParams.get('package');
+      if (pkgIndex !== null && res.data.packages?.[Number(pkgIndex)]) {
+        setSelectedPackage(Number(pkgIndex));
       }
-      if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
+      const now = new Date();
+      const later = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+      setStartTime(formatDateTime(now));
+      setEndTime(formatDateTime(later));
+    }).catch(() => {
+      setFetchError('Failed to load booking details. Please try again.');
     });
-  }, [bikeId]);
+  }, [bikeId, searchParams]);
 
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
@@ -126,7 +124,7 @@ const Checkout = () => {
       </div>
     </div>
   );
-  if (!bike || !settings) return <SkeletonPage />;
+  if (!bike) return <SkeletonPage />;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">
@@ -150,11 +148,11 @@ const Checkout = () => {
         </div>
 
         {/* Package Selection */}
-        {settings.packages?.length > 0 && (
+        {bike.packages?.length > 0 && (
           <div>
             <h3 className="font-bold mb-3 text-sm uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>Choose a Package</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {settings.packages.map((pkg, index) => (
+              {bike.packages.map((pkg, index) => (
                 <button key={index} onClick={() => handlePackageSelect(index)}
                   className={`p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                     selectedPackage === index
@@ -162,7 +160,7 @@ const Checkout = () => {
                       : 'hover:border-amber-500/50'
                   }`}
                   style={selectedPackage !== index ? { borderColor: 'var(--border-base)' } : undefined}>
-                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{pkg.name}</p>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{pkg.label}</p>
                   <p className="font-semibold text-sm" style={{ color: 'var(--accent-text)' }}>{pkg.price} TK</p>
                 </button>
               ))}
@@ -185,13 +183,13 @@ const Checkout = () => {
         )}
 
         {/* Selected Package Info */}
-        {selectedPackage !== null && settings.packages[selectedPackage] && (
+        {selectedPackage !== null && bike.packages[selectedPackage] && (
           <div className="glass p-4 rounded-xl flex items-center justify-between border" style={{ borderColor: 'var(--accent-border)' }}>
             <div className="flex items-center">
               <CheckCircle size={18} className="text-amber-400 mr-2" />
-              <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{settings.packages[selectedPackage].name}</span>
+              <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{bike.packages[selectedPackage].label}</span>
             </div>
-            <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{settings.packages[selectedPackage].price} TK</span>
+            <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{bike.packages[selectedPackage].price} TK</span>
           </div>
         )}
 
@@ -225,7 +223,7 @@ const Checkout = () => {
               </div>
               <div className="text-xs space-y-0.5 pt-2 border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}>
                 {selectedPackage !== null ? (
-                  <p className="flex items-center"><Clock size={12} className="mr-1" /> Package: {settings.packages[selectedPackage]?.name}</p>
+                  <p className="flex items-center"><Clock size={12} className="mr-1" /> Package: {bike.packages[selectedPackage]?.label}</p>
                 ) : (
                   <p className="flex items-center flex-wrap"><Clock size={12} className="mr-1" /> {formatDisplayDate(startTime)} → {formatDisplayDate(endTime)}</p>
                 )}
