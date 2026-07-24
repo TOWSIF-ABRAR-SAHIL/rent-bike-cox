@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight } from 'lucide-react';
+import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
+import EmptyState from '../components/ui/EmptyState';
 
 const RenterDashboard = () => {
   const { addToast } = useToast();
@@ -14,6 +15,8 @@ const RenterDashboard = () => {
     model: '', brand: '', category: '', description: '', pricePerHour: 200, videoUrl: ''
   });
   const [bikeFiles, setBikeFiles] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -23,12 +26,13 @@ const RenterDashboard = () => {
       setBikes(bikesRes.data);
       setCategories(catsRes.data);
       if (catsRes.data.length > 0) setNewBike(prev => ({ ...prev, category: catsRes.data[0]._id }));
-    }).catch(() => addToast('Failed to fetch data', 'error'))
+    }).catch(() => { addToast('Failed to fetch data', 'error'); setFetchError('Failed to load dashboard data.'); })
       .finally(() => setLoading(false));
   }, [addToast]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     const formDataToSend = new FormData();
     Object.keys(newBike).forEach(key => { if (newBike[key]) formDataToSend.append(key, newBike[key]); });
     Array.from(bikeFiles).forEach(file => formDataToSend.append('bikeImages', file));
@@ -40,7 +44,7 @@ const RenterDashboard = () => {
       const res = await api.get('/dashboard/my-bikes');
       setBikes(res.data);
       addToast('Bike added successfully!', 'success');
-    } catch { addToast('Failed to add bike', 'error'); }
+    } catch { addToast('Failed to add bike', 'error'); } finally { setSubmitting(false); }
   }, [newBike, bikeFiles, categories, addToast]);
 
   const toggleAvailability = useCallback(async (bikeId) => {
@@ -52,6 +56,15 @@ const RenterDashboard = () => {
   }, [addToast]);
 
   if (loading) return <SkeletonPage />;
+
+  if (fetchError) return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
@@ -77,22 +90,29 @@ const RenterDashboard = () => {
           <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
           <div className="md:col-span-2">
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Upload Vehicle Photos</label>
-            <input type="file" multiple className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-500/10 file:text-cyan-400 hover:file:bg-primary-500/20" onChange={e => setBikeFiles(e.target.files)} />
+            <input type="file" multiple accept="image/jpeg,image/png" className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" onChange={e => {
+              const files = Array.from(e.target.files || []);
+              const oversized = files.find(f => f.size > 5 * 1024 * 1024);
+              if (oversized) {
+                alert('File too large: ' + oversized.name + '. Maximum 5MB allowed.');
+                e.target.value = '';
+                return;
+              }
+              setBikeFiles(e.target.files);
+            }} />
           </div>
-          <button type="submit" className="btn-primary md:col-span-2 flex items-center justify-center">
-            <PlusCircle size={16} className="mr-2" /> Save Vehicle
+          <button type="submit" disabled={submitting} className="btn-primary md:col-span-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+            {submitting ? <><Loader2 size={16} className="mr-2 animate-spin" /> Saving...</> : <><PlusCircle size={16} className="mr-2" /> Save Vehicle</>}
           </button>
         </form>
       )}
 
       {bikes.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-20 h-20 glass rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <BikeIcon size={32} style={{ color: 'var(--text-muted)' }} />
-          </div>
-          <p className="text-lg mb-2" style={{ color: 'var(--text-secondary)' }}>No vehicles yet</p>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Add your first vehicle to start renting</p>
-        </div>
+        <EmptyState
+          icon={BikeIcon}
+          title="No vehicles yet"
+          description="Add your first vehicle to start renting"
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {bikes.map(bike => (
@@ -103,18 +123,18 @@ const RenterDashboard = () => {
               <div className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{bike.model}</h3>
+                    <h3 className="font-bold text-lg truncate" style={{ color: 'var(--text-primary)' }}>{bike.model}</h3>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand} - {bike.category?.name || 'N/A'}</p>
-                    <p className="text-cyan-400 font-semibold text-sm mt-1">{bike.pricePerHour} TK/hr</p>
+                    <p className="font-semibold text-sm mt-1" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour} TK/hr</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className={`px-2.5 py-1 rounded-lg text-xs font-medium ${bike.availability ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium border" style={{ background: bike.availability ? 'var(--success-bg)' : 'var(--danger-bg)', color: bike.availability ? 'var(--success-text)' : 'var(--danger-text)', borderColor: bike.availability ? 'var(--success-border)' : 'var(--danger-border)' }}>
                     {bike.availability ? 'Available' : 'Booked'}
                   </span>
                   {bike.availability ? (
                     <button onClick={() => toggleAvailability(bike._id)}
-                      className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20">
+                      className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all border" style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--success-bg)'}>
                       <ToggleRight size={14} className="mr-1" /> Available
                     </button>
                   ) : (

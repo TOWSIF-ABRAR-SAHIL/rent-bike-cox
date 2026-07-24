@@ -1,4 +1,5 @@
 const Policy = require('../models/Policy');
+const { sanitize } = require('../utils/sanitize');
 
 const defaultPolicies = [
   {
@@ -75,7 +76,10 @@ exports.createPolicy = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { title, content, type, sortOrder } = req.body;
-    const policy = new Policy({ title, content, type, sortOrder });
+    const cleanTitle = sanitize(title);
+    const cleanContent = sanitize(content);
+    if (!cleanTitle || !cleanContent) return res.status(400).json({ message: 'Title and content are required' });
+    const policy = new Policy({ title: cleanTitle, content: cleanContent, type, sortOrder });
     await policy.save();
     res.status(201).json(policy);
   } catch (error) {
@@ -88,8 +92,8 @@ exports.updatePolicy = async (req, res) => {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { title, content, type, sortOrder, isActive } = req.body;
     const update = {};
-    if (title !== undefined) update.title = title;
-    if (content !== undefined) update.content = content;
+    if (title !== undefined) update.title = sanitize(title);
+    if (content !== undefined) update.content = sanitize(content);
     if (type !== undefined) update.type = type;
     if (sortOrder !== undefined) update.sortOrder = sortOrder;
     if (isActive !== undefined) update.isActive = isActive;
@@ -97,6 +101,7 @@ exports.updatePolicy = async (req, res) => {
     if (!policy) return res.status(404).json({ message: 'Policy not found' });
     res.json(policy);
   } catch (error) {
+    console.error('[Policy] updatePolicy error:', error.message);
     res.status(500).json({ message: 'Failed to update policy' });
   }
 };

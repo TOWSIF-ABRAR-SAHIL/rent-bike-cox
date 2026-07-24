@@ -8,7 +8,7 @@ const Input = ({ label, icon: Icon, error, className = '', ...props }) => (
         {...props}
       />
     </div>
-    {error && <p className="text-xs text-red-400">{error}</p>}
+    {error && <p className="text-xs" style={{ color: 'var(--danger-text)' }}>{error}</p>}
   </div>
 );
 

@@ -10,8 +10,8 @@ const PaymentCancelled = () => {
       <div className="absolute top-20 right-20 w-96 h-96 bg-amber-500 rounded-full blur-[120px]" />
     </div>
     <div className="glass rounded-3xl p-6 sm:p-10 text-center max-w-md w-full animate-slide-up relative">
-      <div className="w-20 h-20 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto mb-6">
-        <XCircle size={40} className="text-amber-400" />
+      <div className="w-20 h-20 rounded-2xl border flex items-center justify-center mx-auto mb-6" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
+        <XCircle size={40} style={{ color: 'var(--warning-text)' }} />
       </div>
       <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Payment Cancelled</h1>
       <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>You cancelled the payment. Your booking is not confirmed.</p>

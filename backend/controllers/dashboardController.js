@@ -2,6 +2,7 @@ const Bike = require('../models/Bike');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Category = require('../models/Category');
+const { sanitize } = require('../utils/sanitize');
 
 const defaultCategories = [
   { name: 'Bike', slug: 'bike' },
@@ -34,7 +35,11 @@ const seedCategories = async () => {
 exports.addBike = async (req, res) => {
   try {
     const { model, brand, category, description, pricePerHour, videoUrl } = req.body;
-    if (!model || !brand || !category || !pricePerHour) {
+    const cleanModel = sanitize(model);
+    const cleanBrand = sanitize(brand);
+    const cleanDescription = sanitize(description);
+    const cleanVideoUrl = sanitize(videoUrl);
+    if (!cleanModel || !cleanBrand || !category || !pricePerHour) {
       return res.status(400).json({ message: 'Model, brand, category, and pricePerHour are required' });
     }
     const price = Number(pricePerHour);
@@ -44,13 +49,13 @@ exports.addBike = async (req, res) => {
     const images = req.files ? req.files.map(file => file.path) : [];
 
     const bike = new Bike({
-      model,
-      brand,
+      model: cleanModel,
+      brand: cleanBrand,
       category,
-      description,
+      description: cleanDescription,
       pricePerHour: price,
       images,
-      videoUrl: videoUrl || undefined,
+      videoUrl: cleanVideoUrl || undefined,
       renter: req.user.id
     });
     await bike.save();
@@ -142,8 +147,10 @@ exports.createCategory = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { name } = req.body;
-    const slug = name.toLowerCase().trim().replace(/\s+/g, '-');
-    const category = new Category({ name, slug });
+    const cleanName = sanitize(name);
+    if (!cleanName) return res.status(400).json({ message: 'Category name is required' });
+    const slug = cleanName.toLowerCase().replace(/\s+/g, '-');
+    const category = new Category({ name: cleanName, slug });
     await category.save();
     res.status(201).json(category);
   } catch (error) {
@@ -160,8 +167,10 @@ exports.updateCategory = async (req, res) => {
     const { name, isActive } = req.body;
     const update = {};
     if (name !== undefined) {
-      update.name = name;
-      update.slug = name.toLowerCase().trim().replace(/\s+/g, '-');
+      const cleanName = sanitize(name);
+      if (!cleanName) return res.status(400).json({ message: 'Category name is required' });
+      update.name = cleanName;
+      update.slug = cleanName.toLowerCase().replace(/\s+/g, '-');
     }
     if (isActive !== undefined) update.isActive = isActive;
     const category = await Category.findByIdAndUpdate(req.params.id, update, { new: true });
@@ -216,6 +225,23 @@ exports.updateGlobalSettings = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { basePricePerHour, packages } = req.body;
+    if (basePricePerHour !== undefined) {
+      const price = Number(basePricePerHour);
+      if (isNaN(price) || price <= 0 || price > 100000) {
+        return res.status(400).json({ message: 'Base price must be between 1 and 100,000 TK/hour' });
+      }
+    }
+    if (packages !== undefined && Array.isArray(packages)) {
+      for (const pkg of packages) {
+        if (typeof pkg.name === 'string') pkg.name = sanitize(pkg.name);
+        if (!pkg.name || pkg.name.length > 50) {
+          return res.status(400).json({ message: 'Invalid package name' });
+        }
+        if (typeof pkg.price !== 'number' || pkg.price <= 0 || pkg.price > 1000000) {
+          return res.status(400).json({ message: 'Invalid package price' });
+        }
+      }
+    }
     let settings = await Settings.findOne();
     if (!settings) {
       const newSettings = {};
@@ -240,7 +266,7 @@ exports.getAllBikes = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await Bike.countDocuments();
     const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name');
-    res.json({ bikes, page, limit, total, pages: Math.ceil(total / limit) });
+    res.json(bikes);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -265,7 +291,7 @@ exports.getAllUsers = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await User.countDocuments();
-    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password');
+    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password -nid -license');
     res.json({ users, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
