@@ -28,17 +28,21 @@ const Checkout = () => {
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       api.get(`/dashboard/bikes/${bikeId}`),
       api.get('/dashboard/settings')
     ]).then(([bikeRes, settingsRes]) => {
-      setBike(bikeRes.data);
-      setSettings(settingsRes.data);
-      const now = new Date();
-      const later = new Date(now.getTime() + 5 * 60 * 60 * 1000);
-      setStartTime(formatDateTime(now));
-      setEndTime(formatDateTime(later));
-    }).catch(() => setFetchError('Failed to load booking details. Please try again.'));
+      if (bikeRes.status === 'fulfilled') {
+        setBike(bikeRes.value.data);
+        const now = new Date();
+        const later = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+        setStartTime(formatDateTime(now));
+        setEndTime(formatDateTime(later));
+      } else {
+        setFetchError('Failed to load booking details. Please try again.');
+      }
+      if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
+    });
   }, [bikeId]);
 
   useEffect(() => {
@@ -98,6 +102,16 @@ const Checkout = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!bookingData?.booking?._id) return;
+    const interval = setInterval(async () => {
+      try {
+        await api.post(`/booking/${bookingData.booking._id}/heartbeat`);
+      } catch { /* heartbeat is best-effort */ }
+    }, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [bookingData?.booking?._id]);
 
   const handlePackageSelect = (index) => setSelectedPackage(selectedPackage === index ? null : index);
   const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
@@ -172,7 +186,7 @@ const Checkout = () => {
 
         {/* Selected Package Info */}
         {selectedPackage !== null && settings.packages[selectedPackage] && (
-          <div className="glass p-4 rounded-xl flex items-center justify-between border border-amber-500/20">
+          <div className="glass p-4 rounded-xl flex items-center justify-between border" style={{ borderColor: 'var(--accent-border)' }}>
             <div className="flex items-center">
               <CheckCircle size={18} className="text-amber-400 mr-2" />
               <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{settings.packages[selectedPackage].name}</span>
@@ -234,11 +248,11 @@ const Checkout = () => {
               <Link to="/policies" target="_blank" className="text-xs font-medium underline block mb-3" style={{ color: 'var(--accent-text)' }}>
                 Read full Policies & Terms
               </Link>
-              <label className="flex items-start cursor-pointer">
+              <label className="flex items-start cursor-pointer min-h-11 py-1">
                 <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 mr-2.5 h-4 w-4 text-amber-500 rounded focus:ring-amber-500"
+                  className="mt-1 mr-2.5 h-5 w-5 text-amber-500 rounded focus:ring-amber-500 flex-shrink-0"
                   style={{ borderColor: 'var(--border-strong)' }} />
-                <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>I have read and agree to all terms and conditions.</span>
+                <span className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>I have read and agree to all terms and conditions.</span>
               </label>
             </div>
 

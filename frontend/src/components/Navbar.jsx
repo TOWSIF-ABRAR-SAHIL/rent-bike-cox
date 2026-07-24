@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
 
@@ -40,7 +40,8 @@ const Navbar = () => {
     };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
-    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
   useEffect(() => {
@@ -98,6 +99,10 @@ const Navbar = () => {
                     Dashboard
                   </Link>
                 )}
+                <Link to="/my-bookings" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Clock size={16} className="mr-1.5" />
+                  My Bookings
+                </Link>
                 <div className="relative" ref={dropdownRef}>
                   <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="User menu" aria-expanded={dropdownOpen} aria-haspopup="true">
                     <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-2">
@@ -130,7 +135,7 @@ const Navbar = () => {
             )}
           </div>
 
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-lg transition-all" style={{ color: 'var(--text-primary)' }} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 min-h-11 min-w-11 rounded-lg transition-all flex items-center justify-center" style={{ color: 'var(--text-primary)' }} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
@@ -160,6 +165,9 @@ const Navbar = () => {
                     <LayoutDashboard size={16} className="mr-2" /> Dashboard
                   </Link>
                 )}
+                <Link to="/my-bookings" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Clock size={16} className="mr-2" /> My Bookings
+                </Link>
                 <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>

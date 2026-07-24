@@ -136,7 +136,7 @@ const Policies = () => (
     <div className="mt-8 gradient-primary rounded-2xl p-6 text-center" style={{ color: 'var(--text-primary)' }}>
       <Phone size={24} className="mx-auto mb-3 opacity-80" />
       <h3 className="font-bold text-lg mb-1">Questions?</h3>
-      <p className="text-amber-200 text-sm mb-3">Contact us anytime</p>
+      <p className="text-white text-sm mb-3">Contact us anytime</p>
       <div className="flex justify-center gap-4 text-sm">
         <span>01891154443</span>
         <span className="opacity-50">|</span>

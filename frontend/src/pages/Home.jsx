@@ -27,6 +27,7 @@ const Home = () => {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -34,7 +35,7 @@ const Home = () => {
   }, [search]);
 
   useEffect(() => {
-    api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => {});
+    api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const Home = () => {
         const res = await api.get('/dashboard/bikes/available', { params });
         setBikes(res.data);
       } catch {
-        // silent
+        setFetchError('Failed to load vehicles. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -69,10 +70,17 @@ const Home = () => {
 
   return (
     <div>
+      {fetchError && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+          <div className="border p-4 rounded-2xl text-sm text-center" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
+            {fetchError} <button onClick={() => { setFetchError(''); setLoading(true); }} className="font-semibold underline ml-2">Retry</button>
+          </div>
+        </div>
+      )}
       {/* Hero */}
       <section className="gradient-hero relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-[100px] animate-float" />
+          <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/15 rounded-full blur-[100px] animate-float" />
           <div className="absolute bottom-10 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] animate-float hidden sm:block" style={{ animationDelay: '2s' }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] animate-float" style={{ animationDelay: '4s' }} />
         </div>
@@ -194,7 +202,7 @@ const Home = () => {
           <div className="flex flex-wrap gap-2 mb-8">
             <button
               onClick={() => setActiveCategory('')}
-              className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`px-5 py-2.5 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 ${
                 activeCategory === ''
                   ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
                   : 'glass'
@@ -207,7 +215,7 @@ const Home = () => {
               <button
                 key={cat._id}
                 onClick={() => handleCategoryClick(cat.slug)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                className={`px-5 py-2.5 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 ${
                   activeCategory === cat.slug
                     ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
                     : 'glass'

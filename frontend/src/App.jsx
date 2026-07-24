@@ -18,6 +18,7 @@ const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 const Policies = lazy(() => import('./pages/Policies'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const MyBookings = lazy(() => import('./pages/MyBookings'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
 
@@ -48,6 +49,11 @@ function App() {
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/payment-failed" element={<PaymentFailed />} />
                     <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    <Route path="/my-bookings" element={
+                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                        <MyBookings />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/policies" element={<Policies />} />
                     <Route path="/checkout/:bikeId" element={
                       <ProtectedRoute roles={['User', 'Renter', 'Admin']}>

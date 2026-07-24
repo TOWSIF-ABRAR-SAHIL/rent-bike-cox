@@ -16,6 +16,26 @@ const Signup = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const handleNidFile = (e) => {
+    const file = e.target.files[0];
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum 5MB allowed.');
+      e.target.value = '';
+      return;
+    }
+    setNidFile(file);
+  };
+
+  const handleLicenseFile = (e) => {
+    const file = e.target.files[0];
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum 5MB allowed.');
+      e.target.value = '';
+      return;
+    }
+    setLicenseFile(file);
+  };
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
@@ -107,11 +127,11 @@ const Signup = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>NID Copy</label>
-                    <input type="file" onChange={(e) => setNidFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" required={formData.role === 'Renter'} />
+                    <input type="file" accept="image/jpeg,image/png" onChange={handleNidFile} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" required={formData.role === 'Renter'} />
                   </div>
                   <div>
                     <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>License Copy</label>
-                    <input type="file" onChange={(e) => setLicenseFile(e.target.files[0])} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" required={formData.role === 'Renter'} />
+                    <input type="file" accept="image/jpeg,image/png" onChange={handleLicenseFile} className="input-dark !py-2.5 !px-3 text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" required={formData.role === 'Renter'} />
                   </div>
                 </div>
               </>

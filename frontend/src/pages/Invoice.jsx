@@ -17,13 +17,22 @@ const Invoice = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get(`/booking/${bookingId}`)
-      .then(res => setBooking(res.data))
-      .catch(() => {
-        setFetchError('Failed to load invoice. Please try again.');
-        addToast('Failed to load invoice', 'error');
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const fetchInvoice = async () => {
+      try {
+        const res = await api.get(`/booking/${bookingId}`);
+        if (!cancelled) setBooking(res.data);
+      } catch {
+        if (!cancelled) {
+          setFetchError('Failed to load invoice. Please try again.');
+          addToast('Failed to load invoice', 'error');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchInvoice();
+    return () => { cancelled = true; };
   }, [bookingId, addToast]);
 
   const handleCancel = async () => {

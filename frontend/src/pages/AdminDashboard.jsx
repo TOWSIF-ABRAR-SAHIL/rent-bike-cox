@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
-    className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+    className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 ${
       active ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'
     }`}
-    style={active ? { color: 'var(--text-primary)' } : { color: 'var(--text-secondary)' }}
+    style={active ? { color: 'white' } : { color: 'var(--text-secondary)' }}
     onMouseEnter={!active ? e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text-primary)'; } : undefined}
     onMouseLeave={!active ? e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = ''; } : undefined}>
     <Icon className="mr-2" size={16} /> {children}
@@ -36,26 +36,61 @@ const AdminDashboard = () => {
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
   const [newCategory, setNewCategory] = useState('');
   const [fetchError, setFetchError] = useState('');
+  const [walkIn, setWalkIn] = useState({ bikeId: '', startTime: '', endTime: '', customerName: '', customerPhone: '', customerNid: '', destination: '' });
+  const [walkInSubmitting, setWalkInSubmitting] = useState(false);
+  const [finance, setFinance] = useState(null);
+  const [financeLoading, setFinanceLoading] = useState(false);
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       api.get('/dashboard/settings'),
       api.get('/dashboard/admin/bikes'),
       api.get('/dashboard/admin/users'),
       api.get('/coupons'),
       api.get('/dashboard/admin/categories')
     ]).then(([settingsRes, bikesRes, usersRes, couponsRes, categoriesRes]) => {
-      setSettings(settingsRes.data);
-      setBikes(bikesRes.data);
-      setUsers(usersRes.data);
-      setCoupons(couponsRes.data);
-      setCategories(categoriesRes.data);
+      if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
+      if (bikesRes.status === 'fulfilled') setBikes(bikesRes.value.data);
+      if (usersRes.status === 'fulfilled') setUsers(usersRes.value.data);
+      if (couponsRes.status === 'fulfilled') setCoupons(couponsRes.value.data);
+      if (categoriesRes.status === 'fulfilled') setCategories(categoriesRes.value.data);
+      const failedCount = [settingsRes, bikesRes, usersRes, couponsRes, categoriesRes].filter(r => r.status === 'rejected').length;
+      if (failedCount > 0) {
+        addToast(`Failed to load ${failedCount} of 5 data sources`, 'error');
+        if (failedCount === 5) setFetchError('Failed to load dashboard data. Please try again.');
+      }
     }).catch(() => {
       addToast('Failed to fetch data', 'error');
       setFetchError('Failed to load dashboard data. Please try again.');
     })
       .finally(() => setLoading(false));
   }, [addToast]);
+
+  const fetchFinance = useCallback(async () => {
+    setFinanceLoading(true);
+    try {
+      const [overviewRes, fraudRes] = await Promise.allSettled([
+        api.get('/financial/admin/overview'),
+        api.get('/financial/admin/fraud-events?limit=10'),
+      ]);
+      setFinance({
+        overview: overviewRes.status === 'fulfilled' ? overviewRes.value.data : null,
+        fraudEvents: fraudRes.status === 'fulfilled' ? fraudRes.value.data : null,
+      });
+    } catch {
+      addToast('Failed to load financial data', 'error');
+    } finally {
+      setFinanceLoading(false);
+    }
+  }, [addToast]);
+
+  const handleUnlockBreaker = useCallback(async () => {
+    try {
+      await api.post('/financial/admin/circuit-breaker/unlock');
+      addToast('Circuit breaker unlocked', 'success');
+      fetchFinance();
+    } catch { addToast('Failed to unlock', 'error'); }
+  }, [addToast, fetchFinance]);
 
   const handleUpdateSettings = useCallback(async (e) => {
     e.preventDefault();
@@ -135,6 +170,20 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
+  const handleWalkIn = useCallback(async (e) => {
+    e.preventDefault();
+    setWalkInSubmitting(true);
+    try {
+      await api.post('/booking/walk-in', walkIn);
+      addToast('Walk-in booking created!', 'success');
+      setWalkIn({ bikeId: '', startTime: '', endTime: '', customerName: '', customerPhone: '', customerNid: '', destination: '' });
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to create walk-in booking', 'error');
+    } finally {
+      setWalkInSubmitting(false);
+    }
+  }, [walkIn, addToast]);
+
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="skeleton h-8 rounded-lg w-48" />
@@ -172,6 +221,8 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={Users}>Users</TabButton>
         <TabButton active={activeTab === 'coupons'} onClick={() => setActiveTab('coupons')} icon={Tag}>Coupons</TabButton>
         <TabButton active={activeTab === 'categories'} onClick={() => setActiveTab('categories')} icon={FolderOpen}>Categories</TabButton>
+        <TabButton active={activeTab === 'walkin'} onClick={() => setActiveTab('walkin')} icon={UserPlus}>Walk-in</TabButton>
+        <TabButton active={activeTab === 'finance'} onClick={() => { setActiveTab('finance'); if (!finance) fetchFinance(); }} icon={Shield}>Finance</TabButton>
       </div>
 
       {activeTab === 'settings' && (
@@ -597,6 +648,150 @@ const AdminDashboard = () => {
           )}
           </>
         </div>
+      )}
+
+      {activeTab === 'walkin' && (
+        <div className="glass p-6 rounded-2xl max-w-xl">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <UserPlus size={20} /> Walk-in Booking
+          </h2>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>Create a booking for a walk-in customer. Payment is collected in cash at the counter.</p>
+          <form onSubmit={handleWalkIn} className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Vehicle</label>
+              <select value={walkIn.bikeId} onChange={e => setWalkIn({...walkIn, bikeId: e.target.value})} className="input-dark text-sm" required>
+                <option value="">Select a vehicle</option>
+                {bikes.filter(b => b.availability).map(bike => (
+                  <option key={bike._id} value={bike._id} style={{ background: 'var(--bg-surface)' }}>{bike.model} ({bike.brand}) — {bike.pricePerHour} TK/hr</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+                  <Clock size={12} className="inline mr-1" /> Start Time
+                </label>
+                <input type="datetime-local" value={walkIn.startTime} onChange={e => setWalkIn({...walkIn, startTime: e.target.value})} className="input-dark text-sm" required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+                  <Clock size={12} className="inline mr-1" /> End Time
+                </label>
+                <input type="datetime-local" value={walkIn.endTime} onChange={e => setWalkIn({...walkIn, endTime: e.target.value})} className="input-dark text-sm" required />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Customer Name</label>
+              <input type="text" value={walkIn.customerName} onChange={e => setWalkIn({...walkIn, customerName: e.target.value})} placeholder="Full name" className="input-dark text-sm" required />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Phone</label>
+                <input type="tel" value={walkIn.customerPhone} onChange={e => setWalkIn({...walkIn, customerPhone: e.target.value})} placeholder="01XXXXXXXXX" className="input-dark text-sm" required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>NID Number</label>
+                <input type="text" value={walkIn.customerNid} onChange={e => setWalkIn({...walkIn, customerNid: e.target.value})} placeholder="National ID" className="input-dark text-sm" required />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Destination</label>
+              <input type="text" value={walkIn.destination} onChange={e => setWalkIn({...walkIn, destination: e.target.value})} placeholder="e.g. Cox's Bazar Beach" className="input-dark text-sm" />
+            </div>
+            <button type="submit" disabled={walkInSubmitting || !walkIn.bikeId} className="btn-primary flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+              {walkInSubmitting ? <><Clock size={16} className="mr-2 animate-spin" /> Creating...</> : <><UserPlus size={16} className="mr-2" /> Create Walk-in Booking</>}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {activeTab === 'finance' && (
+        financeLoading ? (
+          <div className="space-y-4">
+            <SkeletonTable rows={3} cols={4} />
+          </div>
+        ) : finance?.overview ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Today Revenue" value={`${finance.overview.today.revenue.toLocaleString()} TK`} colorStyle={{ color: 'var(--success-text)' }} />
+              <StatCard label="Today Bookings" value={finance.overview.today.bookings} colorStyle={{ color: 'var(--text-primary)' }} />
+              <StatCard label="Week Revenue" value={`${finance.overview.week.revenue.toLocaleString()} TK`} colorStyle={{ color: 'var(--info-text)' }} />
+              <StatCard label="Fraud Events" value={finance.overview.fraudEventsToday} colorStyle={{ color: finance.overview.fraudEventsToday > 0 ? 'var(--danger-text)' : 'var(--text-secondary)' }} />
+            </div>
+
+            <div className="glass p-6 rounded-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <AlertTriangle size={18} className="text-amber-500" /> Refund Circuit Breaker
+                </h3>
+                {finance.overview.circuitBreaker.isTripped && (
+                  <button onClick={handleUnlockBreaker} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">
+                    Unlock Breaker
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Status</p>
+                  <p className="font-semibold" style={{ color: finance.overview.circuitBreaker.isTripped ? 'var(--danger-text)' : 'var(--success-text)' }}>
+                    {finance.overview.circuitBreaker.isTripped ? 'TRIPPED' : 'Normal'}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Today Refunded</p>
+                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{finance.overview.circuitBreaker.totalRefunded.toLocaleString()} TK</p>
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Remaining Cap</p>
+                  <p className="font-semibold" style={{ color: finance.overview.circuitBreaker.remaining < 10000 ? 'var(--warning-text)' : 'var(--text-primary)' }}>{finance.overview.circuitBreaker.remaining.toLocaleString()} TK</p>
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Refund Count</p>
+                  <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{finance.overview.circuitBreaker.refundCount}</p>
+                </div>
+              </div>
+            </div>
+
+            {finance.fraudEvents?.events?.length > 0 && (
+              <div className="glass p-6 rounded-2xl">
+                <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <AlertTriangle size={18} className="text-red-400" /> Recent Fraud Events
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-base)' }}>
+                        <th className="text-left py-2 px-3 text-xs uppercase" style={{ color: 'var(--text-muted)' }}>Time</th>
+                        <th className="text-left py-2 px-3 text-xs uppercase" style={{ color: 'var(--text-muted)' }}>Type</th>
+                        <th className="text-left py-2 px-3 text-xs uppercase" style={{ color: 'var(--text-muted)' }}>IP</th>
+                        <th className="text-left py-2 px-3 text-xs uppercase" style={{ color: 'var(--text-muted)' }}>Severity</th>
+                        <th className="text-left py-2 px-3 text-xs uppercase" style={{ color: 'var(--text-muted)' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {finance.fraudEvents.events.map(ev => (
+                        <tr key={ev._id} style={{ borderBottom: '1px solid var(--border-base)' }}>
+                          <td className="py-2 px-3" style={{ color: 'var(--text-secondary)' }}>{new Date(ev.createdAt).toLocaleString()}</td>
+                          <td className="py-2 px-3" style={{ color: 'var(--text-primary)' }}>{ev.eventType}</td>
+                          <td className="py-2 px-3 font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>{ev.ip}</td>
+                          <td className="py-2 px-3">
+                            <span className="px-2 py-0.5 rounded text-xs font-medium" style={{
+                              background: ev.severity === 'critical' ? 'var(--danger-bg)' : ev.severity === 'high' ? 'var(--warning-bg)' : 'var(--info-bg)',
+                              color: ev.severity === 'critical' ? 'var(--danger-text)' : ev.severity === 'high' ? 'var(--warning-text)' : 'var(--info-text)',
+                            }}>{ev.severity}</span>
+                          </td>
+                          <td className="py-2 px-3" style={{ color: 'var(--text-secondary)' }}>{ev.actionTaken}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <EmptyState icon={DollarSign} title="No financial data" description="Financial overview will appear after the first booking." />
+        )
       )}
     </div>
   );

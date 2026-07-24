@@ -16,13 +16,14 @@ const BikeDetails = () => {
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       api.get(`/dashboard/bikes/${id}`),
       api.get('/dashboard/settings')
     ]).then(([bikeRes, settingsRes]) => {
-      setBike(bikeRes.data);
-      setSettings(settingsRes.data);
-    }).catch(() => setFetchError('Failed to load vehicle details. Please try again.')).finally(() => setLoading(false));
+      if (bikeRes.status === 'fulfilled') setBike(bikeRes.value.data);
+      else setFetchError('Failed to load vehicle details. Please try again.');
+      if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const handleBooking = () => {
@@ -99,7 +100,7 @@ const BikeDetails = () => {
               {bike.availability !== false && <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }}>Available</span>}
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold break-words" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
-            <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>{bike.brand}</p>
+            <p className="mt-1 break-words" style={{ color: 'var(--text-secondary)' }}>{bike.brand}</p>
           </div>
 
           <div className="flex items-baseline gap-2">

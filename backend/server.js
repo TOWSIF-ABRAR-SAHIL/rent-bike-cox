@@ -11,11 +11,28 @@ const bookingRoutes = require('./routes/booking');
 const paymentRoutes = require('./routes/payment');
 const couponRoutes = require('./routes/coupon');
 const policyRoutes = require('./routes/policy');
+const financialRoutes = require('./routes/financial');
+const documentRoutes = require('./routes/documents');
+const { startCleanupScheduler } = require('./utils/checkoutCleanup');
 
 const app = express();
 
 // Security & Performance Middleware
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'", process.env.FRONTEND_URL, "https://sandbox.sslcommerz.com"].filter(Boolean),
+    }
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
 app.use(compression());
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -154,6 +171,28 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth', authLimiter);
 
+// Rate limiting on booking/payment routes (prevent abuse)
+const bookingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { message: 'Too many booking requests, please try again later' }
+});
+app.use('/api/booking', bookingLimiter);
+
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: 'Too many payment requests, please try again later' }
+});
+app.use('/api/payment', paymentLimiter);
+
+const financialLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { message: 'Too many requests, please try again later' }
+});
+app.use('/api/financial', financialLimiter);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -161,6 +200,8 @@ app.use('/api/booking', bookingRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/policies', policyRoutes);
+app.use('/api/financial', financialRoutes);
+app.use('/api/documents', documentRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', (req, res) => {
@@ -190,4 +231,5 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentbike'
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  startCleanupScheduler();
 });

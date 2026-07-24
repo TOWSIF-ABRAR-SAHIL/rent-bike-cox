@@ -1,4 +1,4 @@
-import { useState, useCallback, createContext } from 'react';
+import { useState, useCallback, useEffect, createContext } from 'react';
 import { CheckCircle, XCircle, Info, X } from 'lucide-react';
 
 const ToastContext = createContext(null);
@@ -20,6 +20,13 @@ export function ToastProvider({ children }) {
   const removeToast = useCallback((id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
+
+  useEffect(() => {
+    if (toasts.length === 0) return;
+    const handler = (e) => { if (e.key === 'Escape') setToasts([]); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [toasts.length]);
 
   const styles = {
     success: { background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' },
