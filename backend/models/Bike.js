@@ -13,9 +13,9 @@ const bikeSchema = new mongoose.Schema({
   renter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   packages: [{
     label: { type: String, required: true },
-    durationType: { type: String, enum: ['hour', 'day', 'week', 'month'], required: true },
-    durationValue: { type: Number, required: true, min: 1 },
-    price: { type: Number, required: true, min: 0 }
+    minHours: { type: Number, required: true, min: 1 },
+    maxHours: { type: Number, default: null },
+    hourlyRate: { type: Number, required: true, min: 0 }
   }]
 }, { timestamps: true });
 

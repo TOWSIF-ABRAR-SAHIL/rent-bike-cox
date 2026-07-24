@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Package } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -114,22 +114,29 @@ const BikeDetails = () => {
             </div>
           )}
 
-          {/* Packages */}
+          {/* Pricing Tiers */}
           {bike.packages?.length > 0 && (
             <div className="glass rounded-2xl p-5">
               <h3 className="font-bold mb-3 flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
-                <Package size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Available Packages
+                <Timer size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Pricing Tiers
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {bike.packages.map((pkg, i) => (
-                  <button key={i} onClick={() => navigate(token ? `/checkout/${id}?package=${i}` : '/login')}
-                    className="glass rounded-xl p-3 text-left transition-all duration-200 hover:shadow-lg hover:shadow-amber-500/10 hover:border-amber-500/50 group"
+              <div className="space-y-2">
+                {bike.packages.map((tier, i) => (
+                  <div key={i} className="flex items-center justify-between glass rounded-xl px-4 py-3"
                     style={{ border: '1px solid var(--border-base)' }}>
-                    <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{pkg.label}</p>
-                    <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--accent-text)' }}>{pkg.price} TK</p>
-                  </button>
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{tier.label}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {tier.minHours}h{tier.maxHours ? ` – ${tier.maxHours}h` : '+'}
+                      </p>
+                    </div>
+                    <p className="font-bold text-sm" style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</p>
+                  </div>
                 ))}
               </div>
+              <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+                Minimum rate: 150 TK/hr • Pick any duration — best tier auto-applied
+              </p>
             </div>
           )}
 

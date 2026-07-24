@@ -26,7 +26,7 @@ exports.createBooking = async (req, res) => {
       return res.status(403).json({ message: 'Access temporarily restricted. Contact support.' });
     }
 
-    const { bikeId, startTime, endTime, couponCode, packageIndex, destination } = req.body;
+    const { bikeId, startTime, endTime, couponCode, destination } = req.body;
     if (!bikeId || !startTime || !endTime) {
       return res.status(400).json({ message: 'bikeId, startTime, and endTime are required' });
     }
@@ -34,7 +34,7 @@ exports.createBooking = async (req, res) => {
     const bike = await Bike.findById(bikeId);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
-    const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, packageIndex, bike.packages);
+    const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, bike.packages);
 
     let couponDoc = null;
     if (couponCode) {
@@ -431,7 +431,8 @@ exports.extendBooking = async (req, res) => {
     const bike = await Bike.findById(booking.bike);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
-    const additionalPrice = roundPaisa(multiplyPaisa(additionalHours, bike.pricePerHour));
+    const additionalPricing = await calculateBookingPrice(bike.pricePerHour, currentEnd, newEndTime, bike.packages);
+    const additionalPrice = additionalPricing.totalPrice;
 
     const result = await extendBookingAtomically(booking._id, newEndTime, additionalPrice);
     if (!result.success) {
@@ -475,7 +476,7 @@ exports.createWalkInBooking = async (req, res) => {
     const bike = await Bike.findById(bikeId);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
-    const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime);
+    const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, bike.packages);
 
     const result = await createWalkInBooking(bikeId, startTime, endTime, {
       user: req.user.id,

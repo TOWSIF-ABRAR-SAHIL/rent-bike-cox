@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Package } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -125,13 +125,13 @@ const AdminDashboard = () => {
       });
       setBikes(prev => prev.map(b => b._id === editingBike._id ? res.data : b));
       setEditingBike(null);
-      addToast('Packages updated', 'success');
-    } catch { addToast('Failed to update packages', 'error'); }
+      addToast('Pricing tiers updated', 'success');
+    } catch { addToast('Failed to update tiers', 'error'); }
     finally { setEditSaving(false); }
   }, [editingBike, editPackages, addToast]);
 
   const addEditPackage = () => {
-    setEditPackages(prev => [...prev, { label: '', durationType: 'hour', durationValue: 1, price: 0 }]);
+    setEditPackages(prev => [...prev, { label: '', minHours: 1, maxHours: null, hourlyRate: 0 }]);
   };
   const updateEditPackage = (index, field, value) => {
     setEditPackages(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p));
@@ -348,7 +348,7 @@ const AdminDashboard = () => {
                           <button onClick={() => openEditPackages(bike)}
                             className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
                             style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', borderColor: 'var(--accent-border)' }}>
-                            <Package size={12} />
+                            <Timer size={12} />
                           </button>
                           <button onClick={() => toggleBikeVerification(bike._id)}
                             className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
@@ -838,32 +838,31 @@ const AdminDashboard = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slideIn" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Edit Packages — {editingBike.model}</h3>
+              <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Edit Pricing Tiers — {editingBike.model}</h3>
               <button onClick={() => setEditingBike(null)} className="p-2 rounded-lg hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
                 <X size={18} />
               </button>
             </div>
 
+            <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+              Define pricing tiers by hour range. Min floor: 150 TK/hr.
+            </p>
+
             <div className="space-y-3 mb-5">
-              {editPackages.map((pkg, i) => (
+              {editPackages.map((tier, i) => (
                 <div key={i} className="flex gap-2 items-start p-3 rounded-xl border" style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)' }}>
-                  <input type="text" placeholder="Label (e.g. 1 Day)" value={pkg.label}
+                  <input type="text" placeholder="Label (e.g. 1-2 Hours)" value={tier.label}
                     onChange={e => updateEditPackage(i, 'label', e.target.value)}
                     className="input-dark !py-1.5 !px-2.5 text-xs flex-1" />
-                  <input type="number" placeholder="Qty" min="1" value={pkg.durationValue}
-                    onChange={e => updateEditPackage(i, 'durationValue', Number(e.target.value) || 1)}
+                  <input type="number" placeholder="Min H" min="1" value={tier.minHours}
+                    onChange={e => updateEditPackage(i, 'minHours', Number(e.target.value) || 1)}
                     className="input-dark !py-1.5 !px-2.5 text-xs w-16" />
-                  <select value={pkg.durationType}
-                    onChange={e => updateEditPackage(i, 'durationType', e.target.value)}
-                    className="input-dark !py-1.5 !px-2.5 text-xs w-20">
-                    <option value="hour">Hour</option>
-                    <option value="day">Day</option>
-                    <option value="week">Week</option>
-                    <option value="month">Month</option>
-                  </select>
-                  <input type="number" placeholder="Price" min="0" value={pkg.price}
-                    onChange={e => updateEditPackage(i, 'price', Number(e.target.value) || 0)}
-                    className="input-dark !py-1.5 !px-2.5 text-xs w-24" />
+                  <input type="number" placeholder="Max H" min="0" value={tier.maxHours ?? ''}
+                    onChange={e => updateEditPackage(i, 'maxHours', e.target.value === '' ? null : Number(e.target.value))}
+                    className="input-dark !py-1.5 !px-2.5 text-xs w-16" />
+                  <input type="number" placeholder="Rate" min="0" value={tier.hourlyRate}
+                    onChange={e => updateEditPackage(i, 'hourlyRate', Number(e.target.value) || 0)}
+                    className="input-dark !py-1.5 !px-2.5 text-xs w-20" />
                   <button type="button" onClick={() => removeEditPackage(i)}
                     className="p-1.5 rounded-lg hover:opacity-80" style={{ color: 'var(--danger-text)' }}>
                     <X size={14} />
@@ -875,7 +874,7 @@ const AdminDashboard = () => {
             <button type="button" onClick={addEditPackage}
               className="w-full py-2.5 rounded-xl border-2 border-dashed text-xs font-medium mb-4 transition-all hover:opacity-80"
               style={{ borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}>
-              + Add Package
+              + Add Tier
             </button>
 
             <div className="flex gap-3">
@@ -883,7 +882,7 @@ const AdminDashboard = () => {
                 Cancel
               </button>
               <button onClick={saveEditPackages} disabled={editSaving} className="flex-1 btn-primary flex items-center justify-center">
-                {editSaving ? 'Saving...' : 'Save Packages'}
+                {editSaving ? 'Saving...' : 'Save Tiers'}
               </button>
             </div>
           </div>

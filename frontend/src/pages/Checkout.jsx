@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
-import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
 
 const formatDateTime = (date) => {
@@ -11,15 +11,19 @@ const formatDateTime = (date) => {
   return local.toISOString().slice(0, 16);
 };
 
+const addHoursToDate = (dateStr, hours) => {
+  const d = new Date(dateStr);
+  d.setHours(d.getHours() + hours);
+  return formatDateTime(d);
+};
+
 const Checkout = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [bike, setBike] = useState(null);
   const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [hours, setHours] = useState(4);
   const [couponCode, setCouponCode] = useState('');
-  const [selectedPackage, setSelectedPackage] = useState(null);
   const [bookingData, setBookingData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,18 +34,22 @@ const Checkout = () => {
   useEffect(() => {
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
-      const pkgIndex = searchParams.get('package');
-      if (pkgIndex !== null && res.data.packages?.[Number(pkgIndex)]) {
-        setSelectedPackage(Number(pkgIndex));
-      }
       const now = new Date();
-      const later = new Date(now.getTime() + 5 * 60 * 60 * 1000);
       setStartTime(formatDateTime(now));
-      setEndTime(formatDateTime(later));
     }).catch(() => {
       setFetchError('Failed to load booking details. Please try again.');
     });
-  }, [bikeId, searchParams]);
+  }, [bikeId]);
+
+  const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
+
+  const incrementHours = useCallback(() => {
+    setHours(prev => Math.min(prev + 1, 720));
+  }, []);
+
+  const decrementHours = useCallback(() => {
+    setHours(prev => Math.max(prev - 1, 1));
+  }, []);
 
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
@@ -56,7 +64,6 @@ const Checkout = () => {
           couponCode,
           destination
         };
-        if (selectedPackage !== null) payload.packageIndex = selectedPackage;
         const res = await api.post('/booking', payload, { signal: controller.signal });
         setBookingData(res.data);
       } catch (err) {
@@ -67,7 +74,7 @@ const Checkout = () => {
       }
     }, 500);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [startTime, endTime, couponCode, selectedPackage, bikeId, bike, destination]);
+  }, [startTime, endTime, couponCode, bikeId, bike, destination]);
 
   const handlePayment = async () => {
     try {
@@ -111,7 +118,6 @@ const Checkout = () => {
     return () => clearInterval(interval);
   }, [bookingData?.booking?._id]);
 
-  const handlePackageSelect = (index) => setSelectedPackage(selectedPackage === index ? null : index);
   const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
 
   if (fetchError) return (
@@ -147,51 +153,73 @@ const Checkout = () => {
           </div>
         </div>
 
-        {/* Package Selection */}
+        {/* Pricing Tiers Info */}
         {bike.packages?.length > 0 && (
-          <div>
-            <h3 className="font-bold mb-3 text-sm uppercase tracking-wide" style={{ color: 'var(--text-primary)' }}>Choose a Package</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {bike.packages.map((pkg, index) => (
-                <button key={index} onClick={() => handlePackageSelect(index)}
-                  className={`p-3 rounded-xl border-2 text-left transition-all duration-200 ${
-                    selectedPackage === index
-                      ? 'border-amber-500 bg-amber-500/10 shadow-lg shadow-amber-500/10'
-                      : 'hover:border-amber-500/50'
-                  }`}
-                  style={selectedPackage !== index ? { borderColor: 'var(--border-base)' } : undefined}>
-                  <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{pkg.label}</p>
-                  <p className="font-semibold text-sm" style={{ color: 'var(--accent-text)' }}>{pkg.price} TK</p>
-                </button>
+          <div className="glass rounded-2xl p-4">
+            <h3 className="font-bold mb-2 flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
+              <Timer size={14} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Pricing Tiers
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {bike.packages.map((tier, i) => (
+                <span key={i} className="px-3 py-1.5 rounded-lg text-xs font-medium border"
+                  style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)', background: 'var(--card-bg)' }}>
+                  {tier.label}: <span style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</span>
+                </span>
               ))}
             </div>
+            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Best tier auto-applied • Min 150 TK/hr</p>
           </div>
         )}
 
         {/* Duration Selection */}
-        {selectedPackage === null && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Start Time</label>
-              <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" />
+        <div>
+          <label className="block text-xs font-medium mb-2 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+            <Clock size={12} className="inline mr-1" /> How many hours do you need?
+          </label>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={decrementHours}
+              className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all active:scale-95"
+              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}>
+              <Minus size={18} />
+            </button>
+            <div className="flex-1">
+              <input type="number" min="1" max="720" value={hours}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!isNaN(v) && v >= 1 && v <= 720) setHours(v);
+                }}
+                className="input-dark text-center text-2xl font-bold !py-3" />
             </div>
-            <div>
-              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>End Time</label>
-              <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="input-dark text-sm" />
-            </div>
+            <button type="button" onClick={incrementHours}
+              className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all active:scale-95"
+              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}>
+              <Plus size={18} />
+            </button>
           </div>
-        )}
+          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Minimum 1 hour • Maximum 720 hours (30 days)</p>
+        </div>
 
-        {/* Selected Package Info */}
-        {selectedPackage !== null && bike.packages[selectedPackage] && (
-          <div className="glass p-4 rounded-xl flex items-center justify-between border" style={{ borderColor: 'var(--accent-border)' }}>
-            <div className="flex items-center">
-              <CheckCircle size={18} className="text-amber-400 mr-2" />
-              <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{bike.packages[selectedPackage].label}</span>
+        {/* Start Time */}
+        <div>
+          <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
+            <Clock size={12} className="inline mr-1" /> Start Time
+          </label>
+          <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" />
+        </div>
+
+        {/* Auto End Time Display */}
+        <div className="glass rounded-xl p-4 flex items-center justify-between border" style={{ borderColor: 'var(--accent-border)' }}>
+          <div className="flex items-center">
+            <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} />
+            <div>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Return Time (auto-calculated)</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(endTime)}</p>
             </div>
-            <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{bike.packages[selectedPackage].price} TK</span>
           </div>
-        )}
+          <span className="px-3 py-1 rounded-lg text-xs font-bold" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+            {hours}h
+          </span>
+        </div>
 
         {/* Coupon */}
         <div>
@@ -222,11 +250,7 @@ const Checkout = () => {
                 <span className="font-bold text-xl" style={{ color: 'var(--accent-text)' }}>{bookingData.minAdvance} TK</span>
               </div>
               <div className="text-xs space-y-0.5 pt-2 border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}>
-                {selectedPackage !== null ? (
-                  <p className="flex items-center"><Clock size={12} className="mr-1" /> Package: {bike.packages[selectedPackage]?.label}</p>
-                ) : (
-                  <p className="flex items-center flex-wrap"><Clock size={12} className="mr-1" /> {formatDisplayDate(startTime)} → {formatDisplayDate(endTime)}</p>
-                )}
+                <p className="flex items-center"><Clock size={12} className="mr-1" /> {hours} hours • {formatDisplayDate(startTime)} → {formatDisplayDate(endTime)}</p>
                 {couponCode && <p style={{ color: 'var(--success-text)' }}>Coupon: {couponCode} applied</p>}
               </div>
             </div>

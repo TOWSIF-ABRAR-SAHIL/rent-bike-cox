@@ -1,51 +1,42 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Package } from 'lucide-react';
+import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
-const DURATION_OPTIONS = [
-  { value: 'hour', label: 'Hour' },
-  { value: 'day', label: 'Day' },
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-];
-
-function generateDefaultPackages(pricePerHour) {
+function generateDefaultTiers(pricePerHour) {
   if (!pricePerHour || pricePerHour <= 0) return [];
   return [
-    { label: '1 Hour', durationType: 'hour', durationValue: 1, price: pricePerHour },
-    { label: '2 Hours', durationType: 'hour', durationValue: 2, price: pricePerHour * 2 },
-    { label: '4 Hours', durationType: 'hour', durationValue: 4, price: pricePerHour * 4 },
-    { label: '1 Day', durationType: 'day', durationValue: 1, price: Math.round(pricePerHour * 10) },
-    { label: '1 Week', durationType: 'week', durationValue: 1, price: Math.round(pricePerHour * 50) },
+    { label: '1-2 Hours', minHours: 1, maxHours: 2, hourlyRate: pricePerHour },
+    { label: '3-4 Hours', minHours: 3, maxHours: 4, hourlyRate: Math.round(pricePerHour * 0.9) },
+    { label: '5+ Hours', minHours: 5, maxHours: null, hourlyRate: Math.max(150, Math.round(pricePerHour * 0.75)) },
   ];
 }
 
-const PackageBuilder = ({ packages, onChange, basePrice }) => {
-  const addPackage = () => {
-    onChange([...packages, { label: '', durationType: 'hour', durationValue: 1, price: 0 }]);
+const TierBuilder = ({ packages, onChange, basePrice }) => {
+  const addTier = () => {
+    onChange([...packages, { label: '', minHours: 1, maxHours: null, hourlyRate: 0 }]);
   };
 
-  const updatePackage = (index, field, value) => {
-    const updated = packages.map((pkg, i) => i === index ? { ...pkg, [field]: value } : pkg);
+  const updateTier = (index, field, value) => {
+    const updated = packages.map((tier, i) => i === index ? { ...tier, [field]: value } : tier);
     onChange(updated);
   };
 
-  const removePackage = (index) => {
+  const removeTier = (index) => {
     onChange(packages.filter((_, i) => i !== index));
   };
 
-  const autoGenerate = (basePrice) => {
-    onChange(generateDefaultPackages(basePrice));
+  const autoGenerate = (base) => {
+    onChange(generateDefaultTiers(base));
   };
 
   return (
     <div className="md:col-span-2">
       <div className="flex items-center justify-between mb-2">
         <label className="text-xs font-medium uppercase tracking-wide flex items-center" style={{ color: 'var(--text-secondary)' }}>
-          <Package size={14} className="mr-1.5" /> Pricing Packages
+          <Timer size={14} className="mr-1.5" /> Pricing Tiers
         </label>
         <button type="button" onClick={() => autoGenerate(basePrice || 200)}
           className="text-xs px-2.5 py-1 rounded-lg border transition-all hover:opacity-80"
@@ -53,27 +44,31 @@ const PackageBuilder = ({ packages, onChange, basePrice }) => {
           Auto-Generate
         </button>
       </div>
-      <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>Define custom packages for this vehicle. Leave empty to use hourly rate only.</p>
+      <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+        Define pricing tiers per hour range. Customers pick any duration — best tier auto-applies. Min floor: 150 TK/hr.
+      </p>
 
       {packages.length > 0 && (
         <div className="space-y-2 mb-3">
-          {packages.map((pkg, i) => (
+          {packages.map((tier, i) => (
             <div key={i} className="flex gap-2 items-start p-2.5 rounded-xl border" style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)' }}>
-              <input type="text" placeholder="Label (e.g. 1 Day)" value={pkg.label}
-                onChange={e => updatePackage(i, 'label', e.target.value)}
+              <input type="text" placeholder="Label (e.g. 1-2 Hours)" value={tier.label}
+                onChange={e => updateTier(i, 'label', e.target.value)}
                 className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-28" />
-              <input type="number" placeholder="Qty" min="1" value={pkg.durationValue}
-                onChange={e => updatePackage(i, 'durationValue', Number(e.target.value) || 1)}
+              <input type="number" placeholder="Min H" min="1" value={tier.minHours}
+                onChange={e => updateTier(i, 'minHours', Number(e.target.value) || 1)}
                 className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-16" />
-              <select value={pkg.durationType}
-                onChange={e => updatePackage(i, 'durationType', e.target.value)}
-                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-20">
-                {DURATION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-              </select>
-              <input type="number" placeholder="Price (TK)" min="0" value={pkg.price}
-                onChange={e => updatePackage(i, 'price', Number(e.target.value) || 0)}
-                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-24" />
-              <button type="button" onClick={() => removePackage(i)}
+              <input type="number" placeholder="Max H" min="0" value={tier.maxHours ?? ''}
+                onChange={e => updateTier(i, 'maxHours', e.target.value === '' ? null : Number(e.target.value))}
+                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-16"
+                title="Leave empty for unlimited" />
+              <div className="flex items-center flex-shrink-0">
+                <input type="number" placeholder="Rate" min="0" value={tier.hourlyRate}
+                  onChange={e => updateTier(i, 'hourlyRate', Number(e.target.value) || 0)}
+                  className="input-dark !py-1.5 !px-2.5 text-xs w-20" />
+                <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>TK</span>
+              </div>
+              <button type="button" onClick={() => removeTier(i)}
                 className="p-1.5 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
                 style={{ color: 'var(--danger-text)' }}>
                 <X size={14} />
@@ -83,10 +78,10 @@ const PackageBuilder = ({ packages, onChange, basePrice }) => {
         </div>
       )}
 
-      <button type="button" onClick={addPackage}
+      <button type="button" onClick={addTier}
         className="w-full py-2 rounded-xl border-2 border-dashed text-xs font-medium transition-all hover:opacity-80"
         style={{ borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}>
-        + Add Package
+        + Add Tier
       </button>
     </div>
   );
@@ -124,7 +119,7 @@ const RenterDashboard = () => {
     const formDataToSend = new FormData();
     Object.keys(newBike).forEach(key => { if (newBike[key]) formDataToSend.append(key, newBike[key]); });
     if (bikePackages.length > 0) {
-      const cleanPackages = bikePackages.map(({ label, durationType, durationValue, price }) => ({ label, durationType, durationValue, price }));
+      const cleanPackages = bikePackages.map(({ label, minHours, maxHours, hourlyRate }) => ({ label, minHours, maxHours, hourlyRate }));
       formDataToSend.append('packages', JSON.stringify(cleanPackages));
     }
     Array.from(bikeFiles).forEach(file => formDataToSend.append('bikeImages', file));
@@ -181,7 +176,7 @@ const RenterDashboard = () => {
           <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required />
           <textarea placeholder="Description" className="input-dark text-sm md:col-span-2 min-h-[80px] resize-none" value={newBike.description} onChange={e => setNewBike({...newBike, description: e.target.value})} required />
           <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
-          <PackageBuilder packages={bikePackages} onChange={setBikePackages} basePrice={newBike.pricePerHour} />
+          <TierBuilder packages={bikePackages} onChange={setBikePackages} basePrice={newBike.pricePerHour} />
           <div className="md:col-span-2">
             <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Upload Vehicle Photos</label>
             <input type="file" multiple accept="image/jpeg,image/png" className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" onChange={e => {
@@ -221,7 +216,7 @@ const RenterDashboard = () => {
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand} - {bike.category?.name || 'N/A'}</p>
                     <p className="font-semibold text-sm mt-1" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour} TK/hr</p>
                     {bike.packages?.length > 0 && (
-                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{bike.packages.length} packages</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{bike.packages.length} pricing tiers</p>
                     )}
                   </div>
                 </div>

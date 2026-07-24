@@ -54,14 +54,13 @@ exports.addBike = async (req, res) => {
         const raw = typeof packages === 'string' ? JSON.parse(packages) : packages;
         if (Array.isArray(raw)) {
           parsedPackages = raw.filter(p =>
-            p.label && p.durationType && p.durationValue && p.price &&
-            ['hour', 'day', 'week', 'month'].includes(p.durationType) &&
-            Number(p.durationValue) >= 1 && Number(p.price) >= 0
+            p.label && p.minHours &&
+            Number(p.minHours) >= 1 && Number(p.hourlyRate) >= 0
           ).map(p => ({
             label: String(p.label).slice(0, 50),
-            durationType: p.durationType,
-            durationValue: Number(p.durationValue),
-            price: Number(p.price)
+            minHours: Number(p.minHours),
+            maxHours: p.maxHours != null ? Number(p.maxHours) : null,
+            hourlyRate: Number(p.hourlyRate)
           }));
         }
       } catch { /* invalid JSON, skip */ }
@@ -170,14 +169,13 @@ exports.updateBike = async (req, res) => {
         const raw = typeof packages === 'string' ? JSON.parse(packages) : packages;
         if (Array.isArray(raw)) {
           bike.packages = raw.filter(p =>
-            p.label && p.durationType && p.durationValue && p.price &&
-            ['hour', 'day', 'week', 'month'].includes(p.durationType) &&
-            Number(p.durationValue) >= 1 && Number(p.price) >= 0
+            p.label && p.minHours &&
+            Number(p.minHours) >= 1 && Number(p.hourlyRate) >= 0
           ).map(p => ({
             label: String(p.label).slice(0, 50),
-            durationType: p.durationType,
-            durationValue: Number(p.durationValue),
-            price: Number(p.price)
+            minHours: Number(p.minHours),
+            maxHours: p.maxHours != null ? Number(p.maxHours) : null,
+            hourlyRate: Number(p.hourlyRate)
           }));
         } else {
           bike.packages = [];

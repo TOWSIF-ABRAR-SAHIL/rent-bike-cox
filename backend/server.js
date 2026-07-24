@@ -154,11 +154,9 @@ if (process.env.NODE_ENV !== 'production') {
       for (const b of demoBikes) {
         const pph = b.pricePerHour;
         const packages = [
-          { label: '1 Hour', durationType: 'hour', durationValue: 1, price: pph },
-          { label: '2 Hours', durationType: 'hour', durationValue: 2, price: pph * 2 },
-          { label: '4 Hours', durationType: 'hour', durationValue: 4, price: pph * 4 },
-          { label: '1 Day', durationType: 'day', durationValue: 1, price: Math.round(pph * 10) },
-          { label: '1 Week', durationType: 'week', durationValue: 1, price: Math.round(pph * 50) },
+          { label: '1-2 Hours', minHours: 1, maxHours: 2, hourlyRate: pph },
+          { label: '3-4 Hours', minHours: 3, maxHours: 4, hourlyRate: Math.round(pph * 0.9) },
+          { label: '5+ Hours', minHours: 5, maxHours: null, hourlyRate: Math.max(150, Math.round(pph * 0.75)) },
         ];
         await Bike.create({ ...b, category: catMap[b.categorySlug], availability: true, isVerified: true, renter: renter._id, packages });
       }

@@ -1,8 +1,8 @@
-const Settings = require('../models/Settings');
 const { toDhakaTime } = require('./timezone');
 const { multiplyPaisa, roundPaisa, percentOf } = require('./safeAmount');
 
 const BUFFER_MINUTES = 30;
+const MIN_HOURLY_RATE = 150;
 
 function calculateHours(start, end) {
   const ms = new Date(end) - new Date(start);
@@ -17,34 +17,34 @@ function getAdvancePercent(hours) {
   return isShortRental(hours) ? 0.5 : 0.3;
 }
 
-function durationToHours(pkg) {
-  switch (pkg.durationType) {
-    case 'hour': return pkg.durationValue;
-    case 'day': return pkg.durationValue * 24;
-    case 'week': return pkg.durationValue * 24 * 7;
-    case 'month': return pkg.durationValue * 24 * 30;
-    default: return pkg.durationValue;
-  }
-}
+function findMatchingTier(hours, pricingTiers) {
+  if (!pricingTiers || !pricingTiers.length) return null;
 
-function findBestBikePackage(hours, bikePackages) {
-  if (!bikePackages || !bikePackages.length) return null;
+  let bestTier = null;
+  let bestHourlyRate = Infinity;
 
-  let bestPkg = null;
-  let bestCostPerHour = Infinity;
-
-  for (const pkg of bikePackages) {
-    const pkgHours = durationToHours(pkg);
-    if (pkgHours >= hours && pkg.price / pkgHours < bestCostPerHour) {
-      bestCostPerHour = pkg.price / pkgHours;
-      bestPkg = pkg;
+  for (const tier of pricingTiers) {
+    if (hours >= tier.minHours && (tier.maxHours === null || hours <= tier.maxHours)) {
+      if (tier.hourlyRate < bestHourlyRate) {
+        bestHourlyRate = tier.hourlyRate;
+        bestTier = tier;
+      }
     }
   }
 
-  return bestPkg;
+  if (!bestTier) {
+    for (const tier of pricingTiers) {
+      if (hours >= tier.minHours && tier.hourlyRate < bestHourlyRate) {
+        bestHourlyRate = tier.hourlyRate;
+        bestTier = tier;
+      }
+    }
+  }
+
+  return bestTier;
 }
 
-async function calculateBookingPrice(bikePricePerHour, startTime, endTime, packageIndex, bikePackages) {
+async function calculateBookingPrice(bikePricePerHour, startTime, endTime, pricingTiers) {
   const start = new Date(startTime);
   const end = new Date(endTime);
 
@@ -57,53 +57,25 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, packa
     throw new Error('Minimum rental duration is 1 hour');
   }
 
-  let totalPrice;
-  let packageName;
+  let hourlyRate = bikePricePerHour;
+  let packageName = `${hours} Hour${hours > 1 ? 's' : ''}`;
   let packageSource = 'hourly';
 
-  if (packageIndex !== undefined && packageIndex !== null) {
-    if (bikePackages && bikePackages[packageIndex]) {
-      const pkg = bikePackages[packageIndex];
-      totalPrice = pkg.price;
-      packageName = pkg.label;
-      packageSource = 'bike_package';
-    } else {
-      const settings = await Settings.findOne();
-      if (settings && settings.packages[packageIndex]) {
-        const pkg = settings.packages[packageIndex];
-        totalPrice = pkg.price;
-        packageName = pkg.name;
-        packageSource = 'global_package';
-      } else {
-        throw new Error('Invalid package selected');
-      }
-    }
-  } else {
-    totalPrice = multiplyPaisa(hours, bikePricePerHour);
-    packageName = `${hours} Hour${hours > 1 ? 's' : ''}`;
+  const matchedTier = findMatchingTier(hours, pricingTiers);
+  if (matchedTier) {
+    hourlyRate = matchedTier.hourlyRate;
+    packageName = `${matchedTier.label} (${hours}h × ${matchedTier.hourlyRate} TK/hr)`;
+    packageSource = 'tier';
+  }
 
-    const bestBikePkg = findBestBikePackage(hours, bikePackages);
-    if (bestBikePkg) {
-      const bikeCost = bestBikePkg.price;
-      if (bikeCost < totalPrice) {
-        totalPrice = bikeCost;
-        packageName = bestBikePkg.label;
-        packageSource = 'bike_package_auto';
-      }
-    }
-
-    if (packageSource === 'hourly') {
-      const settings = await Settings.findOne();
-      if (settings?.packages?.length) {
-        const dailyRate = settings.packages[0]?.price;
-        if (dailyRate && totalPrice > dailyRate) {
-          totalPrice = dailyRate;
-          packageName = '1 Day (auto-applied — best rate)';
-          packageSource = 'global_package_auto';
-        }
-      }
+  if (hourlyRate < MIN_HOURLY_RATE) {
+    hourlyRate = MIN_HOURLY_RATE;
+    if (matchedTier) {
+      packageName = `${matchedTier.label} (${hours}h × ${MIN_HOURLY_RATE} TK/hr — min floor)`;
     }
   }
+
+  let totalPrice = multiplyPaisa(hours, hourlyRate);
 
   const advancePercent = getAdvancePercent(hours);
   const minAdvance = percentOf(totalPrice, advancePercent * 100);
@@ -112,6 +84,7 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, packa
     totalPrice: roundPaisa(totalPrice),
     minAdvance: roundPaisa(minAdvance),
     hours,
+    hourlyRate,
     isShortRental: isShortRental(hours),
     advancePercent,
     packageName,
@@ -132,7 +105,7 @@ module.exports = {
   getAdvancePercent,
   calculateBookingPrice,
   applyCoupon,
-  durationToHours,
-  findBestBikePackage,
+  findMatchingTier,
+  MIN_HOURLY_RATE,
   BUFFER_MINUTES,
 };
