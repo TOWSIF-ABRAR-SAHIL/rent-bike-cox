@@ -2,6 +2,7 @@ const Bike = require('../models/Bike');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Category = require('../models/Category');
+const { sanitize } = require('../utils/sanitize');
 
 const defaultCategories = [
   { name: 'Bike', slug: 'bike' },
@@ -33,8 +34,12 @@ const seedCategories = async () => {
 
 exports.addBike = async (req, res) => {
   try {
-    const { model, brand, category, description, pricePerHour, videoUrl } = req.body;
-    if (!model || !brand || !category || !pricePerHour) {
+    const { model, brand, category, description, pricePerHour, videoUrl, packages } = req.body;
+    const cleanModel = sanitize(model);
+    const cleanBrand = sanitize(brand);
+    const cleanDescription = sanitize(description);
+    const cleanVideoUrl = sanitize(videoUrl);
+    if (!cleanModel || !cleanBrand || !category || !pricePerHour) {
       return res.status(400).json({ message: 'Model, brand, category, and pricePerHour are required' });
     }
     const price = Number(pricePerHour);
@@ -43,15 +48,34 @@ exports.addBike = async (req, res) => {
     }
     const images = req.files ? req.files.map(file => file.path) : [];
 
+    let parsedPackages = [];
+    if (packages) {
+      try {
+        const raw = typeof packages === 'string' ? JSON.parse(packages) : packages;
+        if (Array.isArray(raw)) {
+          parsedPackages = raw.filter(p =>
+            p.label && p.minHours &&
+            Number(p.minHours) >= 1 && Number(p.hourlyRate) >= 0
+          ).map(p => ({
+            label: String(p.label).slice(0, 50),
+            minHours: Number(p.minHours),
+            maxHours: p.maxHours != null ? Number(p.maxHours) : null,
+            hourlyRate: Number(p.hourlyRate)
+          }));
+        }
+      } catch { /* invalid JSON, skip */ }
+    }
+
     const bike = new Bike({
-      model,
-      brand,
+      model: cleanModel,
+      brand: cleanBrand,
       category,
-      description,
+      description: cleanDescription,
       pricePerHour: price,
       images,
-      videoUrl: videoUrl || undefined,
-      renter: req.user.id
+      videoUrl: cleanVideoUrl || undefined,
+      renter: req.user.id,
+      packages: parsedPackages
     });
     await bike.save();
     res.status(201).json(bike);
@@ -114,6 +138,60 @@ exports.getBikeById = async (req, res) => {
   }
 };
 
+exports.updateBike = async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
+    const bike = await Bike.findById(req.params.id);
+    if (!bike) return res.status(404).json({ message: 'Bike not found' });
+
+    const { model, brand, category, description, pricePerHour, videoUrl, packages } = req.body;
+
+    if (model !== undefined) bike.model = sanitize(model) || bike.model;
+    if (brand !== undefined) bike.brand = sanitize(brand) || bike.brand;
+    if (category !== undefined) bike.category = category;
+    if (description !== undefined) bike.description = sanitize(description) || bike.description;
+    if (videoUrl !== undefined) bike.videoUrl = sanitize(videoUrl);
+
+    if (pricePerHour !== undefined) {
+      const price = Number(pricePerHour);
+      if (isNaN(price) || price <= 0 || price > 100000) {
+        return res.status(400).json({ message: 'Price must be between 1 and 100,000 TK/hour' });
+      }
+      bike.pricePerHour = price;
+    }
+
+    if (req.files && req.files.length > 0) {
+      bike.images = req.files.map(file => file.path);
+    }
+
+    if (packages !== undefined) {
+      try {
+        const raw = typeof packages === 'string' ? JSON.parse(packages) : packages;
+        if (Array.isArray(raw)) {
+          bike.packages = raw.filter(p =>
+            p.label && p.minHours &&
+            Number(p.minHours) >= 1 && Number(p.hourlyRate) >= 0
+          ).map(p => ({
+            label: String(p.label).slice(0, 50),
+            minHours: Number(p.minHours),
+            maxHours: p.maxHours != null ? Number(p.maxHours) : null,
+            hourlyRate: Number(p.hourlyRate)
+          }));
+        } else {
+          bike.packages = [];
+        }
+      } catch {
+        bike.packages = [];
+      }
+    }
+
+    await bike.save();
+    res.json(bike);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update bike' });
+  }
+};
+
 // --- Category Actions ---
 
 exports.getCategories = async (req, res) => {
@@ -142,8 +220,10 @@ exports.createCategory = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { name } = req.body;
-    const slug = name.toLowerCase().trim().replace(/\s+/g, '-');
-    const category = new Category({ name, slug });
+    const cleanName = sanitize(name);
+    if (!cleanName) return res.status(400).json({ message: 'Category name is required' });
+    const slug = cleanName.toLowerCase().replace(/\s+/g, '-');
+    const category = new Category({ name: cleanName, slug });
     await category.save();
     res.status(201).json(category);
   } catch (error) {
@@ -160,8 +240,10 @@ exports.updateCategory = async (req, res) => {
     const { name, isActive } = req.body;
     const update = {};
     if (name !== undefined) {
-      update.name = name;
-      update.slug = name.toLowerCase().trim().replace(/\s+/g, '-');
+      const cleanName = sanitize(name);
+      if (!cleanName) return res.status(400).json({ message: 'Category name is required' });
+      update.name = cleanName;
+      update.slug = cleanName.toLowerCase().replace(/\s+/g, '-');
     }
     if (isActive !== undefined) update.isActive = isActive;
     const category = await Category.findByIdAndUpdate(req.params.id, update, { new: true });
@@ -216,6 +298,23 @@ exports.updateGlobalSettings = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { basePricePerHour, packages } = req.body;
+    if (basePricePerHour !== undefined) {
+      const price = Number(basePricePerHour);
+      if (isNaN(price) || price <= 0 || price > 100000) {
+        return res.status(400).json({ message: 'Base price must be between 1 and 100,000 TK/hour' });
+      }
+    }
+    if (packages !== undefined && Array.isArray(packages)) {
+      for (const pkg of packages) {
+        if (typeof pkg.name === 'string') pkg.name = sanitize(pkg.name);
+        if (!pkg.name || pkg.name.length > 50) {
+          return res.status(400).json({ message: 'Invalid package name' });
+        }
+        if (typeof pkg.price !== 'number' || pkg.price <= 0 || pkg.price > 1000000) {
+          return res.status(400).json({ message: 'Invalid package price' });
+        }
+      }
+    }
     let settings = await Settings.findOne();
     if (!settings) {
       const newSettings = {};
@@ -240,7 +339,7 @@ exports.getAllBikes = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await Bike.countDocuments();
     const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name');
-    res.json({ bikes, page, limit, total, pages: Math.ceil(total / limit) });
+    res.json(bikes);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -265,7 +364,7 @@ exports.getAllUsers = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await User.countDocuments();
-    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password');
+    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password -nid -license');
     res.json({ users, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

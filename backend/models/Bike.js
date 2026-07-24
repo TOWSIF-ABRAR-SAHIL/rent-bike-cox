@@ -7,10 +7,16 @@ const bikeSchema = new mongoose.Schema({
   videoUrl: { type: String },
   description: { type: String, required: true },
   pricePerHour: { type: Number, required: true, default: 200 },
-  images: [{ type: String, required: true }], // Array for multi-angle images
+  images: [{ type: String, required: true }],
   availability: { type: Boolean, default: true },
   isVerified: { type: Boolean, default: false },
-  renter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  renter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  packages: [{
+    label: { type: String, required: true },
+    minHours: { type: Number, required: true, min: 1 },
+    maxHours: { type: Number, default: null },
+    hourlyRate: { type: Number, required: true, min: 0 }
+  }]
 }, { timestamps: true });
 
 bikeSchema.index({ availability: 1, isVerified: 1 });

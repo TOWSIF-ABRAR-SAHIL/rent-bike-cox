@@ -31,13 +31,13 @@ const Login = () => {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-20 right-20 w-96 h-96 bg-blue-500/15 rounded-full blur-[100px]" />
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-cyan-500/10 rounded-full blur-[80px]" />
+        <div className="absolute top-20 right-20 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-20 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-[80px]" />
       </div>
       <div className="w-full max-w-md animate-slide-up relative">
         <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
+            <div className="w-14 h-14 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
               <LogIn size={24} style={{ color: 'var(--text-primary)' }} />
             </div>
             <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Welcome Back</h2>
@@ -45,7 +45,7 @@ const Login = () => {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl mb-6 text-sm">
+            <div className="border p-3 rounded-xl mb-6 text-sm" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
               {error}
             </div>
           )}
@@ -66,7 +66,7 @@ const Login = () => {
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Don't have an account?{' '}
-            <Link to="/signup" className="text-cyan-400 font-semibold hover:text-cyan-300">Create one</Link>
+            <Link to="/signup" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Create one</Link>
           </p>
         </div>
       </div>

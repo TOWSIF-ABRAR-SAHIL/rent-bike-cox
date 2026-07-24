@@ -243,17 +243,24 @@ async function seedDemoData() {
 
   // Create demo bikes
   for (const bikeData of demoBikes) {
+    const pph = bikeData.pricePerHour;
+    const packages = [
+      { label: '1-2 Hours', minHours: 1, maxHours: 2, hourlyRate: pph },
+      { label: '3-4 Hours', minHours: 3, maxHours: 4, hourlyRate: Math.round(pph * 0.9) },
+      { label: '5+ Hours', minHours: 5, maxHours: null, hourlyRate: Math.max(150, Math.round(pph * 0.75)) },
+    ];
     await Bike.create({
       model: bikeData.model,
       brand: bikeData.brand,
       category: catMap[bikeData.categorySlug],
       description: bikeData.description,
-      pricePerHour: bikeData.pricePerHour,
+      pricePerHour: pph,
       images: bikeData.images,
       videoUrl: bikeData.videoUrl,
       availability: bikeData.availability,
       isVerified: bikeData.isVerified,
-      renter: renter._id
+      renter: renter._id,
+      packages
     });
     console.log(`Created: ${bikeData.brand} ${bikeData.model}`);
   }

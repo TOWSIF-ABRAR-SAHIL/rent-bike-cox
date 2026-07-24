@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/authMiddleware');
-const { 
-  addBike, 
-  getRenterBikes, 
-  getGlobalSettings, 
-  updateGlobalSettings, 
+const {
+  addBike,
+  getRenterBikes,
+  getGlobalSettings,
+  updateGlobalSettings,
   getAllBikes,
   getAvailableBikes,
   getBikeById,
@@ -18,7 +18,8 @@ const {
   createCategory,
   updateCategory,
   deleteCategory,
-  deleteBike
+  deleteBike,
+  updateBike
 } = require('../controllers/dashboardController');
 
 const upload = require('../middleware/uploadMiddleware');
@@ -36,6 +37,7 @@ router.put('/bikes/:id/availability', auth, toggleBikeAvailability);
 
 // Admin routes
 router.get('/admin/bikes', auth, getAllBikes);
+router.put('/admin/bikes/:id', auth, updateBike);
 router.delete('/admin/bikes/:id', auth, deleteBike);
 router.put('/admin/settings', auth, updateGlobalSettings);
 router.put('/admin/bikes/:id/verify', auth, toggleBikeVerification);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { Bike, Printer, XCircle } from 'lucide-react';
+import { Bike, Printer, XCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -13,12 +13,26 @@ const Invoice = () => {
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [fetchError, setFetchError] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    api.get(`/booking/${bookingId}`)
-      .then(res => setBooking(res.data))
-      .catch(() => addToast('Failed to load invoice', 'error'))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const fetchInvoice = async () => {
+      try {
+        const res = await api.get(`/booking/${bookingId}`);
+        if (!cancelled) setBooking(res.data);
+      } catch {
+        if (!cancelled) {
+          setFetchError('Failed to load invoice. Please try again.');
+          addToast('Failed to load invoice', 'error');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchInvoice();
+    return () => { cancelled = true; };
   }, [bookingId, addToast]);
 
   const handleCancel = async () => {
@@ -36,9 +50,24 @@ const Invoice = () => {
   };
 
   if (loading) return <SkeletonPage />;
+  if (fetchError) return (
+    <div className="min-h-[60vh] flex items-center justify-center p-4">
+      <div className="text-center glass rounded-2xl p-8 max-w-md">
+        <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
+        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+      </div>
+    </div>
+  );
   if (!booking) return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Invoice not found.</p>
+    <div className="min-h-[60vh] flex items-center justify-center p-4">
+      <div className="text-center glass rounded-2xl p-8 max-w-md">
+        <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
+        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Invoice Not Found</h2>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>This invoice doesn't exist or has been removed.</p>
+        <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+      </div>
     </div>
   );
 
@@ -51,10 +80,10 @@ const Invoice = () => {
       {/* Screen view: dark invoice */}
       <div className="glass rounded-3xl overflow-hidden" id="printable-invoice">
         {/* Header */}
-        <div className="text-center p-6 sm:p-8 border-b bg-gradient-to-r from-blue-500/10 to-cyan-500/10" style={{ borderColor: 'var(--border-base)' }}>
+        <div className="text-center p-6 sm:p-8 border-b bg-gradient-to-r from-amber-500/10 to-orange-500/10" style={{ borderColor: 'var(--border-base)' }}>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center justify-center">
-            <Bike className="mr-2 text-cyan-400" />
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
+            <Bike className="mr-2" style={{ color: 'var(--accent-text)' }} />
+            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
           </h1>
           <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>Official Rental Invoice</p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
@@ -67,7 +96,7 @@ const Invoice = () => {
         <div className="p-6 sm:p-8 space-y-8">
           {/* Renter & Trip Details */}
           <div>
-            <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Renter & Trip Details</h3>
+            <h3 className="font-bold uppercase mb-3 text-sm tracking-wide" style={{ color: 'var(--accent-text)' }}>Renter & Trip Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Rider Name:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user?.name || 'N/A'}</span></p>
@@ -83,7 +112,7 @@ const Invoice = () => {
 
           {/* Payment & Vehicle Details */}
           <div>
-            <h3 className="font-bold text-cyan-400 uppercase mb-3 text-sm tracking-wide">Payment & Vehicle Details</h3>
+            <h3 className="font-bold uppercase mb-3 text-sm tracking-wide" style={{ color: 'var(--accent-text)' }}>Payment & Vehicle Details</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="space-y-1.5">
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Vehicle:</span> <span className="break-words" style={{ color: 'var(--text-primary)' }}>{booking.bike?.model || 'N/A'} ({booking.bike?.brand || 'N/A'})</span></p>
@@ -92,8 +121,8 @@ const Invoice = () => {
               </div>
               <div className="space-y-1.5">
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Total Amount:</span> <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{booking.totalPrice} TK/-</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Advance Paid:</span> <span className="text-green-400">{booking.advancePaid} TK</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Due Amount:</span> <span className="text-amber-400">{booking.totalPrice - booking.advancePaid} TK</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Advance Paid:</span> <span style={{ color: 'var(--success-text)' }}>{booking.advancePaid} TK</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Due Amount:</span> <span style={{ color: 'var(--warning-text)' }}>{booking.totalPrice - booking.advancePaid} TK</span></p>
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Security Deposit:</span> <span style={{ color: 'var(--text-primary)' }}>{securityDeposit} TK (Cash/Document)</span></p>
               </div>
             </div>
@@ -111,14 +140,14 @@ const Invoice = () => {
           <div className="glass rounded-2xl p-6 text-sm border" style={{ borderColor: 'var(--border-base)' }}>
             <h3 className="font-bold mb-4 uppercase text-center border-b pb-3" style={{ color: 'var(--text-primary)', borderColor: 'var(--border-base)' }}>Terms & Fine Policies (Mandatory)</h3>
             <ol className="space-y-2 list-decimal ml-4" style={{ color: 'var(--text-secondary)' }}>
-              <li><strong style={{ color: 'var(--text-primary)' }}>Strictly Prohibited:</strong> Taking the bike onto the beach sand. Fine: <strong className="text-amber-400">1,000/- TK</strong>.</li>
+              <li><strong style={{ color: 'var(--text-primary)' }}>Strictly Prohibited:</strong> Taking the bike onto the beach sand. Fine: <strong style={{ color: 'var(--warning-text)' }}>1,000/- TK</strong>.</li>
               <li>Bikes will not be rented without a valid <strong style={{ color: 'var(--text-primary)' }}>Driving License</strong>.</li>
               <li>Helmet provided. Maximum <strong style={{ color: 'var(--text-primary)' }}>two persons</strong> per bike.</li>
               <li>Speed must not exceed <strong style={{ color: 'var(--text-primary)' }}>50 km/h</strong>.</li>
               <li>The renter is responsible for all accidents, theft, or damage.</li>
-              <li>Beyond <strong style={{ color: 'var(--text-primary)' }}>Teknaf Marine Drive Zero Point</strong>: <strong className="text-amber-400">5,000/- TK</strong> fine.</li>
+              <li>Beyond <strong style={{ color: 'var(--text-primary)' }}>Teknaf Marine Drive Zero Point</strong>: <strong style={{ color: 'var(--warning-text)' }}>5,000/- TK</strong> fine.</li>
               <li>All traffic laws must be followed.</li>
-              <li>Lost helmet: <strong className="text-amber-400">2,000/- TK</strong>. Damaged helmet: fines apply.</li>
+              <li>Lost helmet: <strong style={{ color: 'var(--warning-text)' }}>2,000/- TK</strong>. Damaged helmet: fines apply.</li>
             </ol>
             <p className="mt-4 text-center" style={{ color: 'var(--text-secondary)' }}>
               <strong style={{ color: 'var(--text-primary)' }}>Petrol Cost:</strong> Borne by the customer. Owner does not provide fuel.

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const variants = {
-  primary: 'gradient-primary text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-0.5 active:translate-y-0',
+  primary: 'gradient-primary text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0',
   ghost: 'border',
-  danger: 'gradient-accent text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:-translate-y-0.5',
-  outline: 'border-2 border-primary-500 text-primary-400 hover:bg-primary-500/10',
+  danger: 'gradient-danger text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:-translate-y-0.5',
+  outline: 'border-2 border-amber-500 text-amber-400 hover:bg-amber-500/10',
   success: 'gradient-success text-white shadow-lg shadow-green-500/25 hover:shadow-xl hover:-translate-y-0.5',
 };
 
