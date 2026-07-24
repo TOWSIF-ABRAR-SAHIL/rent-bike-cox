@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const Home = lazy(() => import('./pages/Home'));
 const BikeDetails = lazy(() => import('./pages/BikeDetails'));
@@ -17,6 +18,7 @@ const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 const Policies = lazy(() => import('./pages/Policies'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const MyBookings = lazy(() => import('./pages/MyBookings'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
 
@@ -24,7 +26,7 @@ const Loading = () => (
   <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
     <div className="relative w-12 h-12">
       <div className="absolute inset-0 rounded-full" style={{ border: '2px solid var(--border-base)' }} />
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 animate-spin" />
+      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-500 animate-spin" />
     </div>
   </div>
 );
@@ -39,13 +41,19 @@ function App() {
               <Navbar />
               <main className="pt-16">
                 <Suspense fallback={<Loading />}>
-                  <Routes>
+                  <ErrorBoundary>
+                    <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/bike/:id" element={<BikeDetails />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/payment-failed" element={<PaymentFailed />} />
                     <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    <Route path="/my-bookings" element={
+                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                        <MyBookings />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/policies" element={<Policies />} />
                     <Route path="/checkout/:bikeId" element={
                       <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
@@ -68,7 +76,8 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />
-                  </Routes>
+                    </Routes>
+                  </ErrorBoundary>
                 </Suspense>
               </main>
               <Footer />

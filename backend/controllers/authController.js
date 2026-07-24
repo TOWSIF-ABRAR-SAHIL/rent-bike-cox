@@ -1,16 +1,24 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const { sanitize } = require('../utils/sanitize');
 
 exports.register = async (req, res) => {
   try {
     const { name, email, password, nid, license, phoneNumber, address } = req.body;
+    const cleanName = sanitize(name);
+    const cleanNid = sanitize(nid);
+    const cleanLicense = sanitize(license);
+    const cleanAddress = sanitize(address);
 
-    if (!name || !email || !password || !nid || !license || !phoneNumber) {
+    if (!cleanName || !email || !password || !cleanNid || !cleanLicense || !phoneNumber) {
       return res.status(400).json({ message: 'Name, email, password, NID, license, and phone number are required' });
     }
-    if (password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    if (!/[A-Z]/.test(password)) return res.status(400).json({ message: 'Password must contain at least one uppercase letter' });
+    if (!/[0-9]/.test(password)) return res.status(400).json({ message: 'Password must contain at least one number' });
     if (name.length > 100) return res.status(400).json({ message: 'Name is too long' });
+    if (email.length > 254) return res.status(400).json({ message: 'Email is too long' });
 
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: 'User already exists' });
@@ -22,16 +30,16 @@ exports.register = async (req, res) => {
     const licenseImage = req.files?.['licenseImage']?.[0]?.path || '';
 
     user = new User({
-      name,
+      name: cleanName,
       email,
       password: hashedPassword,
       role: 'User',
-      nid,
-      license,
+      nid: cleanNid,
+      license: cleanLicense,
       nidImage,
       licenseImage,
       phoneNumber,
-      address
+      address: cleanAddress
     });
 
     await user.save();
@@ -47,7 +55,9 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    if (!email || !password) return res.status(400).json({ message: 'Email and password are required' });
+
+    const user = await User.findOne({ email }).select('+password');
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
