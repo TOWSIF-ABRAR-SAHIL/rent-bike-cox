@@ -32,8 +32,8 @@ exports.createBooking = async (req, res) => {
     }
 
     const startMs = new Date(startTime).getTime();
-    if (startMs < Date.now() + 5 * 60 * 1000) {
-      return res.status(400).json({ message: 'Start time must be at least 5 minutes from now' });
+    if (startMs < Date.now() + 10 * 60 * 1000) {
+      return res.status(400).json({ message: 'Start time must be at least 10 minutes from now' });
     }
 
     const bike = await Bike.findById(bikeId);

@@ -24,18 +24,18 @@ html.dark {
   --bg-card: #0d0d14;
   --bg-elevated: #16162a;
   --border-base: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.14);
   --text-primary: #f0f0f5;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-secondary: #b4b4bc;
+  --text-muted: #8a8a94;
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-bg-strong: rgba(255, 255, 255, 0.08);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-strong: rgba(255, 255, 255, 0.1);
-  --glass-nav: rgba(10, 10, 15, 0.8);
-  --input-bg: rgba(255, 255, 255, 0.05);
-  --input-border: rgba(255, 255, 255, 0.1);
-  --hover-bg: rgba(255, 255, 255, 0.05);
+  --glass-border-strong: rgba(255, 255, 255, 0.12);
+  --glass-nav: rgba(10, 10, 15, 0.92);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --hover-bg: rgba(255, 255, 255, 0.06);
   --shadow-color: rgba(0, 0, 0, 0.3);
   --skeleton-from: rgba(255,255,255,0.04);
   --skeleton-via: rgba(255,255,255,0.08);
@@ -135,6 +135,12 @@ html.light {
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
+  }
+
+  #root {
+    overflow-x: hidden;
+    min-height: 100dvh;
   }
 
   body {
@@ -150,6 +156,12 @@ html.light {
   * {
     scrollbar-width: thin;
     scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
@@ -270,6 +282,10 @@ html.light {
       disabled:opacity-50 disabled:cursor-not-allowed;
     background: linear-gradient(135deg, #ef4444, #dc2626);
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .animate-fade-in {

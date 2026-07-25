@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -28,6 +28,16 @@ const Home = () => {
   const [activeCategory, setActiveCategory] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [fetchError, setFetchError] = useState('');
+  const [slowNetwork, setSlowNetwork] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      const id = setTimeout(() => setSlowNetwork(false), 0);
+      return () => clearTimeout(id);
+    }
+    const timer = setTimeout(() => setSlowNetwork(true), 8000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -230,8 +240,21 @@ const Home = () => {
 
         {/* Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+            </div>
+            {slowNetwork && (
+              <div className="text-center glass rounded-2xl p-6 max-w-md mx-auto">
+                <RefreshCw size={24} className="mx-auto mb-3 animate-spin" style={{ color: 'var(--text-muted)' }} />
+                <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Taking longer than usual?</p>
+                <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>The server may be slow to respond. You can wait or retry.</p>
+                <button onClick={() => { setSlowNetwork(false); setLoading(true); window.location.reload(); }}
+                  className="btn-primary !px-5 !py-2.5 text-sm">
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
         ) : bikes.length === 0 ? (
           <EmptyState

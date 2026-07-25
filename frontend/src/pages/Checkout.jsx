@@ -1,16 +1,31 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus, RefreshCw } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
+import { useToast } from '../components/useToast';
 
 const POLL_INTERVAL_MS = 20000;
+
+const START_TIME_MIN_MINUTES = 10;
 
 const formatDateTime = (date) => {
   const d = new Date(date);
   const offset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - offset * 60 * 1000);
   return local.toISOString().slice(0, 16);
+};
+
+const getDefaultStartTime = () => {
+  const now = new Date();
+  const target = new Date(now.getTime() + 30 * 60 * 1000);
+  const mins = target.getMinutes();
+  const remainder = mins % 15;
+  if (remainder > 0) target.setMinutes(mins + (15 - remainder));
+  else target.setMinutes(mins);
+  target.setSeconds(0);
+  target.setMilliseconds(0);
+  return formatDateTime(target);
 };
 
 const addHoursToDate = (dateStr, hours) => {
@@ -22,9 +37,11 @@ const addHoursToDate = (dateStr, hours) => {
 const Checkout = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlHours = Math.min(720, Math.max(1, parseInt(searchParams.get('hours'), 10) || 4));
   const [bike, setBike] = useState(null);
   const [startTime, setStartTime] = useState('');
-  const [hours, setHours] = useState(4);
+  const [hours, setHours] = useState(urlHours);
   const [couponCode, setCouponCode] = useState('');
   const [previewData, setPreviewData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -37,15 +54,23 @@ const Checkout = () => {
   const [timeAdjusted, setTimeAdjusted] = useState('');
   const errorRef = useRef(null);
   const pollRef = useRef(null);
+  const { addToast } = useToast();
+  const [isStartTooSoon, setIsStartTooSoon] = useState(false);
+
+  useEffect(() => {
+    if (!startTime) return;
+    const check = () => setIsStartTooSoon(new Date(startTime).getTime() < Date.now() + START_TIME_MIN_MINUTES * 60 * 1000);
+    const id = setTimeout(() => { check(); }, 0);
+    const interval = setInterval(check, 15000);
+    return () => { clearTimeout(id); clearInterval(interval); };
+  }, [startTime]);
 
   const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
 
   useEffect(() => {
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
-      const now = new Date();
-      now.setMinutes(now.getMinutes() + 5);
-      setStartTime(formatDateTime(now));
+      setStartTime(getDefaultStartTime());
     }).catch(() => {
       setFetchError('Failed to load booking details. Please try again.');
     });
@@ -54,10 +79,10 @@ const Checkout = () => {
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
     const controller = new AbortController();
-    setPreviewLoading(true);
-    setError('');
     const timer = setTimeout(async () => {
+      setError('');
       setPreviewData(null);
+      setPreviewLoading(true);
       try {
         const res = await api.post('/pricing/preview', {
           bikeId,
@@ -117,16 +142,37 @@ const Checkout = () => {
 
   const createBookingAndPay = async (confirmDirectly = false) => {
     if (!agreedToTerms) {
-      setError('Please agree to the terms and conditions before proceeding.');
+      const msg = 'Please agree to the terms and conditions before proceeding.';
+      setError(msg);
+      addToast(msg, 'error');
+      return;
+    }
+
+    if (!pricing) {
+      const msg = 'Pricing is still loading. Please wait a moment and try again.';
+      setError(msg);
+      addToast(msg, 'error');
+      return;
+    }
+
+    if (!isAvailable) {
+      const msg = previewData?.conflictMessage || 'This time slot is no longer available. Please change your start time or duration.';
+      setError(msg);
+      addToast(msg, 'error');
       return;
     }
 
     let effectiveStartTime = startTime;
     const now = new Date();
     const startMs = new Date(startTime).getTime();
-    if (startMs < now.getTime() + 5 * 60 * 1000) {
-      const adjusted = new Date(now.getTime() + 5 * 60 * 1000);
-      effectiveStartTime = formatDateTime(adjusted);
+    if (startMs < now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000) {
+      const target = new Date(now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000);
+      const mins = target.getMinutes();
+      const remainder = mins % 15;
+      if (remainder > 0) target.setMinutes(mins + (15 - remainder));
+      else target.setMinutes(mins);
+      target.setSeconds(0);
+      effectiveStartTime = formatDateTime(target);
       setStartTime(effectiveStartTime);
       setTimeAdjusted(formatDisplayDate(effectiveStartTime));
     }
@@ -148,19 +194,24 @@ const Checkout = () => {
         throw new Error('Invalid response from server — booking not created');
       }
       setCreatedBookingId(booking._id);
+      addToast('Booking created successfully!', 'success');
 
       if (confirmDirectly) {
         const confirmRes = await api.post('/booking/confirm', {
           bookingId: booking._id,
           amountPaid: res.data.minAdvance,
         });
+        addToast('Booking confirmed!', 'success');
         navigate(`/invoice/${confirmRes.data.booking._id}`);
       } else {
         const payRes = await api.post('/payment/init', { bookingId: booking._id });
         if (payRes.data.url) {
+          addToast('Redirecting to payment gateway...', 'info');
           window.location.replace(payRes.data.url);
         } else {
-          setError('Payment gateway unavailable. Use "Confirm Booking" for direct confirmation.');
+          const msg = 'Payment gateway unavailable. Use "Confirm Booking" for direct confirmation.';
+          setError(msg);
+          addToast(msg, 'error');
           setCreating(false);
         }
       }
@@ -168,11 +219,16 @@ const Checkout = () => {
       console.error('[Checkout] createBookingAndPay failed:', err);
       const msg = err.response?.data?.message || 'Failed to create booking. Please try again.';
       if (msg.includes('not available') || msg.includes('conflict') || err.response?.status === 409) {
-        setError('This time slot was just booked by someone else. Please try a different start time or check other bikes.');
-      } else if (msg.includes('5 minutes') || msg.includes('start time')) {
-        setError('Start time is too soon. It has been adjusted — please try again.');
+        const userMsg = 'This time slot was just booked by someone else. Please try a different start time or check other bikes.';
+        setError(userMsg);
+        addToast(userMsg, 'error');
+      } else if (msg.includes('10 minutes') || msg.includes('start time')) {
+        const userMsg = 'Start time is too soon. It has been adjusted — please try again.';
+        setError(userMsg);
+        addToast(userMsg, 'error');
       } else {
         setError(msg);
+        addToast(msg, 'error');
       }
       setCreating(false);
       pollRef.current = setInterval(async () => {
@@ -329,6 +385,12 @@ const Checkout = () => {
             <Clock size={12} className="inline mr-1" /> Start Time
           </label>
           <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" />
+          {isStartTooSoon && (
+            <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--warning-text)' }}>
+              <AlertTriangle size={11} />
+              Too soon — will be auto-adjusted to the nearest available slot on submit.
+            </p>
+          )}
         </div>
 
         {/* Auto End Time Display */}

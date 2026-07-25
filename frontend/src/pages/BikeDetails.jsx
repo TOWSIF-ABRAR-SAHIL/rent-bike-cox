@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -22,8 +22,12 @@ const BikeDetails = () => {
     }).finally(() => setLoading(false));
   }, [id]);
 
-  const handleBooking = () => {
-    navigate(token ? `/checkout/${id}` : '/login');
+  const [selectedTierHours, setSelectedTierHours] = useState(null);
+
+  const handleBooking = (hoursOverride) => {
+    if (!token) { navigate('/login'); return; }
+    const h = hoursOverride || selectedTierHours || 4;
+    navigate(`/checkout/${id}?hours=${h}`);
   };
 
   if (loading) return <SkeletonPage />;
@@ -121,21 +125,32 @@ const BikeDetails = () => {
                 <Timer size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Pricing Tiers
               </h3>
               <div className="space-y-2">
-                {bike.packages.map((tier, i) => (
-                  <div key={i} className="flex items-center justify-between glass rounded-xl px-4 py-3"
-                    style={{ border: '1px solid var(--border-base)' }}>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{tier.label}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {tier.minHours}h{tier.maxHours ? ` – ${tier.maxHours}h` : '+'}
-                      </p>
-                    </div>
-                    <p className="font-bold text-sm" style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</p>
-                  </div>
-                ))}
+                {bike.packages.map((tier, i) => {
+                  const tierHours = tier.minHours;
+                  const isSelected = selectedTierHours === tierHours;
+                  return (
+                    <button key={i} type="button" onClick={() => setSelectedTierHours(isSelected ? null : tierHours)}
+                      className="w-full flex items-center justify-between glass rounded-xl px-4 py-3 transition-all duration-200 text-left"
+                      style={{
+                        border: isSelected ? '1.5px solid var(--accent-text)' : '1px solid var(--border-base)',
+                        background: isSelected ? 'var(--accent-bg)' : undefined,
+                      }}>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{tier.label}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          {tier.minHours}h{tier.maxHours ? ` – ${tier.maxHours}h` : '+'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm" style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</p>
+                        {isSelected && <CheckCircle size={14} style={{ color: 'var(--accent-text)' }} />}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
               <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
-                Minimum rate: 150 TK/hr • Pick any duration — best tier auto-applied
+                Click a tier to pre-fill checkout, or pick any duration on the next page
               </p>
             </div>
           )}
@@ -169,8 +184,8 @@ const BikeDetails = () => {
           </div>
 
           {/* Book Button */}
-          <button onClick={handleBooking} className="btn-primary w-full text-lg !py-4 flex items-center justify-center">
-            {token ? 'Book Now' : 'Login to Book'}
+          <button onClick={() => handleBooking()} className="btn-primary w-full text-lg !py-4 flex items-center justify-center">
+            {token ? (selectedTierHours ? `Book Now (${selectedTierHours}h)` : 'Book Now') : 'Login to Book'}
           </button>
         </div>
       </div>
