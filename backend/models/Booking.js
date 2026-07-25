@@ -85,7 +85,7 @@ bookingSchema.index({ bike: 1, status: 1, startTime: 1, endTime: 1 });
 bookingSchema.index({ status: 1, createdAt: 1 });
 bookingSchema.index({ createdAt: -1 });
 bookingSchema.index({ tranId: 1 }, { sparse: true });
-bookingSchema.index({ bookingCode: 1 }, { sparse: true });
+
 bookingSchema.index({ state: 1, createdAt: -1 });
 
 // Backward compat: map status → state on read if state not set
