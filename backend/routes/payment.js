@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/authMiddleware');
+const authorize = require('../security/middleware/authorize');
 const { initPayment, paymentSuccess, paymentFail, paymentCancel, paymentIPN } = require('../controllers/paymentController');
 const { idempotencyMiddleware } = require('../utils/idempotency');
 const PaymentIntent = require('../models/PaymentIntent');
@@ -23,9 +24,8 @@ router.post('/cancel', paymentCancel);
 router.post('/ipn', paymentIPN);
 
 // Admin: payment intents + refunds
-router.get('/intents', auth, async (req, res) => {
+router.get('/intents', auth, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const { page = 1, limit = 50, status } = req.query;
     const query = {};
     if (status) query.status = status;
@@ -42,9 +42,8 @@ router.get('/intents', auth, async (req, res) => {
   }
 });
 
-router.get('/refunds', auth, async (req, res) => {
+router.get('/refunds', auth, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const { page = 1, limit = 50, status } = req.query;
     const query = {};
     if (status) query.status = status;

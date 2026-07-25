@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const authorize = require('../security/middleware/authorize');
 const AuditLog = require('../models/AuditLog');
 
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const { page = 1, limit = 50, action } = req.query;
     const query = {};
     if (action) query.action = action;

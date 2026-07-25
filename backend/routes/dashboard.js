@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/authMiddleware');
+const authorize = require('../security/middleware/authorize');
+const requireOwnership = require('../security/middleware/checkOwnership');
+const Bike = require('../models/Bike');
 const {
   addBike,
   getRenterBikes,
@@ -31,21 +34,21 @@ router.get('/bikes/:id', getBikeById);
 router.get('/categories', getCategories);
 
 // Renter routes
-router.post('/bikes', auth, upload.array('bikeImages', 5), addBike);
-router.get('/my-bikes', auth, getRenterBikes);
-router.put('/bikes/:id/availability', auth, toggleBikeAvailability);
+router.post('/bikes', auth, authorize('Renter', 'Admin'), upload.array('bikeImages', 5), addBike);
+router.get('/my-bikes', auth, authorize('Renter', 'Admin'), getRenterBikes);
+router.put('/bikes/:id/availability', auth, authorize('Renter', 'Admin'), requireOwnership(Bike, 'id', 'renter'), toggleBikeAvailability);
 
 // Admin routes
-router.get('/admin/bikes', auth, getAllBikes);
-router.put('/admin/bikes/:id', auth, upload.array('bikeImages', 5), updateBike);
-router.delete('/admin/bikes/:id', auth, deleteBike);
-router.put('/admin/settings', auth, updateGlobalSettings);
-router.put('/admin/bikes/:id/verify', auth, toggleBikeVerification);
-router.get('/admin/users', auth, getAllUsers);
-router.put('/admin/users/:id/verify', auth, toggleUserVerification);
-router.get('/admin/categories', auth, getAllCategories);
-router.post('/admin/categories', auth, createCategory);
-router.put('/admin/categories/:id', auth, updateCategory);
-router.delete('/admin/categories/:id', auth, deleteCategory);
+router.get('/admin/bikes', auth, authorize('Admin'), getAllBikes);
+router.put('/admin/bikes/:id', auth, authorize('Admin'), upload.array('bikeImages', 5), updateBike);
+router.delete('/admin/bikes/:id', auth, authorize('Admin'), requireOwnership(Bike, 'id', 'renter'), deleteBike);
+router.put('/admin/settings', auth, authorize('Admin'), updateGlobalSettings);
+router.put('/admin/bikes/:id/verify', auth, authorize('Admin'), toggleBikeVerification);
+router.get('/admin/users', auth, authorize('Admin'), getAllUsers);
+router.put('/admin/users/:id/verify', auth, authorize('Admin'), toggleUserVerification);
+router.get('/admin/categories', auth, authorize('Admin'), getAllCategories);
+router.post('/admin/categories', auth, authorize('Admin'), createCategory);
+router.put('/admin/categories/:id', auth, authorize('Admin'), updateCategory);
+router.delete('/admin/categories/:id', auth, authorize('Admin'), deleteCategory);
 
 module.exports = router;

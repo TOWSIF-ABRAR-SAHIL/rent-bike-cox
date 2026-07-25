@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const authorize = require('../security/middleware/authorize');
 const Payout = require('../models/Payout');
 const PayoutService = require('../services/PayoutService');
 
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const { page = 1, limit = 50, status } = req.query;
     const query = {};
     if (status) query.status = status;
@@ -22,9 +22,8 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/pending', authMiddleware, async (req, res) => {
+router.get('/pending', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const payouts = await PayoutService.getPendingPayouts();
     res.json({ payouts });
   } catch (err) {
@@ -32,9 +31,8 @@ router.get('/pending', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/approve/:payoutId', authMiddleware, async (req, res) => {
+router.post('/approve/:payoutId', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const payout = await PayoutService.approvePayout({
       payoutId: req.params.payoutId,
       processedBy: req.user.id,
@@ -45,9 +43,8 @@ router.post('/approve/:payoutId', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/pay/:payoutId', authMiddleware, async (req, res) => {
+router.post('/pay/:payoutId', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
-    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const payout = await PayoutService.markPayoutPaid({
       payoutId: req.params.payoutId,
       paymentReference: req.body.paymentReference,
