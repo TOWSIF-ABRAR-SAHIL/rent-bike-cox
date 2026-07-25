@@ -1,10 +1,29 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware');
+const auth = require('../middleware/authMiddleware');
+const { initPayment, paymentSuccess, paymentFail, paymentCancel, paymentIPN } = require('../controllers/paymentController');
+const { idempotencyMiddleware } = require('../utils/idempotency');
 const PaymentIntent = require('../models/PaymentIntent');
 const Refund = require('../models/Refund');
 
-router.get('/intents', authMiddleware, async (req, res) => {
+const paymentIdempotency = idempotencyMiddleware(10 * 60 * 1000);
+
+// SSLCommerz payment flow
+router.post('/init', auth, paymentIdempotency, initPayment);
+router.get('/success/:bookingId/:tranId', paymentSuccess);
+router.post('/success/:bookingId/:tranId', paymentSuccess);
+router.get('/fail/:bookingId', paymentFail);
+router.post('/fail/:bookingId', paymentFail);
+router.get('/fail', paymentFail);
+router.post('/fail', paymentFail);
+router.get('/cancel/:bookingId', paymentCancel);
+router.post('/cancel/:bookingId', paymentCancel);
+router.get('/cancel', paymentCancel);
+router.post('/cancel', paymentCancel);
+router.post('/ipn', paymentIPN);
+
+// Admin: payment intents + refunds
+router.get('/intents', auth, async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const { page = 1, limit = 50, status } = req.query;
@@ -23,7 +42,7 @@ router.get('/intents', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/refunds', authMiddleware, async (req, res) => {
+router.get('/refunds', auth, async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Admin only' });
     const { page = 1, limit = 50, status } = req.query;
