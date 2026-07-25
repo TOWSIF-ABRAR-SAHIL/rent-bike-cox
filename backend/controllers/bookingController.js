@@ -9,6 +9,8 @@ const { roundPaisa, multiplyPaisa, subtractPaisa } = require('../utils/safeAmoun
 const { createJournalEntry } = require('../utils/ledger');
 const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buildFingerprint } = require('../utils/fraud');
 const { sanitize } = require('../utils/sanitize');
+const bus = require('../events/EventBus');
+const { increment } = require('../utils/metrics');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -110,6 +112,9 @@ exports.createBooking = async (req, res) => {
         couponApplied: couponDoc ? { code: couponDoc.code, discount: couponDoc.discountPercent } : null,
       },
     });
+
+    increment('booking_created');
+    bus.emit('booking.created', { bookingId: lockResult.booking._id.toString(), userId: req.user.id, bikeId, totalPrice: pricing.totalPrice });
   } catch (error) {
     console.error('[Booking] createBooking error:', error.message, error.stack);
     res.status(500).json({ message: 'Booking creation failed' });
@@ -264,6 +269,9 @@ exports.cancelBooking = async (req, res) => {
         circuitBreakerCapped: refund.circuitBreakerCapped || false,
       },
     });
+
+    increment('booking_cancelled');
+    bus.emit('booking.cancelled', { bookingId: booking._id.toString(), userId: req.user.id, refundAmount: refund.refundableAmount });
   } catch (error) {
     console.error('[Booking] cancelBooking error:', error.message);
     res.status(500).json({ message: 'Booking cancellation failed' });

@@ -9,6 +9,8 @@ const { multiplyPaisa, roundPaisa, subtractPaisa } = require('../utils/safeAmoun
 const { createJournalEntry } = require('../utils/ledger');
 const { isProcessed, markProcessed, verifyCallbackIntegrity } = require('../utils/callbackGuard');
 const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buildFingerprint } = require('../utils/fraud');
+const bus = require('../events/EventBus');
+const { increment } = require('../utils/metrics');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASS || process.env.SSLCOMMERZ_STORE_PASSWORD;
@@ -256,6 +258,8 @@ exports.paymentSuccess = async (req, res) => {
 
     await markProcessed(nonce);
     console.log('[Payment] Confirmed booking:', bookingId);
+    increment('payment_success');
+    bus.emit('payment.confirmed', { bookingId, tranId, source: 'redirect' });
     return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
   } catch (error) {
     console.error('[Payment] success error:', error.message, error.stack);
@@ -298,6 +302,8 @@ exports.paymentFail = async (req, res) => {
         booking.cancellationReason = 'Payment failed';
         booking.cancelledAt = new Date();
         await booking.save();
+        increment('payment_fail');
+        bus.emit('payment.failed', { bookingId, reason: 'user_fail' });
       }
     } catch (err) {
       console.error('[Payment] fail cleanup error:', err.message);
@@ -324,6 +330,8 @@ exports.paymentCancel = async (req, res) => {
         booking.cancellationReason = 'User cancelled payment';
         booking.cancelledAt = new Date();
         await booking.save();
+        increment('payment_cancel');
+        bus.emit('payment.cancelled', { bookingId });
       }
     } catch (err) {
       console.error('[Payment] cancel cleanup error:', err.message);
