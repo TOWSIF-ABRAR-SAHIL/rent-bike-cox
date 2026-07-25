@@ -10,9 +10,10 @@ const bufferMs = BUFFER_MINUTES * 60 * 1000;
 /**
  * Check if a bike is available for the given time window, including buffer.
  * excludeBookingId: skip this booking (for extensions).
+ * excludeUserId: ignore this user's Pending bookings (prevents self-conflict from abandoned checkouts).
  * session: optional Mongoose session for transactional reads.
  */
-async function checkAvailability(bikeId, startTime, endTime, excludeBookingId = null, session = null) {
+async function checkAvailability(bikeId, startTime, endTime, excludeBookingId = null, excludeUserId = null, session = null) {
   const start = new Date(startTime);
   const end = new Date(endTime);
 
@@ -21,10 +22,18 @@ async function checkAvailability(bikeId, startTime, endTime, excludeBookingId = 
 
   const matchQuery = {
     bike: bikeId,
-    status: { $in: ACTIVE_STATUSES },
     startTime: { $lt: bufferEnd },
     endTime: { $gt: bufferStart },
   };
+
+  if (excludeUserId) {
+    matchQuery.$or = [
+      { status: 'Confirmed' },
+      { $and: [{ status: 'Pending' }, { user: { $ne: excludeUserId } }] },
+    ];
+  } else {
+    matchQuery.status = { $in: ACTIVE_STATUSES };
+  }
 
   if (excludeBookingId) {
     matchQuery._id = { $ne: excludeBookingId };
@@ -88,7 +97,7 @@ async function releaseBikeLock(bikeId, session = null) {
  * Falls back to CAS if replica set unavailable (Atlas M0).
  * Returns { success, booking?, message? }
  */
-async function createBookingAtomically(bikeId, startTime, endTime, bookingData) {
+async function createBookingAtomically(bikeId, startTime, endTime, bookingData, excludeUserId = null) {
   let session;
   try {
     session = await mongoose.startSession();
@@ -97,7 +106,7 @@ async function createBookingAtomically(bikeId, startTime, endTime, bookingData) 
       writeConcern: { w: 'majority' },
     });
 
-    const availability = await checkAvailability(bikeId, startTime, endTime, null, session);
+    const availability = await checkAvailability(bikeId, startTime, endTime, null, excludeUserId, session);
     if (!availability.available) {
       await session.abortTransaction();
       return { success: false, message: availability.message };
@@ -120,7 +129,7 @@ async function createBookingAtomically(bikeId, startTime, endTime, bookingData) 
 
     if (err.name === 'MongoServerError' && err.code === 48) {
       console.warn('[BookingLock] Transactions not supported — falling back to CAS');
-      return createBookingCAS(bikeId, startTime, endTime, bookingData);
+      return createBookingCAS(bikeId, startTime, endTime, bookingData, excludeUserId);
     }
 
     throw err;
@@ -133,8 +142,8 @@ async function createBookingAtomically(bikeId, startTime, endTime, bookingData) 
  * CAS fallback: check availability then lock, non-transactional.
  * Used when replica set is not available (e.g., Atlas M0).
  */
-async function createBookingCAS(bikeId, startTime, endTime, bookingData) {
-  const availability = await checkAvailability(bikeId, startTime, endTime);
+async function createBookingCAS(bikeId, startTime, endTime, bookingData, excludeUserId = null) {
+  const availability = await checkAvailability(bikeId, startTime, endTime, null, excludeUserId);
   if (!availability.available) {
     return { success: false, message: availability.message };
   }

@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
-import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus } from 'lucide-react';
+import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus, RefreshCw } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
+
+const POLL_INTERVAL_MS = 20000;
 
 const formatDateTime = (date) => {
   const d = new Date(date);
@@ -24,24 +26,86 @@ const Checkout = () => {
   const [startTime, setStartTime] = useState('');
   const [hours, setHours] = useState(4);
   const [couponCode, setCouponCode] = useState('');
-  const [bookingData, setBookingData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [destination, setDestination] = useState('');
   const [fetchError, setFetchError] = useState('');
+  const [createdBookingId, setCreatedBookingId] = useState(null);
+  const [timeAdjusted, setTimeAdjusted] = useState('');
+  const errorRef = useRef(null);
+  const pollRef = useRef(null);
+
+  const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
 
   useEffect(() => {
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
       const now = new Date();
+      now.setMinutes(now.getMinutes() + 5);
       setStartTime(formatDateTime(now));
     }).catch(() => {
       setFetchError('Failed to load booking details. Please try again.');
     });
   }, [bikeId]);
 
-  const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
+  useEffect(() => {
+    if (!startTime || !endTime || !bike) return;
+    const controller = new AbortController();
+    setPreviewLoading(true);
+    setError('');
+    const timer = setTimeout(async () => {
+      setPreviewData(null);
+      try {
+        const res = await api.post('/pricing/preview', {
+          bikeId,
+          startTime: new Date(startTime),
+          endTime: new Date(endTime),
+          couponCode,
+        }, { signal: controller.signal });
+        setPreviewData(res.data);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('[Checkout] Pricing preview failed:', err);
+          setError(err.response?.data?.message || 'Failed to calculate pricing');
+          setPreviewData(null);
+        }
+      } finally {
+        if (!controller.signal.aborted) setPreviewLoading(false);
+      }
+    }, 500);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [startTime, endTime, couponCode, bikeId, bike]);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (!startTime || !endTime || !bike || createdBookingId) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await api.post('/pricing/preview', {
+          bikeId,
+          startTime: new Date(startTime),
+          endTime: new Date(endTime),
+          couponCode,
+        });
+        setPreviewData(prev => {
+          if (!prev) return res.data;
+          if (prev.available !== res.data.available) {
+            return res.data;
+          }
+          return { ...prev, pricing: res.data.pricing };
+        });
+      } catch { /* poll is best-effort */ }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(pollRef.current);
+  }, [startTime, endTime, couponCode, bikeId, bike, createdBookingId]);
 
   const incrementHours = useCallback(() => {
     setHours(prev => Math.min(prev + 1, 720));
@@ -51,74 +115,100 @@ const Checkout = () => {
     setHours(prev => Math.max(prev - 1, 1));
   }, []);
 
-  useEffect(() => {
-    if (!startTime || !endTime || !bike) return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
+  const createBookingAndPay = async (confirmDirectly = false) => {
+    if (!agreedToTerms) {
+      setError('Please agree to the terms and conditions before proceeding.');
+      return;
+    }
+
+    let effectiveStartTime = startTime;
+    const now = new Date();
+    const startMs = new Date(startTime).getTime();
+    if (startMs < now.getTime() + 5 * 60 * 1000) {
+      const adjusted = new Date(now.getTime() + 5 * 60 * 1000);
+      effectiveStartTime = formatDateTime(adjusted);
+      setStartTime(effectiveStartTime);
+      setTimeAdjusted(formatDisplayDate(effectiveStartTime));
+    }
+
+    try {
+      setCreating(true);
       setError('');
-      try {
-        const payload = {
-          bikeId,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          couponCode,
-          destination
-        };
-        const res = await api.post('/booking', payload, { signal: controller.signal });
-        setBookingData(res.data);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setError(err.response?.data?.message || 'Failed to create booking');
-          setBookingData(null);
+      setTimeAdjusted('');
+      clearInterval(pollRef.current);
+      const res = await api.post('/booking', {
+        bikeId,
+        startTime: new Date(effectiveStartTime),
+        endTime: new Date(addHoursToDate(effectiveStartTime, hours)),
+        couponCode,
+        destination,
+      });
+      const booking = res.data.booking;
+      if (!booking || !booking._id) {
+        throw new Error('Invalid response from server — booking not created');
+      }
+      setCreatedBookingId(booking._id);
+
+      if (confirmDirectly) {
+        const confirmRes = await api.post('/booking/confirm', {
+          bookingId: booking._id,
+          amountPaid: res.data.minAdvance,
+        });
+        navigate(`/invoice/${confirmRes.data.booking._id}`);
+      } else {
+        const payRes = await api.post('/payment/init', { bookingId: booking._id });
+        if (payRes.data.url) {
+          window.location.replace(payRes.data.url);
+        } else {
+          setError('Payment gateway unavailable. Use "Confirm Booking" for direct confirmation.');
+          setCreating(false);
         }
       }
-    }, 500);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, [startTime, endTime, couponCode, bikeId, bike, destination]);
-
-  const handlePayment = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await api.post('/payment/init', { bookingId: bookingData.booking._id });
-      if (response.data.url) {
-        window.location.replace(response.data.url);
+    } catch (err) {
+      console.error('[Checkout] createBookingAndPay failed:', err);
+      const msg = err.response?.data?.message || 'Failed to create booking. Please try again.';
+      if (msg.includes('not available') || msg.includes('conflict') || err.response?.status === 409) {
+        setError('This time slot was just booked by someone else. Please try a different start time or check other bikes.');
+      } else if (msg.includes('5 minutes') || msg.includes('start time')) {
+        setError('Start time is too soon. It has been adjusted — please try again.');
       } else {
-        setError('Payment gateway unavailable. Use "Confirm Booking" below for direct confirmation.');
-        setLoading(false);
+        setError(msg);
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Payment initialization failed');
-      setLoading(false);
-    }
-  };
-
-  const handleDirectConfirm = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await api.post('/booking/confirm', {
-        bookingId: bookingData.booking._id,
-        amountPaid: bookingData.minAdvance
-      });
-      navigate(`/invoice/${response.data.booking._id}`);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Confirmation failed');
-      setLoading(false);
+      setCreating(false);
+      pollRef.current = setInterval(async () => {
+        try {
+          const res = await api.post('/pricing/preview', {
+            bikeId,
+            startTime: new Date(startTime),
+            endTime: new Date(endTime),
+            couponCode,
+          });
+          setPreviewData(res.data);
+        } catch { /* poll is best-effort */ }
+      }, POLL_INTERVAL_MS);
     }
   };
 
   useEffect(() => {
-    if (!bookingData?.booking?._id) return;
+    if (!createdBookingId) return;
     const interval = setInterval(async () => {
       try {
-        await api.post(`/booking/${bookingData.booking._id}/heartbeat`);
+        await api.post(`/booking/${createdBookingId}/heartbeat`);
       } catch { /* heartbeat is best-effort */ }
     }, 2 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [bookingData?.booking?._id]);
+  }, [createdBookingId]);
 
   const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
+  const pricing = previewData?.pricing;
+  const isAvailable = previewData?.available !== false;
+
+  const disabledReason = !agreedToTerms
+    ? 'Please agree to the terms and conditions below to continue.'
+    : !isAvailable
+      ? (previewData?.conflictMessage || 'This bike was just booked by someone else for your selected time. Try a different time or check other bikes.')
+      : null;
+  const isDisabled = creating || !agreedToTerms || !isAvailable;
 
   if (fetchError) return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
@@ -137,8 +227,24 @@ const Checkout = () => {
       <h1 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
 
       {error && (
-        <div className="border p-4 rounded-2xl mb-6 text-sm" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
-          {error}
+        <div ref={errorRef} className="border p-4 rounded-2xl mb-6 text-sm flex items-start gap-2" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
+          <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <span>{error}</span>
+            {error.includes('someone else') && (
+              <Link to="/" className="block mt-2 font-semibold underline text-xs" style={{ color: 'var(--accent-text)' }}>
+                Browse other bikes &rarr;
+              </Link>
+            )}
+          </div>
+          <button onClick={() => setError('')} className="text-xs font-bold flex-shrink-0" style={{ color: 'var(--danger-text)' }}>&times;</button>
+        </div>
+      )}
+
+      {timeAdjusted && !error && (
+        <div className="border p-3 rounded-2xl mb-6 text-sm flex items-center gap-2" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)', color: 'var(--warning-text)' }}>
+          <Clock size={14} className="flex-shrink-0" />
+          <span>Start time adjusted to <strong>{timeAdjusted}</strong> (nearest available slot)</span>
         </div>
       )}
 
@@ -152,6 +258,24 @@ const Checkout = () => {
             <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour || 0} TK / Hour</p>
           </div>
         </div>
+
+        {/* Live Availability Badge */}
+        {previewData && (
+          <div className="flex items-center justify-between">
+            <div className={`rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 ${isAvailable ? 'border' : ''}`}
+              style={isAvailable
+                ? { background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }
+                : { background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }
+              }>
+              {isAvailable ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
+              {isAvailable ? 'Available now' : 'No longer available'}
+            </div>
+            <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <RefreshCw size={10} className="animate-spin" style={{ animationDuration: '3s' }} />
+              <span>Live</span>
+            </div>
+          </div>
+        )}
 
         {/* Pricing Tiers Info */}
         {bike.packages?.length > 0 && (
@@ -167,7 +291,7 @@ const Checkout = () => {
                 </span>
               ))}
             </div>
-            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Best tier auto-applied • Min 150 TK/hr</p>
+            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Best tier auto-applied &bull; Min 150 TK/hr</p>
           </div>
         )}
 
@@ -196,7 +320,7 @@ const Checkout = () => {
               <Plus size={18} />
             </button>
           </div>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Minimum 1 hour • Maximum 720 hours (30 days)</p>
+          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Minimum 1 hour &bull; Maximum 720 hours (30 days)</p>
         </div>
 
         {/* Start Time */}
@@ -213,13 +337,33 @@ const Checkout = () => {
             <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} />
             <div>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Return Time (auto-calculated)</p>
-              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(endTime)}</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{endTime ? formatDisplayDate(endTime) : '—'}</p>
             </div>
           </div>
           <span className="px-3 py-1 rounded-lg text-xs font-bold" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
             {hours}h
           </span>
         </div>
+
+        {/* Availability Status */}
+        {previewData && (
+          <div className={`rounded-xl p-3 text-sm font-medium flex items-center gap-2 ${isAvailable ? 'border' : ''}`}
+            style={isAvailable
+              ? { background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }
+              : { background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }
+            }>
+            {isAvailable ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+            {isAvailable ? 'Bike available for selected time' : (previewData.conflictMessage || 'This time slot was just booked by someone else. Try different hours or start time.')}
+          </div>
+        )}
+
+        {/* Preview Loading */}
+        {previewLoading && (
+          <div className="rounded-xl p-3 text-sm font-medium flex items-center gap-2" style={{ background: 'var(--card-bg)', color: 'var(--text-muted)' }}>
+            <Loader2 size={16} className="animate-spin" />
+            Checking availability &amp; pricing...
+          </div>
+        )}
 
         {/* Coupon */}
         <div>
@@ -238,72 +382,79 @@ const Checkout = () => {
         </div>
 
         {/* Price Breakdown */}
-        {bookingData && (
+        {pricing && (
           <>
             <div className="glass rounded-2xl p-5 space-y-3">
               <div className="flex justify-between text-sm">
                 <span style={{ color: 'var(--text-secondary)' }}>Total Price</span>
-                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{bookingData.booking.totalPrice} TK</span>
+                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Advance Required</span>
-                <span className="font-bold text-xl" style={{ color: 'var(--accent-text)' }}>{bookingData.minAdvance} TK</span>
+                <span className="font-bold text-xl" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</span>
               </div>
               <div className="text-xs space-y-0.5 pt-2 border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}>
-                <p className="flex items-center"><Clock size={12} className="mr-1" /> {hours} hours • {formatDisplayDate(startTime)} → {formatDisplayDate(endTime)}</p>
-                {couponCode && <p style={{ color: 'var(--success-text)' }}>Coupon: {couponCode} applied</p>}
+                <p className="flex items-center"><Clock size={12} className="mr-1" /> {pricing.hours} hours &bull; {formatDisplayDate(startTime)} &rarr; {endTime ? formatDisplayDate(endTime) : '—'}</p>
+                {pricing.couponApplied && <p style={{ color: 'var(--success-text)' }}>Coupon: {pricing.couponApplied.code} ({pricing.couponApplied.discount}% off)</p>}
               </div>
             </div>
 
             {/* Terms */}
             <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--warning-border)' }}>
               <h3 className="font-bold flex items-center mb-3 text-sm" style={{ color: 'var(--warning-text)' }}>
-                <AlertTriangle size={16} className="mr-2" /> Terms & Conditions
+                <AlertTriangle size={16} className="mr-2" /> Terms &amp; Conditions
               </h3>
               <ul className="text-xs space-y-1.5 mb-4" style={{ color: 'var(--text-secondary)' }}>
-                <li>• Petrol cost borne by the customer</li>
-                <li>• Beach sand: <strong style={{ color: 'var(--warning-text)' }}>1,000 TK fine</strong></li>
-                <li>• Lost helmet: <strong style={{ color: 'var(--warning-text)' }}>2,000 TK fine</strong></li>
-                <li>• Beyond Teknaf: <strong style={{ color: 'var(--warning-text)' }}>5,000 TK fine</strong></li>
-                <li>• Renter liable for all accidents/damage</li>
+                <li>&bull; Petrol cost borne by the customer</li>
+                <li>&bull; Beach sand: <strong style={{ color: 'var(--warning-text)' }}>1,000 TK fine</strong></li>
+                <li>&bull; Lost helmet: <strong style={{ color: 'var(--warning-text)' }}>2,000 TK fine</strong></li>
+                <li>&bull; Beyond Teknaf: <strong style={{ color: 'var(--warning-text)' }}>5,000 TK fine</strong></li>
+                <li>&bull; Renter liable for all accidents/damage</li>
               </ul>
               <Link to="/policies" target="_blank" className="text-xs font-medium underline block mb-3" style={{ color: 'var(--accent-text)' }}>
-                Read full Policies & Terms
+                Read full Policies &amp; Terms
               </Link>
-              <label className="flex items-start cursor-pointer min-h-11 py-1">
+              <label className="flex items-start cursor-pointer min-h-12 py-2 rounded-lg transition-colors" style={{ background: agreedToTerms ? 'var(--success-bg)' : 'transparent' }}>
                 <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-1 mr-2.5 h-5 w-5 text-amber-500 rounded focus:ring-amber-500 flex-shrink-0"
-                  style={{ borderColor: 'var(--border-strong)' }} />
-                <span className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>I have read and agree to all terms and conditions.</span>
+                  className="mt-0.5 mr-3 h-5 w-5 rounded flex-shrink-0"
+                  style={{ accentColor: 'var(--accent-text)', borderColor: 'var(--border-strong)' }} />
+                <span className="text-sm font-medium leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                  I have read and agree to all terms and conditions.
+                </span>
               </label>
             </div>
 
+            {/* Disabled Reason Banner */}
+            {isDisabled && !creating && disabledReason && (
+              <div className="rounded-xl p-3 text-sm font-medium flex items-center gap-2" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', color: 'var(--warning-text)' }}>
+                <AlertTriangle size={16} className="flex-shrink-0" />
+                <span>{disabledReason}</span>
+              </div>
+            )}
+
             {/* Payment */}
             <div className="space-y-3">
-              <button onClick={handlePayment} disabled={loading || !agreedToTerms}
+              <button onClick={() => createBookingAndPay(false)} disabled={isDisabled}
                 className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center ${
-                  loading || !agreedToTerms
+                  isDisabled
                     ? 'cursor-not-allowed'
                     : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
                 }`}
-                style={loading || !agreedToTerms ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}>
-                {loading ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
-                {loading ? 'Processing...' : `Pay ${bookingData.minAdvance} TK via SSLCommerz`}
+                style={isDisabled ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}>
+                {creating ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
+                {creating ? 'Processing...' : `Pay ${pricing.minAdvance} TK via SSLCommerz`}
               </button>
-              <button onClick={handleDirectConfirm} disabled={loading || !agreedToTerms}
+              <button onClick={() => createBookingAndPay(true)} disabled={isDisabled}
                 className={`w-full py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center border-2 ${
-                  loading || !agreedToTerms
+                  isDisabled
                     ? 'cursor-not-allowed'
                     : ''
                 }`}
-                style={loading || !agreedToTerms ? { borderColor: 'var(--border-base)', color: 'var(--text-muted)' } : { borderColor: 'var(--success-border)', color: 'var(--success-text)', background: 'var(--success-bg)' }}>
+                style={isDisabled ? { borderColor: 'var(--border-base)', color: 'var(--text-muted)' } : { borderColor: 'var(--success-border)', color: 'var(--success-text)', background: 'var(--success-bg)' }}>
                 <CheckCircle size={20} className="mr-2" />
-                {loading ? 'Processing...' : `Confirm Booking (${bookingData.minAdvance} TK Advance)`}
+                {creating ? 'Processing...' : `Confirm Booking (${pricing.minAdvance} TK Advance)`}
               </button>
               <p className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>bKash / Nagad / Bank Transfer via secure SSLCommerz gateway</p>
-              {!agreedToTerms && bookingData && (
-                <p className="text-xs text-center" style={{ color: 'var(--danger-text)' }}>Please agree to terms to proceed</p>
-              )}
             </div>
           </>
         )}

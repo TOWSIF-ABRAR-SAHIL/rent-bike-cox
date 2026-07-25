@@ -18,7 +18,7 @@
 
 ## 3. Global Business Rules & Constraints
 *   **Roles:** Admin (can rent bikes & manage platform), Renter (Bike Owner), User (Customer).
-*   **Vehicle Categories:** Admin-managed. Default: Bike, Car, Microbus, SUV, Van. New categories can be added from Admin Dashboard.
+*   **Vehicle Categories:** Admin-managed. Default: Bike, Car, Jeep. New categories can be added from Admin Dashboard.
 *   **Base Pricing:** 200 TK per hour. Custom packages (1-day, 2-day, 1-week, monthly) are available and customizable by Admins.
 *   **Contact Information:** 01891154443, 01764466757.
 *   **Identity Verification:** A valid NID and Driving License are strictly required to confirm any booking.

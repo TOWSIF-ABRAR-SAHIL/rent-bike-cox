@@ -31,6 +31,11 @@ exports.createBooking = async (req, res) => {
       return res.status(400).json({ message: 'bikeId, startTime, and endTime are required' });
     }
 
+    const startMs = new Date(startTime).getTime();
+    if (startMs < Date.now() + 5 * 60 * 1000) {
+      return res.status(400).json({ message: 'Start time must be at least 5 minutes from now' });
+    }
+
     const bike = await Bike.findById(bikeId);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
@@ -86,7 +91,7 @@ exports.createBooking = async (req, res) => {
       lockedAt: new Date(),
       expiresAt: new Date(Date.now() + CHECKOUT_TIMEOUT_MS),
       couponApplied: couponDoc ? couponDoc._id : undefined,
-    });
+    }, req.user.id);
 
     if (!lockResult.success) {
       return res.status(409).json({ message: lockResult.message });

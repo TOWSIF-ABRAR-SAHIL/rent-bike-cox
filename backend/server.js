@@ -13,6 +13,7 @@ const couponRoutes = require('./routes/coupon');
 const policyRoutes = require('./routes/policy');
 const financialRoutes = require('./routes/financial');
 const documentRoutes = require('./routes/documents');
+const pricingRoutes = require('./routes/pricing');
 const { startCleanupScheduler } = require('./utils/checkoutCleanup');
 
 const app = express();
@@ -208,6 +209,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/policies', policyRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/pricing', pricingRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', (req, res) => {
