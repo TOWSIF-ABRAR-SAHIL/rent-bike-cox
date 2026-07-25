@@ -12,6 +12,6 @@ const circuitBreakerSchema = new mongoose.Schema({
   unlockedAt: { type: Date },
 }, { timestamps: true });
 
-circuitBreakerSchema.index({ date: 1 });
+
 
 module.exports = mongoose.model('CircuitBreaker', circuitBreakerSchema);
