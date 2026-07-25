@@ -7,10 +7,12 @@ const { idempotencyMiddleware } = require('../utils/idempotency');
 const PaymentIntent = require('../models/PaymentIntent');
 const Refund = require('../models/Refund');
 
+const { paymentInitRules, paginationRules } = require('../security/validators/index');
+
 const paymentIdempotency = idempotencyMiddleware(10 * 60 * 1000);
 
 // SSLCommerz payment flow
-router.post('/init', auth, paymentIdempotency, initPayment);
+router.post('/init', auth, paymentIdempotency, paymentInitRules, initPayment);
 router.get('/success/:bookingId/:tranId', paymentSuccess);
 router.post('/success/:bookingId/:tranId', paymentSuccess);
 router.get('/fail/:bookingId', paymentFail);
@@ -24,7 +26,7 @@ router.post('/cancel', paymentCancel);
 router.post('/ipn', paymentIPN);
 
 // Admin: payment intents + refunds
-router.get('/intents', auth, authorize('Admin'), async (req, res) => {
+router.get('/intents', auth, authorize('Admin'), paginationRules, async (req, res) => {
   try {
     const { page = 1, limit = 50, status } = req.query;
     const query = {};
@@ -42,7 +44,7 @@ router.get('/intents', auth, authorize('Admin'), async (req, res) => {
   }
 });
 
-router.get('/refunds', auth, authorize('Admin'), async (req, res) => {
+router.get('/refunds', auth, authorize('Admin'), paginationRules, async (req, res) => {
   try {
     const { page = 1, limit = 50, status } = req.query;
     const query = {};

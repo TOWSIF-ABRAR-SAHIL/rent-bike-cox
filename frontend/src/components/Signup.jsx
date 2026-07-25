@@ -52,7 +52,7 @@ const Signup = () => {
       const response = await api.post('/auth/register', formDataToSend, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      login(response.data.token);
+      login(response.data.accessToken, response.data.refreshToken);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');

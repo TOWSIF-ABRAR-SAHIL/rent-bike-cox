@@ -19,4 +19,16 @@ auditLogSchema.index({ resourceId: 1, createdAt: -1 });
 
 auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
 
+auditLogSchema.pre('findOneAndUpdate', function () {
+  throw new Error('Audit logs are immutable');
+});
+
+auditLogSchema.pre('updateOne', function () {
+  throw new Error('Audit logs are immutable');
+});
+
+auditLogSchema.pre('deleteOne', function () {
+  throw new Error('Audit logs are immutable');
+});
+
 module.exports = mongoose.model('AuditLog', auditLogSchema);

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Category = require('../models/Category');
 const { sanitize } = require('../utils/sanitize');
+const logger = require('../utils/logger');
 
 const defaultCategories = [
   { name: 'Bike', slug: 'bike' },
@@ -137,7 +138,7 @@ exports.getBikeById = async (req, res) => {
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
     res.json(bike);
   } catch (error) {
-    console.error('[getBikeById] Error:', error.message);
+    logger.error('getBikeById error', { tag: 'Dashboard', message: error.message });
     res.status(500).json({ message: 'Server error while fetching vehicle details' });
   }
 };

@@ -52,7 +52,7 @@ class FraudDetectionService {
 
     if (results.decision !== 'ALLOW') {
       await recordFraudEvent({
-        eventType: 'fraud_check',
+        eventType: 'amountMismatch',
         userId,
         ip,
         metadata: { bookingId, amountPaisa, score: results.score, flags: results.flags, decision: results.decision },

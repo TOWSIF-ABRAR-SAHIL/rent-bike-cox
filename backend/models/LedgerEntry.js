@@ -23,4 +23,16 @@ ledgerEntrySchema.index({ createdAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 
 
 ledgerEntrySchema.set('toJSON', { virtuals: true });
 
+ledgerEntrySchema.pre('findOneAndUpdate', function () {
+  throw new Error('Ledger entries are immutable');
+});
+
+ledgerEntrySchema.pre('updateOne', function () {
+  throw new Error('Ledger entries are immutable');
+});
+
+ledgerEntrySchema.pre('deleteOne', function () {
+  throw new Error('Ledger entries are immutable');
+});
+
 module.exports = mongoose.model('LedgerEntry', ledgerEntrySchema);

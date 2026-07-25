@@ -4,6 +4,7 @@ const FraudEvent = require('../models/FraudEvent');
 const { getBookingLedger, getDailySummary, verifyLedgerBalance } = require('../utils/ledger');
 const { getCircuitBreakerStatus, unlockCircuitBreaker } = require('../utils/circuitBreaker');
 const { getVelocityReport } = require('../utils/fraud');
+const logger = require('../utils/logger');
 
 exports.getCircuitBreaker = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ exports.getCircuitBreaker = async (req, res) => {
     const status = await getCircuitBreakerStatus();
     res.json(status);
   } catch (error) {
-    console.error('[Financial] getCircuitBreaker error:', error.message);
+    logger.error('getCircuitBreaker error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch circuit breaker status' });
   }
 };
@@ -25,7 +26,7 @@ exports.unlockCircuitBreaker = async (req, res) => {
     }
     res.json({ message: 'Circuit breaker unlocked', breaker: result });
   } catch (error) {
-    console.error('[Financial] unlockCircuitBreaker error:', error.message);
+    logger.error('unlockCircuitBreaker error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to unlock circuit breaker' });
   }
 };
@@ -41,7 +42,7 @@ exports.getBookingLedger = async (req, res) => {
 
     res.json({ entries, balance });
   } catch (error) {
-    console.error('[Financial] getBookingLedger error:', error.message);
+    logger.error('getBookingLedger error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch booking ledger' });
   }
 };
@@ -53,7 +54,7 @@ exports.getDailyFinancialSummary = async (req, res) => {
     const summary = await getDailySummary(date);
     res.json({ date: date.toISOString().split('T')[0], summary });
   } catch (error) {
-    console.error('[Financial] getDailySummary error:', error.message);
+    logger.error('getDailySummary error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch daily summary' });
   }
 };
@@ -65,7 +66,7 @@ exports.getFraudReport = async (req, res) => {
     const report = await getVelocityReport(ip, phone, parseInt(hours) || 24);
     res.json(report);
   } catch (error) {
-    console.error('[Financial] getFraudReport error:', error.message);
+    logger.error('getFraudReport error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch fraud report' });
   }
 };
@@ -90,7 +91,7 @@ exports.getFraudEvents = async (req, res) => {
 
     res.json({ events, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
-    console.error('[Financial] getFraudEvents error:', error.message);
+    logger.error('getFraudEvents error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch fraud events' });
   }
 };
@@ -139,7 +140,7 @@ exports.getFinancialOverview = async (req, res) => {
       fraudEventsToday: recentFraud,
     });
   } catch (error) {
-    console.error('[Financial] getFinancialOverview error:', error.message);
+    logger.error('getFinancialOverview error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch financial overview' });
   }
 };

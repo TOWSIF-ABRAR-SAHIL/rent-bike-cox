@@ -25,6 +25,7 @@ const {
   updateBike
 } = require('../controllers/dashboardController');
 
+const { createBikeRules, paginationRules } = require('../security/validators/index');
 const upload = require('../middleware/uploadMiddleware');
 
 // Shared/Public
@@ -34,13 +35,13 @@ router.get('/bikes/:id', getBikeById);
 router.get('/categories', getCategories);
 
 // Renter routes
-router.post('/bikes', auth, authorize('Renter', 'Admin'), upload.array('bikeImages', 5), addBike);
+router.post('/bikes', auth, authorize('Renter', 'Admin'), upload.array('bikeImages', 5), createBikeRules, addBike);
 router.get('/my-bikes', auth, authorize('Renter', 'Admin'), getRenterBikes);
 router.put('/bikes/:id/availability', auth, authorize('Renter', 'Admin'), requireOwnership(Bike, 'id', 'renter'), toggleBikeAvailability);
 
 // Admin routes
 router.get('/admin/bikes', auth, authorize('Admin'), getAllBikes);
-router.put('/admin/bikes/:id', auth, authorize('Admin'), upload.array('bikeImages', 5), updateBike);
+router.put('/admin/bikes/:id', auth, authorize('Admin'), upload.array('bikeImages', 5), createBikeRules, updateBike);
 router.delete('/admin/bikes/:id', auth, authorize('Admin'), requireOwnership(Bike, 'id', 'renter'), deleteBike);
 router.put('/admin/settings', auth, authorize('Admin'), updateGlobalSettings);
 router.put('/admin/bikes/:id/verify', auth, authorize('Admin'), toggleBikeVerification);

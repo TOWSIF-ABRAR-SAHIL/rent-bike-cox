@@ -18,8 +18,7 @@ const BikeDetails = () => {
   useEffect(() => {
     api.get(`/dashboard/bikes/${id}`).then(res => {
       setBike(res.data);
-    }).catch((err) => {
-      console.error('[BikeDetails] Failed to fetch vehicle:', err.response?.status, err.response?.data?.message || err.message);
+    }).catch(() => {
       setFetchError('Failed to load vehicle details. Please try again.');
     }).finally(() => setLoading(false));
   }, [id]);
@@ -122,7 +121,7 @@ const BikeDetails = () => {
           {bike.videoUrl && (
             <div className="rounded-2xl overflow-hidden glass">
               <div className="relative aspect-video flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
-                <iframe src={bike.videoUrl} className="w-full h-full" allowFullScreen title="Vehicle video" sandbox="allow-scripts allow-presentation" />
+                <iframe src={bike.videoUrl} className="w-full h-full" allowFullScreen title="Vehicle video" sandbox="allow-presentation" />
               </div>
             </div>
           )}

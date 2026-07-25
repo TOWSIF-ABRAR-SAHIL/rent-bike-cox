@@ -4,6 +4,7 @@ const VELOCITY_WINDOWS = {
   failedPayment: { windowMs: 60 * 1000, maxCount: 3 },
   couponAbuse: { windowMs: 5 * 60 * 1000, maxCount: 5 },
   amountMismatch: { windowMs: 10 * 60 * 1000, maxCount: 2 },
+  booking: { windowMs: 60 * 60 * 1000, maxCount: 5 },
 };
 
 function getClientIp(req) {

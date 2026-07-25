@@ -11,6 +11,7 @@ const { isProcessed, markProcessed, verifyCallbackIntegrity } = require('../util
 const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buildFingerprint } = require('../utils/fraud');
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
+const logger = require('../utils/logger');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASS || process.env.SSLCOMMERZ_STORE_PASSWORD;
@@ -86,7 +87,7 @@ exports.initPayment = async (req, res) => {
       ship_country: 'Bangladesh',
     };
 
-    console.log('[Payment] init:', { bookingId, amount, tran_id, is_live });
+    logger.info('init', { tag: 'Payment', bookingId, amount, tran_id, is_live });
 
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
     sslcz.init(data).then(apiResponse => {
@@ -94,15 +95,15 @@ exports.initPayment = async (req, res) => {
       if (gatewayUrl) {
         res.json({ url: gatewayUrl });
       } else {
-        console.error('[Payment] No gateway URL:', apiResponse);
+        logger.error('No gateway URL', { tag: 'Payment', apiResponse });
         res.status(400).json({ message: 'Payment gateway did not return a URL' });
       }
     }).catch(err => {
-      console.error('[Payment] SSLCommerz init error:', err.message || err);
+      logger.error('SSLCommerz init error', { tag: 'Payment', error: err.message || err });
       res.status(500).json({ message: 'Payment initialization failed' });
     });
   } catch (error) {
-    console.error('[Payment] initPayment error:', error.message);
+    logger.error('initPayment error', { tag: 'Payment', message: error.message });
     res.status(500).json({ message: 'Payment initialization failed' });
   }
 };
@@ -110,7 +111,7 @@ exports.initPayment = async (req, res) => {
 exports.paymentSuccess = async (req, res) => {
   try {
     const { bookingId, tranId } = req.params;
-    console.log('[Payment] Success callback:', { bookingId, tranId });
+    logger.info('Success callback', { tag: 'Payment', bookingId, tranId });
 
     if (!bookingId || !tranId) {
       return res.redirect(`${frontendUrl}/payment-failed`);
@@ -119,7 +120,7 @@ exports.paymentSuccess = async (req, res) => {
     const nonce = `success:${bookingId}:${tranId}`;
     const alreadyProcessed = await isProcessed(nonce);
     if (alreadyProcessed) {
-      console.log('[Payment] Replay detected — already processed:', nonce);
+      logger.info('Replay detected — already processed', { tag: 'Payment', nonce });
       const existingBooking = await Booking.findById(bookingId);
       if (existingBooking && (existingBooking.status === 'Confirmed' || existingBooking.status === 'Completed')) {
         return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
@@ -129,32 +130,32 @@ exports.paymentSuccess = async (req, res) => {
 
     const booking = await Booking.findById(bookingId);
     if (!booking) {
-      console.error('[Payment] Booking not found:', bookingId);
+      logger.error('Booking not found', { tag: 'Payment', bookingId });
       return res.redirect(`${frontendUrl}/payment-failed`);
     }
 
     if (booking.status === 'Confirmed' || booking.status === 'Completed') {
-      console.log('[Payment] Idempotent skip — already confirmed:', bookingId);
+      logger.info('Idempotent skip — already confirmed', { tag: 'Payment', bookingId });
       await markProcessed(nonce);
       return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
     }
 
     if (booking.status === 'Expired' || booking.status === 'Cancelled') {
-      console.error('[Payment] Booking expired/cancelled:', bookingId);
+      logger.error('Booking expired/cancelled', { tag: 'Payment', bookingId });
       await markProcessed(nonce);
       return res.redirect(`${frontendUrl}/payment-failed`);
     }
 
     const { val_id } = req.query;
     if (!val_id) {
-      console.error('[Payment] No val_id in redirect — possible bypass');
+      logger.error('No val_id in redirect — possible bypass', { tag: 'Payment' });
       await markProcessed(nonce);
       return res.redirect(`${frontendUrl}/payment-failed`);
     }
 
     const { valid, verified, error } = await verifyCallbackIntegrity(val_id, bookingId);
     if (!valid) {
-      console.error('[Payment] SSLCommerz verification failed:', error);
+      logger.error('SSLCommerz verification failed', { tag: 'Payment', error });
       await recordFraudEvent({
         eventType: 'amount_mismatch',
         userId: booking.user,
@@ -174,7 +175,7 @@ exports.paymentSuccess = async (req, res) => {
     const expectedAdvance = roundPaisa(multiplyPaisa(booking.totalPrice, advancePercent));
 
     if (verifiedAmount !== expectedAdvance) {
-      console.error('[Payment] Amount mismatch:', { verifiedAmount, expectedAdvance });
+      logger.error('Amount mismatch', { tag: 'Payment', verifiedAmount, expectedAdvance });
       await recordFraudEvent({
         eventType: 'amount_mismatch',
         userId: booking.user,
@@ -257,12 +258,12 @@ exports.paymentSuccess = async (req, res) => {
     }
 
     await markProcessed(nonce);
-    console.log('[Payment] Confirmed booking:', bookingId);
+    logger.info('Confirmed booking', { tag: 'Payment', bookingId });
     increment('payment_success');
     bus.emit('payment.confirmed', { bookingId, tranId, source: 'redirect' });
     return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
   } catch (error) {
-    console.error('[Payment] success error:', error.message, error.stack);
+    logger.error('success error', { tag: 'Payment', message: error.message, stack: error.stack });
     try {
       return res.redirect(`${frontendUrl}/payment-failed`);
     } catch {
@@ -286,7 +287,7 @@ exports.paymentFail = async (req, res) => {
       if (booking) {
         const velocity = await checkVelocity(buildFingerprint(ip, null), 'failed_payment');
         if (velocity.triggered) {
-          console.warn('[Payment] Fail velocity exceeded:', { bookingId, count: velocity.count });
+          logger.warn('Fail velocity exceeded', { tag: 'Payment', bookingId, count: velocity.count });
           await recordFraudEvent({
             eventType: 'failed_payment',
             userId: booking.user,
@@ -296,7 +297,7 @@ exports.paymentFail = async (req, res) => {
           });
         }
 
-        console.log('[Payment] Fail — releasing lock for booking:', bookingId);
+        logger.info('Fail — releasing lock for booking', { tag: 'Payment', bookingId });
         await releaseBikeLock(booking.bike);
         booking.status = 'Cancelled';
         booking.cancellationReason = 'Payment failed';
@@ -306,7 +307,7 @@ exports.paymentFail = async (req, res) => {
         bus.emit('payment.failed', { bookingId, reason: 'user_fail' });
       }
     } catch (err) {
-      console.error('[Payment] fail cleanup error:', err.message);
+      logger.error('fail cleanup error', { tag: 'Payment', message: err.message });
     }
   }
   res.redirect(`${frontendUrl}/payment-failed`);
@@ -324,7 +325,7 @@ exports.paymentCancel = async (req, res) => {
         return res.redirect(`${frontendUrl}/payment-cancelled`);
       }
       if (booking) {
-        console.log('[Payment] Cancel — releasing lock for booking:', bookingId);
+        logger.info('Cancel — releasing lock for booking', { tag: 'Payment', bookingId });
         await releaseBikeLock(booking.bike);
         booking.status = 'Cancelled';
         booking.cancellationReason = 'User cancelled payment';
@@ -334,7 +335,7 @@ exports.paymentCancel = async (req, res) => {
         bus.emit('payment.cancelled', { bookingId });
       }
     } catch (err) {
-      console.error('[Payment] cancel cleanup error:', err.message);
+      logger.error('cancel cleanup error', { tag: 'Payment', message: err.message });
     }
   }
   res.redirect(`${frontendUrl}/payment-cancelled`);
@@ -343,34 +344,34 @@ exports.paymentCancel = async (req, res) => {
 exports.paymentIPN = async (req, res) => {
   try {
     const { val_id, tran_id, status, store_id: ipn_store_id, store_passwd: ipn_store_pass } = req.body;
-    console.log('[IPN] Received:', { val_id, tran_id, status });
+    logger.info('Received', { tag: 'IPN', val_id, tran_id, status });
 
     if (!val_id) {
-      console.error('[IPN] Missing val_id');
+      logger.error('Missing val_id', { tag: 'IPN' });
       return res.status(400).json({ status: 'ERROR', message: 'Missing val_id' });
     }
 
     const { valid, verified, error } = await verifyCallbackIntegrity(val_id, tran_id);
     if (!valid) {
-      console.error('[IPN] Verification failed:', error);
+      logger.error('Verification failed', { tag: 'IPN', error });
       return res.status(200).json({ status: 'OK' });
     }
 
     const booking = await Booking.findOne({ tranId: tran_id });
     if (!booking) {
-      console.error('[IPN] No booking found for tranId:', tran_id);
+      logger.error('No booking found for tranId', { tag: 'IPN', tran_id });
       return res.status(200).json({ status: 'OK' });
     }
 
     const ipnNonce = `success:${booking._id}:${tran_id}`;
     const alreadyProcessed = await isProcessed(ipnNonce);
     if (alreadyProcessed) {
-      console.log('[IPN] Replay detected — already processed:', val_id);
+      logger.info('Replay detected — already processed', { tag: 'IPN', val_id });
       return res.status(200).json({ status: 'OK' });
     }
 
     if (booking.status === 'Confirmed' || booking.status === 'Completed') {
-      console.log('[IPN] Already confirmed, idempotent:', booking._id);
+      logger.info('Already confirmed, idempotent', { tag: 'IPN', bookingId: booking._id });
       await markProcessed(ipnNonce);
       return res.status(200).json({ status: 'OK' });
     }
@@ -381,7 +382,7 @@ exports.paymentIPN = async (req, res) => {
     const expectedAdvance = roundPaisa(multiplyPaisa(booking.totalPrice, advancePercent));
     const verifiedAmount = roundPaisa(Number(verified.amount));
     if (verifiedAmount !== expectedAdvance) {
-      console.error('[IPN] Amount mismatch:', { verifiedAmount, expectedAdvance });
+      logger.error('Amount mismatch', { tag: 'IPN', verifiedAmount, expectedAdvance });
       await recordFraudEvent({
         eventType: 'amount_mismatch',
         userId: booking.user,
@@ -465,10 +466,10 @@ exports.paymentIPN = async (req, res) => {
     }
 
     await markProcessed(ipnNonce);
-    console.log('[IPN] Confirmed booking via IPN:', booking._id);
+    logger.info('Confirmed booking via IPN', { tag: 'IPN', bookingId: booking._id });
     res.status(200).json({ status: 'OK' });
   } catch (error) {
-    console.error('[IPN] Error:', error.message);
+    logger.error('Error', { tag: 'IPN', message: error.message });
     res.status(500).json({ status: 'ERROR', message: 'IPN processing failed' });
   }
 };

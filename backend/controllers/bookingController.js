@@ -11,6 +11,7 @@ const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buil
 const { sanitize } = require('../utils/sanitize');
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
+const logger = require('../utils/logger');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -42,6 +43,10 @@ exports.createBooking = async (req, res) => {
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
     const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, bike.packages);
+
+    if (req.body.totalPrice !== undefined && Number(req.body.totalPrice) !== pricing.totalPrice) {
+      logger.warn('Price tampering detected', { userId: req.user.id, bikeId, clientPrice: req.body.totalPrice, serverPrice: pricing.totalPrice });
+    }
 
     let couponDoc = null;
     if (couponCode) {
@@ -116,7 +121,7 @@ exports.createBooking = async (req, res) => {
     increment('booking_created');
     bus.emit('booking.created', { bookingId: lockResult.booking._id.toString(), userId: req.user.id, bikeId, totalPrice: pricing.totalPrice });
   } catch (error) {
-    console.error('[Booking] createBooking error:', error.message, error.stack);
+    logger.error('createBooking error', { tag: 'Booking', message: error.message, stack: error.stack });
     res.status(500).json({ message: 'Booking creation failed' });
   }
 };
@@ -129,8 +134,8 @@ exports.confirmPayment = async (req, res) => {
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    if (booking.user.toString() !== req.user.id && req.user.role !== 'Admin') {
-      return res.status(403).json({ message: 'Not authorized to confirm this booking' });
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Only administrators can manually confirm payments' });
     }
 
     if (booking.status === 'Confirmed' || booking.status === 'Completed') {
@@ -197,7 +202,7 @@ exports.confirmPayment = async (req, res) => {
 
     res.json({ message: 'Payment confirmed', booking });
   } catch (error) {
-    console.error('[Booking] confirmPayment error:', error.message);
+    logger.error('confirmPayment error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Payment confirmation failed' });
   }
 };
@@ -273,7 +278,7 @@ exports.cancelBooking = async (req, res) => {
     increment('booking_cancelled');
     bus.emit('booking.cancelled', { bookingId: booking._id.toString(), userId: req.user.id, refundAmount: refund.refundableAmount });
   } catch (error) {
-    console.error('[Booking] cancelBooking error:', error.message);
+    logger.error('cancelBooking error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Booking cancellation failed' });
   }
 };
@@ -305,7 +310,7 @@ exports.getBookingDetails = async (req, res) => {
 
     res.json(booking);
   } catch (error) {
-    console.error('[Booking] getBookingDetails error:', error.message);
+    logger.error('getBookingDetails error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Failed to fetch booking' });
   }
 };
@@ -321,7 +326,7 @@ exports.getMyBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
-    console.error('[Booking] getMyBookings error:', error.message);
+    logger.error('getMyBookings error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Failed to fetch bookings' });
   }
 };
@@ -345,7 +350,7 @@ exports.getRenterBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
-    console.error('[Booking] getRenterBookings error:', error.message);
+    logger.error('getRenterBookings error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Failed to fetch renter bookings' });
   }
 };
@@ -366,7 +371,7 @@ exports.getAllBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
-    console.error('[Booking] getAllBookings error:', error.message);
+    logger.error('getAllBookings error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Failed to fetch all bookings' });
   }
 };
@@ -403,7 +408,7 @@ exports.completeBooking = async (req, res) => {
 
     res.json({ message: 'Booking completed', booking });
   } catch (error) {
-    console.error('[Booking] completeBooking error:', error.message);
+    logger.error('completeBooking error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Failed to complete booking' });
   }
 };
@@ -427,7 +432,7 @@ exports.checkoutHeartbeat = async (req, res) => {
 
     res.json({ expiresAt: booking.expiresAt });
   } catch (error) {
-    console.error('[Booking] heartbeat error:', error.message);
+    logger.error('heartbeat error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Heartbeat failed' });
   }
 };
@@ -486,7 +491,7 @@ exports.extendBooking = async (req, res) => {
       newTotalPrice: result.booking.totalPrice,
     });
   } catch (error) {
-    console.error('[Booking] extendBooking error:', error.message);
+    logger.error('extendBooking error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Extension failed' });
   }
 };
@@ -550,7 +555,7 @@ exports.createWalkInBooking = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Booking] createWalkInBooking error:', error.message);
+    logger.error('createWalkInBooking error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Walk-in booking failed' });
   }
 };

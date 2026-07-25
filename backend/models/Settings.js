@@ -14,4 +14,14 @@ const settingsSchema = new mongoose.Schema({
   gatewayPreference: [{ type: String, default: 'sslcommerz' }],
 }, { timestamps: true });
 
+settingsSchema.pre('save', function (next) {
+  if (this.basePricePerHour !== undefined && (this.basePricePerHour < 100 || this.basePricePerHour > 100000)) {
+    return next(new Error('basePricePerHour must be between 100 and 100000'));
+  }
+  if (this.adminCommissionPercent !== undefined && (this.adminCommissionPercent < 0 || this.adminCommissionPercent > 50)) {
+    return next(new Error('adminCommissionPercent must be between 0 and 50'));
+  }
+  next();
+});
+
 module.exports = mongoose.model('Settings', settingsSchema);

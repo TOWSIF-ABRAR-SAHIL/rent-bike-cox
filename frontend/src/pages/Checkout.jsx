@@ -87,8 +87,7 @@ const Checkout = () => {
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
       setStartTime(getDefaultStartTime());
-    }).catch((err) => {
-      console.error('[Checkout] Failed to fetch bike:', err.response?.status, err.response?.data?.message || err.message);
+    }).catch(() => {
       setFetchError('Failed to load booking details. Please try again.');
     });
   }, [bikeId]);
@@ -110,7 +109,6 @@ const Checkout = () => {
         setPreviewData(res.data);
       } catch (err) {
         if (err.name !== 'AbortError') {
-          console.error('[Checkout] Pricing preview failed:', err);
           setError(err.response?.data?.message || 'Failed to calculate pricing');
           setPreviewData(null);
         }
@@ -233,7 +231,6 @@ const Checkout = () => {
         }
       }
     } catch (err) {
-      console.error('[Checkout] createBookingAndPay failed:', err);
       const status = err.response?.status;
       const serverMsg = err.response?.data?.message || '';
 

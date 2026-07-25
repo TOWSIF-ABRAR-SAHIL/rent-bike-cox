@@ -30,7 +30,10 @@ async function markProcessed(nonce) {
   }
 }
 
-async function verifyCallbackIntegrity(valId, bookingId) {
+async function verifyCallbackIntegrity(valId, bookingId, createdAt) {
+  if (createdAt && (Date.now() - new Date(createdAt).getTime()) > MAX_CALLBACK_AGE_MS) {
+    return { valid: false, error: 'Callback too old' };
+  }
   const verified = await verifyIPN(valId);
   if (!verified || (verified.status !== 'VALID' && verified.status !== 'VALIDATED')) {
     return { valid: false, error: 'SSLCommerz verification failed', verified };

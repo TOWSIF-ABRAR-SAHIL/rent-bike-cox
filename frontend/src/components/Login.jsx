@@ -19,10 +19,16 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', formData);
-      login(response.data.token);
+      login(response.data.accessToken, response.data.refreshToken);
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      if (err.response?.status === 423) {
+        const retryAfter = err.response.data?.retryAfter || 900;
+        const minutes = Math.ceil(retryAfter / 60);
+        setError(`Account temporarily locked. Try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`);
+      } else {
+        setError(err.response?.data?.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }

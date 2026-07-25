@@ -1,5 +1,6 @@
 const Coupon = require('../models/Coupon');
 const { sanitize } = require('../utils/sanitize');
+const logger = require('../utils/logger');
 
 exports.getAllCoupons = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ exports.getAllCoupons = async (req, res) => {
     const coupons = await Coupon.find().sort({ createdAt: -1 });
     res.json(coupons);
   } catch (error) {
-    console.error('[Coupon] getAllCoupons error:', error.message);
+    logger.error('getAllCoupons error', { tag: 'Coupon', message: error.message });
     res.status(500).json({ message: 'Failed to fetch coupons' });
   }
 };
@@ -33,7 +34,7 @@ exports.createCoupon = async (req, res) => {
     await coupon.save();
     res.status(201).json(coupon);
   } catch (error) {
-    console.error('[Coupon] createCoupon error:', error.message);
+    logger.error('createCoupon error', { tag: 'Coupon', message: error.message });
     res.status(500).json({ message: 'Failed to create coupon' });
   }
 };
@@ -54,7 +55,7 @@ exports.updateCoupon = async (req, res) => {
     await coupon.save();
     res.json(coupon);
   } catch (error) {
-    console.error('[Coupon] updateCoupon error:', error.message);
+    logger.error('updateCoupon error', { tag: 'Coupon', message: error.message });
     res.status(500).json({ message: 'Failed to update coupon' });
   }
 };
@@ -66,7 +67,7 @@ exports.deleteCoupon = async (req, res) => {
     if (!coupon) return res.status(404).json({ message: 'Coupon not found' });
     res.json({ message: 'Coupon deleted successfully' });
   } catch (error) {
-    console.error('[Coupon] deleteCoupon error:', error.message);
+    logger.error('deleteCoupon error', { tag: 'Coupon', message: error.message });
     res.status(500).json({ message: 'Failed to delete coupon' });
   }
 };
