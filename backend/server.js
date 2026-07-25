@@ -23,6 +23,10 @@ const payoutRoutes = require('./routes/payout');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const securityHeaders = require('./security/middleware/securityHeaders');
+const authMiddleware = require('./middleware/authMiddleware');
 
 // Register gateways
 const gatewayRegistry = require('./gateways/GatewayRegistry');
@@ -31,8 +35,31 @@ gatewayRegistry.register(new SSLCommerzGateway());
 
 const app = express();
 
+// Trust proxy (required for rate limiting behind Render's reverse proxy)
+app.set('trust proxy', 1);
+
+// Request timeout (30s)
+app.use((req, res, next) => {
+  req.setTimeout(30000, () => {
+    if (!res.headersSent) {
+      res.status(408).json({ message: 'Request timeout' });
+    }
+  });
+  res.setTimeout(30000, () => {
+    if (!res.headersSent) {
+      res.status(503).json({ message: 'Service temporarily unavailable' });
+    }
+  });
+  next();
+});
+
 // Correlation ID — before all routes
 app.use(correlationId);
+
+// Additional security middleware
+app.use(securityHeaders);
+app.use(mongoSanitize());
+app.use(hpp());
 
 // Security & Performance Middleware
 app.use(helmet({
@@ -40,23 +67,28 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:", "http:"],
       connectSrc: ["'self'", process.env.FRONTEND_URL, "https://sandbox.sslcommerz.com"].filter(Boolean),
+      frameSrc: ["'self'", "https://www.youtube.com", "https://player.vimeo.com"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
     }
   },
-  hsts: { maxAge: 31536000, includeSubDomains: true },
+  hsts: { maxAge: 63072000, includeSubDomains: true, preload: true },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 app.use(compression());
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://rent-bike-cox.vercel.app',
-  'http://localhost:5173',
+  process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : null,
   'https://sandbox.sslcommerz.com',
-  'https://sslcommerz.com'
+  'https://sslcommerz.com',
 ].filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => {
@@ -77,19 +109,29 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Metrics
-app.get('/api/metrics', (req, res) => {
+// Metrics (admin only)
+app.get('/api/metrics', authMiddleware, (req, res) => {
+  if (req.user.role !== 'Admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
   res.json(getMetrics());
 });
 
-// Temporary seed endpoint — only in development
+// Temporary seed endpoint — only in non-production, requires secret query param
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Category = require('./models/Category');
 const Bike = require('./models/Bike');
 
 if (process.env.NODE_ENV !== 'production') {
-  app.get('/api/seed-temp', async (req, res) => {
+  app.get('/api/seed-temp', (req, res, next) => {
+    if (req.query.secret !== process.env.SEED_SECRET && !process.env.SEED_SECRET) {
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(404).json({ message: 'Not found' });
+      }
+    }
+    next();
+  }, async (req, res) => {
   try {
     // Seed admin
     const salt = await bcrypt.genSalt(10);
@@ -243,7 +285,7 @@ app.use('/api/{*splat}', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('[ERROR]', err.message);
+  req.log?.error('Request error', { error: err.message, code: err.code });
   if (err.message === 'Not allowed by CORS') {
     return res.status(403).json({ message: 'Not allowed by CORS' });
   }
@@ -253,17 +295,21 @@ app.use((err, req, res, next) => {
   if (err.message && err.message.includes('Only JPG')) {
     return res.status(400).json({ message: err.message });
   }
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ message: 'Invalid CSRF token' });
+  }
   res.status(500).json({ message: 'Internal server error' });
 });
 
 // MongoDB Connection
+const logger = require('./utils/logger');
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentbike')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => logger.info('Connected to MongoDB'))
+  .catch(err => logger.error('MongoDB connection error', { error: err.message }));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`, { env: process.env.NODE_ENV });
   startCleanupScheduler();
   startExpiredIntentCleanup();
   startBookingStateTransition();

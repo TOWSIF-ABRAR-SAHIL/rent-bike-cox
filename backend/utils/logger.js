@@ -1,6 +1,10 @@
 const winston = require('winston');
 
-const SENSITIVE_FIELDS = ['password', 'token', 'cvv', 'nid', 'license', 'secret', 'authorization'];
+const SENSITIVE_FIELDS = [
+  'password', 'token', 'cvv', 'nid', 'license', 'secret', 'authorization',
+  'card_number', 'pan', 'cc', 'account_number', 'bank_account',
+  'ssn', 'email', 'phone', 'phonenumber', 'access_token', 'refresh_token',
+];
 
 function redact(obj) {
   if (!obj || typeof obj !== 'object') return obj;
@@ -35,8 +39,27 @@ const logger = winston.createLogger({
             })
           ),
     }),
-    new winston.transports.File({ filename: 'server-error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'server.log' }),
+    new winston.transports.File({
+      filename: 'server-error.log',
+      level: 'error',
+      maxsize: 10 * 1024 * 1024,
+      maxFiles: 5,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json(),
+        winston.format.printf((info) => JSON.stringify(redact(info)))
+      ),
+    }),
+    new winston.transports.File({
+      filename: 'server.log',
+      maxsize: 10 * 1024 * 1024,
+      maxFiles: 5,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json(),
+        winston.format.printf((info) => JSON.stringify(redact(info)))
+      ),
+    }),
   ],
 });
 
