@@ -17,6 +17,8 @@ const Invoice = lazy(() => import('./pages/Invoice'));
 const PaymentFailed = lazy(() => import('./pages/PaymentFailed'));
 const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 const Policies = lazy(() => import('./pages/Policies'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const MyBookings = lazy(() => import('./pages/MyBookings'));
 const Login = lazy(() => import('./components/Login'));
@@ -55,6 +57,8 @@ function App() {
                       </ProtectedRoute>
                     } />
                     <Route path="/policies" element={<Policies />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/checkout/:bikeId" element={
                       <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
                         <Checkout />

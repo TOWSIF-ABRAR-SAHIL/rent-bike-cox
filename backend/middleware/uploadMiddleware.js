@@ -1,5 +1,6 @@
 const multer = require('multer');
 const crypto = require('crypto');
+const { validateFile } = require('../security/utils/fileMagicBytes');
 
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
 const apiKey = process.env.CLOUDINARY_API_KEY;
@@ -7,11 +8,7 @@ const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
 const ALLOWED_MIMES = ['image/jpeg', 'image/jpg', 'image/png'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-const MAGIC_BYTES = {
-  'image/jpeg': [0xff, 0xd8, 0xff],
-  'image/png': [0x89, 0x50, 0x4e, 0x47],
-};
+const MAX_DOC_SIZE = 1 * 1024 * 1024;
 
 let storage;
 
@@ -39,6 +36,7 @@ if (cloudName && apiKey && apiSecret && !cloudName.startsWith('your-')) {
         folder: `rent-bike-cox/${folderName}`,
         allowed_formats: ['jpg', 'png', 'jpeg'],
         public_id: crypto.createHash('sha256').update(`${Date.now()}-${crypto.randomBytes(8).toString('hex')}`).digest('hex').slice(0, 20),
+        type: 'upload',
       };
     },
   });
@@ -55,18 +53,21 @@ const upload = multer({
     }
 
     if (file.buffer) {
-      const expected = MAGIC_BYTES[file.mimetype];
-      if (expected) {
-        const header = Array.from(file.buffer.slice(0, expected.length));
-        const valid = header.every((byte, i) => byte === expected[i]);
-        if (!valid) {
-          return cb(new Error('File content does not match its type'), false);
-        }
+      const result = validateFile(file.buffer, file.originalname);
+      if (!result.valid) {
+        return cb(new Error(result.reason), false);
       }
     }
 
+    const isDoc = file.fieldname === 'nidImage' || file.fieldname === 'licenseImage';
     cb(null, true);
   }
+});
+
+upload.docUpload = multer({
+  storage,
+  limits: { fileSize: MAX_DOC_SIZE },
+  fileFilter: upload.fileFilter,
 });
 
 module.exports = upload;

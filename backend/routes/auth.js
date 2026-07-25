@@ -5,7 +5,7 @@ const { register, login, refresh, logout, changePassword } = require('../control
 const upload = require('../middleware/uploadMiddleware');
 const { registerRules, loginRules } = require('../security/validators/index');
 
-router.post('/register', upload.fields([
+router.post('/register', upload.docUpload.fields([
   { name: 'nidImage', maxCount: 1 },
   { name: 'licenseImage', maxCount: 1 }
 ]), registerRules, register);

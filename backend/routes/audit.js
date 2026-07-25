@@ -6,9 +6,14 @@ const AuditLog = require('../models/AuditLog');
 
 router.get('/', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
-    const { page = 1, limit = 50, action } = req.query;
+    const { page = 1, limit = 50, action, startDate, endDate } = req.query;
     const query = {};
     if (action) query.action = action;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
     const logs = await AuditLog.find(query)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)

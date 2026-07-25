@@ -9,6 +9,7 @@ const { sanitize } = require('../utils/sanitize');
 const { checkPasswordStrength } = require('../security/utils/passwordPolicy');
 const { generateAccessToken, generateRefreshToken, verifyToken, buildFingerprint } = require('../security/utils/tokenManager');
 const securityConfig = require('../security/config/securityConfig');
+const { logSecurityEvent } = require('../utils/securityLogger');
 
 const MAX_ATTEMPTS = securityConfig.lockout.maxAttempts;
 const LOCK_DURATION = securityConfig.lockout.lockDuration;
@@ -112,6 +113,12 @@ exports.login = async (req, res) => {
     });
 
     if (recentFailures >= MAX_ATTEMPTS) {
+      await logSecurityEvent({
+        action: 'login_failed',
+        ip,
+        userAgent,
+        metadata: { email, reason: 'account_locked' },
+      });
       return res.status(423).json({
         message: 'Account temporarily locked due to too many failed attempts',
         retryAfter: Math.ceil(LOCK_DURATION / 1000),
@@ -121,6 +128,12 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       await LoginAttempt.create({ email, ip, userAgent, success: false, failureCount: recentFailures + 1 });
+      await logSecurityEvent({
+        action: 'login_failed',
+        ip,
+        userAgent,
+        metadata: { email, reason: 'invalid_credentials' },
+      });
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -129,11 +142,32 @@ exports.login = async (req, res) => {
       const newCount = recentFailures + 1;
       await LoginAttempt.create({ email, ip, userAgent, success: false, failureCount: newCount });
       if (newCount >= MAX_ATTEMPTS) {
+        await logSecurityEvent({
+          action: 'login_failed',
+          actorId: user._id,
+          ip,
+          userAgent,
+          metadata: { email, reason: 'account_locked' },
+        });
+        await logSecurityEvent({
+          action: 'account_locked',
+          actorId: user._id,
+          ip,
+          userAgent,
+          metadata: { email, failureCount: newCount },
+        });
         return res.status(423).json({
           message: 'Account temporarily locked due to too many failed attempts',
           retryAfter: Math.ceil(LOCK_DURATION / 1000),
         });
       }
+      await logSecurityEvent({
+        action: 'login_failed',
+        actorId: user._id,
+        ip,
+        userAgent,
+        metadata: { email, reason: 'invalid_credentials' },
+      });
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 

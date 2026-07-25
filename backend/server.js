@@ -237,8 +237,10 @@ if (process.env.NODE_ENV !== 'production') {
 // Rate limiting on auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { message: 'Too many attempts, please try again later' }
+  max: 5,
+  message: { message: 'Too many attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/auth', authLimiter);
 
@@ -246,23 +248,47 @@ app.use('/api/auth', authLimiter);
 const bookingLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
-  message: { message: 'Too many booking requests, please try again later' }
+  message: { message: 'Too many booking requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/booking', bookingLimiter);
 
 const paymentLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { message: 'Too many payment requests, please try again later' }
+  message: { message: 'Too many payment requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/payment', paymentLimiter);
 
 const financialLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
-  message: { message: 'Too many requests, please try again later' }
+  message: { message: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api/financial', financialLimiter);
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many file uploads, please try again later' },
+});
+
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later' },
+});
+
+app.use('/api', globalLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

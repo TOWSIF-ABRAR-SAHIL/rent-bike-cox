@@ -48,6 +48,10 @@ api.interceptors.response.use(
       const retryAfter = error.response.data?.retryAfter || 900;
       error.retryAfter = retryAfter;
     }
+    if (error.response?.status === 429) {
+      const retryAfter = error.response.headers?.['retry-after'] || 60;
+      error.retryAfter = parseInt(retryAfter) || 60;
+    }
     return Promise.reject(error);
   }
 );
