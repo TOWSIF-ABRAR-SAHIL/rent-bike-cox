@@ -19,6 +19,7 @@ const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
 const Policies = lazy(() => import('./pages/Policies'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const MyBookings = lazy(() => import('./pages/MyBookings'));
 const Login = lazy(() => import('./components/Login'));
@@ -49,6 +50,7 @@ function App() {
                     <Route path="/bike/:id" element={<BikeDetails />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/payment-failed" element={<PaymentFailed />} />
                     <Route path="/payment-cancelled" element={<PaymentCancelled />} />
                     <Route path="/my-bookings" element={

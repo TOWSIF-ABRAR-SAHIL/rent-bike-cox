@@ -10,6 +10,7 @@ const { checkPasswordStrength } = require('../security/utils/passwordPolicy');
 const { generateAccessToken, generateRefreshToken, verifyToken, buildFingerprint } = require('../security/utils/tokenManager');
 const securityConfig = require('../security/config/securityConfig');
 const { logSecurityEvent } = require('../utils/securityLogger');
+const logger = require('../utils/logger');
 
 const MAX_ATTEMPTS = securityConfig.lockout.maxAttempts;
 const LOCK_DURATION = securityConfig.lockout.lockDuration;
@@ -309,5 +310,186 @@ exports.changePassword = async (req, res) => {
     res.json({ message: 'Password changed successfully. Please login again.' });
   } catch (error) {
     res.status(500).json({ message: 'Password change failed' });
+  }
+};
+
+exports.exportData = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const Booking = require('../models/Booking');
+    const bookings = await Booking.find({ user: req.user.id })
+      .populate('bike', 'model brand')
+      .sort({ createdAt: -1 });
+
+    const exportData = {
+      profile: {
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        address: user.address,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.date,
+      },
+      bookings: bookings.map(b => ({
+        id: b._id,
+        bike: b.bike?.model || 'Unknown',
+        startDate: b.startTime,
+        endDate: b.endTime,
+        totalPrice: b.totalPrice,
+        status: b.status,
+        createdAt: b.createdAt,
+      })),
+      exportedAt: new Date().toISOString(),
+    };
+
+    res.setHeader('Content-Disposition', `attachment; filename="rentbikecox-data-${Date.now()}.json"`);
+    res.json(exportData);
+  } catch (error) {
+    logger.error('Data export error', { error: error.message });
+    res.status(500).json({ message: 'Data export failed' });
+  }
+};
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const Booking = require('../models/Booking');
+    const activeBookings = await Booking.countDocuments({
+      user: req.user.id,
+      status: { $in: ['Pending', 'Confirmed'] },
+    });
+
+    if (activeBookings > 0) {
+      return res.status(400).json({ message: 'Cannot delete account with active bookings. Please complete or cancel them first.' });
+    }
+
+    user.email = `deleted_${user._id}@deleted.invalid`;
+    user.name = 'Deleted User';
+    user.password = require('crypto').randomBytes(32).toString('hex');
+    user.phoneNumber = '';
+    user.nid = '';
+    user.license = '';
+    user.address = '';
+    user.isVerified = false;
+    await user.save();
+
+    const RefreshToken = require('../models/RefreshToken');
+    await RefreshToken.updateMany({ userId: user._id }, { revoked: true });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    logger.error('Account deletion error', { error: error.message });
+    res.status(500).json({ message: 'Account deletion failed' });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ message: 'If an account exists with that email, an OTP has been sent' });
+    }
+
+    const PasswordReset = require('../models/PasswordReset');
+    await PasswordReset.deleteMany({ userId: user._id, used: false });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = PasswordReset.hashOtp(otp);
+
+    await PasswordReset.create({
+      userId: user._id,
+      otpHash,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    });
+
+    logger.info('Password reset OTP generated', { userId: user._id, email });
+
+    res.json({ message: 'If an account exists with that email, an OTP has been sent' });
+  } catch (error) {
+    logger.error('Forgot password error', { error: error.message });
+    res.status(500).json({ message: 'Password reset request failed' });
+  }
+};
+
+exports.verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: 'Invalid or expired OTP' });
+
+    const PasswordReset = require('../models/PasswordReset');
+    const otpHash = PasswordReset.hashOtp(otp);
+    const record = await PasswordReset.findOne({
+      userId: user._id,
+      otpHash,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!record) return res.status(400).json({ message: 'Invalid or expired OTP' });
+
+    res.json({ message: 'OTP verified', resetToken: record._id.toString() });
+  } catch (error) {
+    logger.error('Verify OTP error', { error: error.message });
+    res.status(500).json({ message: 'OTP verification failed' });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { resetToken, newPassword } = req.body;
+    if (!resetToken || !newPassword) return res.status(400).json({ message: 'Reset token and new password are required' });
+
+    const pwCheck = checkPasswordStrength(newPassword);
+    if (!pwCheck.valid) return res.status(400).json({ message: pwCheck.errors[0] });
+
+    const PasswordReset = require('../models/PasswordReset');
+    const record = await PasswordReset.findOne({
+      _id: resetToken,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!record) return res.status(400).json({ message: 'Invalid or expired reset token' });
+
+    const user = await User.findById(record.userId).select('+password');
+    if (!user) return res.status(400).json({ message: 'User not found' });
+
+    const salt = await bcrypt.genSalt(12);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    record.used = true;
+    await record.save();
+
+    const RefreshToken = require('../models/RefreshToken');
+    await RefreshToken.updateMany({ userId: user._id, revoked: false }, { revoked: true });
+
+    const BlacklistedToken = require('../models/BlacklistedToken');
+    const tokens = await RefreshToken.find({ userId: user._id, revoked: true }).select('expiresAt');
+    for (const t of tokens) {
+      const jtiHash = BlacklistedToken.hashJti(`reset-${user._id}-${t._id}`);
+      await BlacklistedToken.create({
+        jtiHash,
+        userId: user._id,
+        expiresAt: t.expiresAt,
+        reason: 'password_change',
+      }).catch(() => {});
+    }
+
+    res.json({ message: 'Password reset successful. Please login with your new password.' });
+  } catch (error) {
+    logger.error('Reset password error', { error: error.message });
+    res.status(500).json({ message: 'Password reset failed' });
   }
 };

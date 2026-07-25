@@ -14,7 +14,7 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^1.41.1",
     "compression": "^1.8.1",
     "cors": "^2.8.6",
     "decimal.js": "^10.6.0",

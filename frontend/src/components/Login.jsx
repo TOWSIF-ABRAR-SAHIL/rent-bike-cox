@@ -65,6 +65,9 @@ const Login = () => {
               <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
               <input type="password" name="password" placeholder="Password" onChange={handleChange} className="input-dark !pl-11" required />
             </div>
+            <div className="text-right">
+              <Link to="/forgot-password" className="text-xs" style={{ color: 'var(--accent-text)' }}>Forgot Password?</Link>
+            </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? 'Signing in...' : 'Sign In'}
             </button>

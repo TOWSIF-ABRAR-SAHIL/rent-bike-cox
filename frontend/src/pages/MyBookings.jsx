@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Clock, MapPin, Loader2, AlertTriangle, Plus } from 'lucide-react';
+import { Clock, MapPin, Loader2, AlertTriangle, Plus, Download, Trash2 } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -21,6 +21,8 @@ const MyBookings = () => {
   const [fetchError, setFetchError] = useState('');
   const [extendingId, setExtendingId] = useState(null);
   const [newEndTime, setNewEndTime] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     api.get('/booking/my-bookings')
@@ -55,6 +57,38 @@ const MyBookings = () => {
     }
   }, [addToast]);
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get('/auth/export-data');
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rentbikecox-data-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* export failed */ } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+    if (!window.confirm('This will permanently delete all your data. Are you absolutely sure?')) return;
+    setDeleting(true);
+    try {
+      await api.delete('/auth/delete-account');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login';
+    } catch (err) {
+      alert(err.response?.data?.message || 'Account deletion failed');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <SkeletonPage />;
 
   if (fetchError) return (
@@ -68,7 +102,17 @@ const MyBookings = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>My Bookings</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>My Bookings</h1>
+        <div className="flex gap-2">
+          <button onClick={handleExport} disabled={exporting} className="btn-ghost text-sm flex items-center gap-1">
+            <Download size={14} /> {exporting ? 'Exporting...' : 'Export Data'}
+          </button>
+          <button onClick={handleDeleteAccount} disabled={deleting} className="text-sm flex items-center gap-1 px-3 py-2 rounded-lg" style={{ color: 'var(--danger-text)' }}>
+            <Trash2 size={14} /> {deleting ? 'Deleting...' : 'Delete Account'}
+          </button>
+        </div>
+      </div>
 
       {bookings.length === 0 ? (
         <EmptyState

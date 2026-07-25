@@ -23,6 +23,7 @@ const payoutRoutes = require('./routes/payout');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
+const { startDataRetention } = require('./jobs/dataRetention');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const securityHeaders = require('./security/middleware/securityHeaders');
@@ -339,4 +340,5 @@ app.listen(PORT, () => {
   startCleanupScheduler();
   startExpiredIntentCleanup();
   startBookingStateTransition();
+  startDataRetention();
 });
