@@ -72,8 +72,11 @@ const Invoice = () => {
   );
 
   const canCancel = (booking.status === 'Pending' || booking.status === 'Confirmed') && user;
-  const serialNo = `RBC-${new Date(booking.createdAt).getFullYear()}-${booking._id.slice(-4).toUpperCase()}`;
+  const serialNo = booking.invoiceNumber || `RBC-${new Date(booking.createdAt).getFullYear()}-${booking._id.slice(-4).toUpperCase()}`;
   const securityDeposit = booking.securityDeposit || 2000;
+  const totalPrice = booking.totalPrice || 0;
+  const advancePaid = booking.advancePaid || 0;
+  const dueAmount = Math.max(0, totalPrice - advancePaid);
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-8 animate-fade-in">
@@ -120,9 +123,9 @@ const Invoice = () => {
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>License No:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.user?.license || 'N/A'}</span></p>
               </div>
               <div className="space-y-1.5">
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Total Amount:</span> <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{booking.totalPrice} TK/-</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Advance Paid:</span> <span style={{ color: 'var(--success-text)' }}>{booking.advancePaid} TK</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Due Amount:</span> <span style={{ color: 'var(--warning-text)' }}>{booking.totalPrice - booking.advancePaid} TK</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Total Amount:</span> <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{totalPrice} TK/-</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Advance Paid:</span> <span style={{ color: 'var(--success-text)' }}>{advancePaid} TK</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Due Amount:</span> <span style={{ color: 'var(--warning-text)' }}>{dueAmount} TK</span></p>
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Security Deposit:</span> <span style={{ color: 'var(--text-primary)' }}>{securityDeposit} TK (Cash/Document)</span></p>
               </div>
             </div>

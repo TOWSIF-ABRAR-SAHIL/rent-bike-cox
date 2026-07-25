@@ -37,7 +37,7 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
-            <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
+            <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
               <Navbar />
               <main className="pt-16">
                 <Suspense fallback={<Loading />}>

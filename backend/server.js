@@ -15,8 +15,24 @@ const financialRoutes = require('./routes/financial');
 const documentRoutes = require('./routes/documents');
 const pricingRoutes = require('./routes/pricing');
 const { startCleanupScheduler } = require('./utils/checkoutCleanup');
+const correlationId = require('./middleware/correlationId');
+const healthRoutes = require('./routes/health');
+const auditRoutes = require('./routes/audit');
+const fraudRoutes = require('./routes/fraud');
+const payoutRoutes = require('./routes/payout');
+const { getMetrics } = require('./utils/metrics');
+const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
+const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
+
+// Register gateways
+const gatewayRegistry = require('./gateways/GatewayRegistry');
+const SSLCommerzGateway = require('./gateways/SSLCommerzGateway');
+gatewayRegistry.register(new SSLCommerzGateway());
 
 const app = express();
+
+// Correlation ID — before all routes
+app.use(correlationId);
 
 // Security & Performance Middleware
 app.use(helmet({
@@ -56,8 +72,14 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Health check
+app.use('/api/health', healthRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Metrics
+app.get('/api/metrics', (req, res) => {
+  res.json(getMetrics());
 });
 
 // Temporary seed endpoint — only in development
@@ -210,6 +232,9 @@ app.use('/api/policies', policyRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/pricing', pricingRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/fraud', fraudRoutes);
+app.use('/api/payouts', payoutRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', (req, res) => {
@@ -240,4 +265,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   startCleanupScheduler();
+  startExpiredIntentCleanup();
+  startBookingStateTransition();
 });

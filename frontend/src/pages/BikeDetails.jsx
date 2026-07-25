@@ -12,22 +12,31 @@ const BikeDetails = () => {
   const [bike, setBike] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedTierHours, setSelectedTierHours] = useState(null);
   const [fetchError, setFetchError] = useState('');
 
   useEffect(() => {
     api.get(`/dashboard/bikes/${id}`).then(res => {
       setBike(res.data);
-    }).catch(() => {
+    }).catch((err) => {
+      console.error('[BikeDetails] Failed to fetch vehicle:', err.response?.status, err.response?.data?.message || err.message);
       setFetchError('Failed to load vehicle details. Please try again.');
     }).finally(() => setLoading(false));
   }, [id]);
 
-  const [selectedTierHours, setSelectedTierHours] = useState(null);
-
   const handleBooking = (hoursOverride) => {
     if (!token) { navigate('/login'); return; }
     const h = hoursOverride || selectedTierHours || 4;
-    navigate(`/checkout/${id}?hours=${h}`);
+    const selectedTier = selectedTierHours
+      ? bike.packages?.find(t => t.minHours === selectedTierHours)
+      : null;
+    navigate(`/checkout/${id}?hours=${h}`, {
+      state: selectedTier ? {
+        packageName: selectedTier.label,
+        packageHourlyRate: selectedTier.hourlyRate,
+        durationHours: selectedTier.minHours,
+      } : null,
+    });
   };
 
   if (loading) return <SkeletonPage />;
@@ -104,7 +113,7 @@ const BikeDetails = () => {
           </div>
 
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{bike.pricePerHour}</span>
+            <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{bike.pricePerHour || 0}</span>
             <span className="text-lg" style={{ color: 'var(--text-secondary)' }}>TK / hour</span>
           </div>
 
@@ -130,7 +139,7 @@ const BikeDetails = () => {
                   const isSelected = selectedTierHours === tierHours;
                   return (
                     <button key={i} type="button" onClick={() => setSelectedTierHours(isSelected ? null : tierHours)}
-                      className="w-full flex items-center justify-between glass rounded-xl px-4 py-3 transition-all duration-200 text-left"
+                      className="w-full flex items-center justify-between glass rounded-xl px-4 py-3 min-h-11 transition-all duration-200 text-left"
                       style={{
                         border: isSelected ? '1.5px solid var(--accent-text)' : '1px solid var(--border-base)',
                         background: isSelected ? 'var(--accent-bg)' : undefined,

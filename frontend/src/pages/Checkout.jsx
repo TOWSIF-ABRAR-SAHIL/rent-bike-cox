@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus, RefreshCw } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
@@ -8,6 +8,7 @@ import { useToast } from '../components/useToast';
 const POLL_INTERVAL_MS = 20000;
 
 const START_TIME_MIN_MINUTES = 10;
+const PAST_TOLERANCE_MINUTES = 5;
 
 const formatDateTime = (date) => {
   const d = new Date(date);
@@ -37,11 +38,15 @@ const addHoursToDate = (dateStr, hours) => {
 const Checkout = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const packageState = location.state;
   const [searchParams] = useSearchParams();
-  const urlHours = Math.min(720, Math.max(1, parseInt(searchParams.get('hours'), 10) || 4));
+  const stateHours = packageState?.durationHours;
+  const urlHours = parseInt(searchParams.get('hours'), 10);
+  const initialHours = stateHours || urlHours || 4;
   const [bike, setBike] = useState(null);
   const [startTime, setStartTime] = useState('');
-  const [hours, setHours] = useState(urlHours);
+  const [hours, setHours] = useState(Math.min(720, Math.max(1, initialHours)));
   const [couponCode, setCouponCode] = useState('');
   const [previewData, setPreviewData] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -56,14 +61,25 @@ const Checkout = () => {
   const pollRef = useRef(null);
   const { addToast } = useToast();
   const [isStartTooSoon, setIsStartTooSoon] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(
+    packageState ? { label: packageState.packageName, hourlyRate: packageState.packageHourlyRate } : null
+  );
 
   useEffect(() => {
     if (!startTime) return;
-    const check = () => setIsStartTooSoon(new Date(startTime).getTime() < Date.now() + START_TIME_MIN_MINUTES * 60 * 1000);
+    const check = () => {
+      const startMs = new Date(startTime).getTime();
+      const nowMs = Date.now();
+      const pastThreshold = nowMs - PAST_TOLERANCE_MINUTES * 60 * 1000;
+      setIsStartTooSoon(startMs < nowMs + START_TIME_MIN_MINUTES * 60 * 1000);
+      if (startMs < pastThreshold) {
+        addToast('Start time is in the past. Please select a future time.', 'error');
+      }
+    };
     const id = setTimeout(() => { check(); }, 0);
     const interval = setInterval(check, 15000);
     return () => { clearTimeout(id); clearInterval(interval); };
-  }, [startTime]);
+  }, [startTime, addToast]);
 
   const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
 
@@ -71,7 +87,8 @@ const Checkout = () => {
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
       setStartTime(getDefaultStartTime());
-    }).catch(() => {
+    }).catch((err) => {
+      console.error('[Checkout] Failed to fetch bike:', err.response?.status, err.response?.data?.message || err.message);
       setFetchError('Failed to load booking details. Please try again.');
     });
   }, [bikeId]);
@@ -217,19 +234,27 @@ const Checkout = () => {
       }
     } catch (err) {
       console.error('[Checkout] createBookingAndPay failed:', err);
-      const msg = err.response?.data?.message || 'Failed to create booking. Please try again.';
-      if (msg.includes('not available') || msg.includes('conflict') || err.response?.status === 409) {
-        const userMsg = 'This time slot was just booked by someone else. Please try a different start time or check other bikes.';
-        setError(userMsg);
-        addToast(userMsg, 'error');
-      } else if (msg.includes('10 minutes') || msg.includes('start time')) {
-        const userMsg = 'Start time is too soon. It has been adjusted — please try again.';
-        setError(userMsg);
-        addToast(userMsg, 'error');
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.message || '';
+
+      let userMsg;
+      if (status === 401) {
+        userMsg = 'Session expired, please login again.';
+        setTimeout(() => navigate('/login'), 1500);
+      } else if (status === 403) {
+        userMsg = 'Please complete identity verification first.';
+      } else if (status === 409 || serverMsg.includes('not available') || serverMsg.includes('conflict')) {
+        userMsg = 'This time slot was just booked by someone else. Please try a different start time or check other bikes.';
+      } else if (serverMsg.includes('10 minutes') || serverMsg.includes('start time')) {
+        userMsg = 'Start time is too soon. It has been adjusted — please try again.';
+      } else if (status === 500) {
+        userMsg = 'Payment gateway error, try again.';
       } else {
-        setError(msg);
-        addToast(msg, 'error');
+        userMsg = serverMsg || 'Failed to create booking. Please try again.';
       }
+
+      setError(userMsg);
+      addToast(userMsg, 'error');
       setCreating(false);
       pollRef.current = setInterval(async () => {
         try {
@@ -314,6 +339,17 @@ const Checkout = () => {
             <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour || 0} TK / Hour</p>
           </div>
         </div>
+
+        {/* Selected Package Indicator */}
+        {selectedPackage && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-border)' }}>
+            <CheckCircle size={14} style={{ color: 'var(--accent-text)' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
+              Selected: {selectedPackage.label} ({selectedPackage.hourlyRate} TK/hr)
+            </span>
+            <button onClick={() => setSelectedPackage(null)} className="ml-auto text-xs font-bold px-2 py-0.5 rounded" style={{ color: 'var(--text-muted)' }}>&times;</button>
+          </div>
+        )}
 
         {/* Live Availability Badge */}
         {previewData && (
@@ -497,7 +533,7 @@ const Checkout = () => {
             {/* Payment */}
             <div className="space-y-3">
               <button onClick={() => createBookingAndPay(false)} disabled={isDisabled}
-                className={`w-full py-4 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center ${
+                className={`w-full py-4 min-h-11 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center ${
                   isDisabled
                     ? 'cursor-not-allowed'
                     : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
@@ -507,7 +543,7 @@ const Checkout = () => {
                 {creating ? 'Processing...' : `Pay ${pricing.minAdvance} TK via SSLCommerz`}
               </button>
               <button onClick={() => createBookingAndPay(true)} disabled={isDisabled}
-                className={`w-full py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center border-2 ${
+                className={`w-full py-3 min-h-11 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center border-2 ${
                   isDisabled
                     ? 'cursor-not-allowed'
                     : ''

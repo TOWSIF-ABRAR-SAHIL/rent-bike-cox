@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const { BUFFER_MINUTES } = require('./pricing');
-const { addPaisa } = require('./safeAmount');
+const { addPaisa, subtractPaisa } = require('./safeAmount');
 
 const ACTIVE_STATUSES = ['Pending', 'Confirmed'];
 const bufferMs = BUFFER_MINUTES * 60 * 1000;
@@ -179,6 +179,7 @@ async function extendBookingAtomically(bookingId, newEndTime, additionalPrice) {
 
   booking.endTime = newEnd;
   booking.totalPrice = addPaisa(booking.totalPrice, additionalPrice);
+  booking.remainingBalance = subtractPaisa(booking.totalPrice, booking.advancePaid);
   await booking.save();
 
   return { success: true, booking };
@@ -194,6 +195,7 @@ async function createWalkInBooking(bikeId, startTime, endTime, bookingData) {
   result.booking.status = 'Confirmed';
   result.booking.paymentStatus = 'Partial';
   result.booking.paymentMethod = 'Walk-in Cash';
+  result.booking.isWalkIn = true;
   result.booking.expiresAt = undefined;
   await result.booking.save();
 

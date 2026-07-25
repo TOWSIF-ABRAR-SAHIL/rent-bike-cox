@@ -49,6 +49,34 @@ const bookingSchema = new mongoose.Schema({
   customerName: { type: String },
   customerPhone: { type: String },
   customerNid: { type: String },
+
+  // Phase 1 extensions (backward compatible — all have defaults)
+  isWalkIn: { type: Boolean, default: false },
+  bookingCode: { type: String, sparse: true },
+  state: { type: String, enum: ['DRAFT', 'PAYMENT_PENDING', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'EXPIRED'], default: 'PAYMENT_PENDING' },
+  stateHistory: [{
+    from: String,
+    to: String,
+    at: { type: Date, default: Date.now },
+    actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reason: String,
+  }],
+  pricing: {
+    subtotalPaisa: { type: Number },
+    discountPaisa: { type: Number, default: 0 },
+    taxPaisa: { type: Number, default: 0 },
+    totalPaisa: { type: Number },
+    advancePaisa: { type: Number },
+    remainingPaisa: { type: Number },
+  },
+  payments: {
+    advance: { amount: Number, tranId: String, gateway: String, method: String, at: Date },
+    remaining: { amount: Number, tranId: String, gateway: String, method: String, at: Date },
+    deposit: { amount: Number, method: String, at: Date },
+  },
+  refundIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Refund' }],
+  fraudScore: { type: Number, default: 0 },
+  fraudFlags: [{ type: String }],
 }, { timestamps: true });
 
 bookingSchema.index({ user: 1, status: 1 });
@@ -56,5 +84,13 @@ bookingSchema.index({ bike: 1, status: 1 });
 bookingSchema.index({ bike: 1, status: 1, startTime: 1, endTime: 1 });
 bookingSchema.index({ status: 1, createdAt: 1 });
 bookingSchema.index({ createdAt: -1 });
+bookingSchema.index({ tranId: 1 }, { sparse: true });
+bookingSchema.index({ bookingCode: 1 }, { sparse: true });
+bookingSchema.index({ state: 1, createdAt: -1 });
+
+// Backward compat: map status → state on read if state not set
+bookingSchema.pre('findOne', function() {
+  // no-op; handled at application layer for new fields
+});
 
 module.exports = mongoose.model('Booking', bookingSchema);

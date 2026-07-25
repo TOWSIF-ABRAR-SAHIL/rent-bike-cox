@@ -274,7 +274,11 @@ exports.getBookingDetails = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate('user', 'name email phoneNumber address')
-      .populate('bike', 'model brand pricePerHour');
+      .populate({
+        path: 'bike',
+        select: 'model brand pricePerHour',
+        populate: { path: 'category', select: 'name slug' },
+      });
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
     if (booking.user._id.toString() !== req.user.id && req.user.role !== 'Admin') {
@@ -301,7 +305,11 @@ exports.getBookingDetails = async (req, res) => {
 exports.getMyBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user.id })
-      .populate('bike', 'model brand pricePerHour images category')
+      .populate({
+        path: 'bike',
+        select: 'model brand pricePerHour images category',
+        populate: { path: 'category', select: 'name slug' },
+      })
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
@@ -321,7 +329,11 @@ exports.getRenterBookings = async (req, res) => {
     const bookings = await Booking.find({ bike: { $in: bikeIds } })
       .skip((page - 1) * limit).limit(limit)
       .populate('user', 'name email phoneNumber')
-      .populate('bike', 'model brand pricePerHour')
+      .populate({
+        path: 'bike',
+        select: 'model brand pricePerHour',
+        populate: { path: 'category', select: 'name slug' },
+      })
       .sort({ createdAt: -1 });
     res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
@@ -338,7 +350,11 @@ exports.getAllBookings = async (req, res) => {
     const total = await Booking.countDocuments();
     const bookings = await Booking.find().skip((page - 1) * limit).limit(limit)
       .populate('user', 'name email phoneNumber')
-      .populate('bike', 'model brand pricePerHour')
+      .populate({
+        path: 'bike',
+        select: 'model brand pricePerHour',
+        populate: { path: 'category', select: 'name slug' },
+      })
       .sort({ createdAt: -1 });
     res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {

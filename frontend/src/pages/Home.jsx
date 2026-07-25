@@ -301,7 +301,7 @@ const Home = () => {
                 <div className="p-5">
                   <h2 className="text-lg font-bold mb-1 truncate transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
                   <p className="text-sm mb-4" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
-                  <div className="flex items-center justify-center w-full py-2.5 rounded-xl text-sm font-semibold transition-all group-hover:border-amber-500/50 group-hover:text-amber-400"
+                  <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-semibold transition-all group-hover:border-amber-500/50 group-hover:text-amber-400"
                     style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}
                   >
                     View Details

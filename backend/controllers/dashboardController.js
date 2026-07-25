@@ -127,6 +127,9 @@ exports.getAvailableBikes = async (req, res) => {
 
 exports.getBikeById = async (req, res) => {
   try {
+    if (!req.params.id || !/^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid vehicle ID format' });
+    }
     res.set('Cache-Control', 'public, max-age=120');
     const bike = await Bike.findById(req.params.id)
       .populate('renter', 'name')
@@ -134,7 +137,8 @@ exports.getBikeById = async (req, res) => {
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
     res.json(bike);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('[getBikeById] Error:', error.message);
+    res.status(500).json({ message: 'Server error while fetching vehicle details' });
   }
 };
 

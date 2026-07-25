@@ -342,13 +342,6 @@ exports.paymentIPN = async (req, res) => {
       return res.status(400).json({ status: 'ERROR', message: 'Missing val_id' });
     }
 
-    const ipnNonce = `success:${booking._id}:${tran_id}`;
-    const alreadyProcessed = await isProcessed(ipnNonce);
-    if (alreadyProcessed) {
-      console.log('[IPN] Replay detected — already processed:', val_id);
-      return res.status(200).json({ status: 'OK' });
-    }
-
     const { valid, verified, error } = await verifyCallbackIntegrity(val_id, tran_id);
     if (!valid) {
       console.error('[IPN] Verification failed:', error);
@@ -358,7 +351,13 @@ exports.paymentIPN = async (req, res) => {
     const booking = await Booking.findOne({ tranId: tran_id });
     if (!booking) {
       console.error('[IPN] No booking found for tranId:', tran_id);
-      await markProcessed(ipnNonce);
+      return res.status(200).json({ status: 'OK' });
+    }
+
+    const ipnNonce = `success:${booking._id}:${tran_id}`;
+    const alreadyProcessed = await isProcessed(ipnNonce);
+    if (alreadyProcessed) {
+      console.log('[IPN] Replay detected — already processed:', val_id);
       return res.status(200).json({ status: 'OK' });
     }
 
