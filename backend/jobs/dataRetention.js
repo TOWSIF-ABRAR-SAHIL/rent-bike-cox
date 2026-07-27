@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Booking = require('../models/Booking');
 const logger = require('../utils/logger');
@@ -5,6 +6,7 @@ const logger = require('../utils/logger');
 const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 
 async function runDataRetention() {
+  if (mongoose.connection.readyState !== 1) return;
   try {
     const cutoff = new Date(Date.now() - TWO_YEARS_MS);
     const inactiveUsers = await User.find({

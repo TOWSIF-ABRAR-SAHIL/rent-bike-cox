@@ -1,5 +1,6 @@
 const CircuitBreaker = require('../models/CircuitBreaker');
 const { roundPaisa } = require('./safeAmount');
+const logger = require('./logger');
 
 const DEFAULT_DAILY_CAP = 50000;
 
@@ -39,7 +40,7 @@ async function checkCircuitBreaker(dailyCap) {
     breaker.trippedBy = 'system';
     await breaker.save();
 
-    console.error(`[CircuitBreaker] TRIPPED — daily cap ${cap} TK reached (${breaker.totalRefunded} TK refunded across ${breaker.refundCount} refunds)`);
+    logger.error(`TRIPPED — daily cap ${cap} TK reached (${breaker.totalRefunded} TK refunded across ${breaker.refundCount} refunds)`);
     return {
       allowed: false,
       reason: 'Circuit breaker tripped — daily refund cap exceeded. Contact admin.',
@@ -74,7 +75,7 @@ async function recordRefund(amount) {
     result.trippedAt = new Date();
     result.trippedBy = 'system';
     await result.save();
-    console.error(`[CircuitBreaker] TRIPPED — cap ${result.dailyRefundCap} TK exceeded by refund of ${amount} TK`);
+    logger.error(`TRIPPED — cap ${result.dailyRefundCap} TK exceeded by refund of ${amount} TK`);
   }
 
   return result;

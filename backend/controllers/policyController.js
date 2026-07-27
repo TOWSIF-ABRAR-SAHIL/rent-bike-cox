@@ -1,5 +1,6 @@
 const Policy = require('../models/Policy');
 const { sanitize } = require('../utils/sanitize');
+const logger = require('../utils/logger');
 
 const defaultPolicies = [
   {
@@ -54,7 +55,7 @@ exports.getPublicPolicies = async (req, res) => {
   try {
     await seedPolicies();
     res.set('Cache-Control', 'public, max-age=300');
-    const policies = await Policy.find({ isActive: true }).sort({ sortOrder: 1 });
+    const policies = await Policy.find({ isActive: true }).sort({ sortOrder: 1 }).lean();
     res.json(policies);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -65,7 +66,7 @@ exports.getAllPolicies = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     await seedPolicies();
-    const policies = await Policy.find().sort({ sortOrder: 1 });
+    const policies = await Policy.find().sort({ sortOrder: 1 }).lean();
     res.json(policies);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -101,7 +102,7 @@ exports.updatePolicy = async (req, res) => {
     if (!policy) return res.status(404).json({ message: 'Policy not found' });
     res.json(policy);
   } catch (error) {
-    console.error('[Policy] updatePolicy error:', error.message);
+    logger.error('updatePolicy error:', error.message);
     res.status(500).json({ message: 'Failed to update policy' });
   }
 };

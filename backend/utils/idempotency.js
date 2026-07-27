@@ -1,5 +1,6 @@
 const IdempotencyKey = require('../models/IdempotencyKey');
 const crypto = require('crypto');
+const logger = require('./logger');
 
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 
@@ -30,7 +31,7 @@ function idempotencyMiddleware(ttlMs = DEFAULT_TTL_MS) {
         return;
       }
     } catch (err) {
-      console.error('[Idempotency] Lookup error (proceeding):', err.message);
+      logger.error('Lookup error (proceeding):', err.message);
     }
 
     const originalJson = res.json.bind(res);
@@ -41,7 +42,7 @@ function idempotencyMiddleware(ttlMs = DEFAULT_TTL_MS) {
         response: body,
         statusCode: res.statusCode,
         expiresAt: new Date(Date.now() + ttlMs),
-      }).catch(err => console.error('[Idempotency] Cache write error:', err.message));
+      }).catch(err => logger.error('Cache write error:', err.message));
 
       return originalJson(body);
     };

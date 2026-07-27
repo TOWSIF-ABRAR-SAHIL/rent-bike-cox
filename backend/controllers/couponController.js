@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
 exports.getAllCoupons = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const coupons = await Coupon.find().sort({ createdAt: -1 });
+    const coupons = await Coupon.find().sort({ createdAt: -1 }).lean();
     res.json(coupons);
   } catch (error) {
     logger.error('getAllCoupons error', { tag: 'Coupon', message: error.message });
@@ -20,7 +20,7 @@ exports.createCoupon = async (req, res) => {
     const code = sanitize(rawCode);
     if (!code) return res.status(400).json({ message: 'Coupon code is required' });
     
-    const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
+    const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() }).lean();
     if (existingCoupon) {
       return res.status(400).json({ message: 'Coupon code already exists' });
     }

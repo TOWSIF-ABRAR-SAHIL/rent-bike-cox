@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/authMiddleware');
 const User = require('../models/User');
+const logger = require('../utils/logger');
 
 router.get('/:userId/:type', auth, async (req, res) => {
   try {
@@ -23,7 +24,7 @@ router.get('/:userId/:type', auth, async (req, res) => {
 
     res.json({ url: docUrl });
   } catch (error) {
-    console.error('[Documents] proxy error:', error.message);
+    logger.error('proxy error:', error.message);
     res.status(500).json({ message: 'Failed to fetch document' });
   }
 });

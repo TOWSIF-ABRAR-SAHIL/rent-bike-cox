@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer } from 'lucide-react';
+import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
+import FleetOverview from '../components/FleetOverview';
+import MaintenanceSchedule from '../components/MaintenanceSchedule';
+import VehicleHealthCard from '../components/VehicleHealthCard';
+import MaintenanceLogForm from '../components/MaintenanceLogForm';
+import MaintenanceHistory from '../components/MaintenanceHistory';
 
 function generateDefaultTiers(pricePerHour) {
   if (!pricePerHour || pricePerHour <= 0) return [];
@@ -93,6 +98,8 @@ const RenterDashboard = () => {
   const [categories, setCategories] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('vehicles');
+  const [selectedBikeId, setSelectedBikeId] = useState(null);
   const [newBike, setNewBike] = useState({
     model: '', brand: '', category: '', description: '', pricePerHour: 200, videoUrl: ''
   });
@@ -100,14 +107,17 @@ const RenterDashboard = () => {
   const [bikeFiles, setBikeFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  const [zones, setZones] = useState([]);
 
   useEffect(() => {
     Promise.all([
       api.get('/dashboard/my-bikes'),
-      api.get('/dashboard/categories')
-    ]).then(([bikesRes, catsRes]) => {
+      api.get('/dashboard/categories'),
+      api.get('/zones/active'),
+    ]).then(([bikesRes, catsRes, zonesRes]) => {
       setBikes(bikesRes.data);
       setCategories(catsRes.data);
+      setZones(zonesRes.data);
       if (catsRes.data.length > 0) setNewBike(prev => ({ ...prev, category: catsRes.data[0]._id }));
     }).catch(() => { addToast('Failed to fetch data', 'error'); setFetchError('Failed to load dashboard data.'); })
       .finally(() => setLoading(false));
@@ -166,80 +176,146 @@ const RenterDashboard = () => {
         </button>
       </div>
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="glass p-6 rounded-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input type="text" placeholder="Model" className="input-dark text-sm" value={newBike.model} onChange={e => setNewBike({...newBike, model: e.target.value})} required />
-          <input type="text" placeholder="Brand" className="input-dark text-sm" value={newBike.brand} onChange={e => setNewBike({...newBike, brand: e.target.value})} required />
-          <select className="input-dark text-sm" value={newBike.category} onChange={e => setNewBike({...newBike, category: e.target.value})} required>
-            {categories.map(cat => <option key={cat._id} value={cat._id} style={{ background: 'var(--bg-surface)' }}>{cat.name}</option>)}
-          </select>
-          <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required />
-          <textarea placeholder="Description" className="input-dark text-sm md:col-span-2 min-h-[80px] resize-none" value={newBike.description} onChange={e => setNewBike({...newBike, description: e.target.value})} required />
-          <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
-          <TierBuilder packages={bikePackages} onChange={setBikePackages} basePrice={newBike.pricePerHour} />
-          <div className="md:col-span-2">
-            <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Upload Vehicle Photos</label>
-            <input type="file" multiple accept="image/jpeg,image/png" className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" onChange={e => {
-              const files = Array.from(e.target.files || []);
-              const oversized = files.find(f => f.size > 5 * 1024 * 1024);
-              if (oversized) {
-                alert('File too large: ' + oversized.name + '. Maximum 5MB allowed.');
-                e.target.value = '';
-                return;
-              }
-              setBikeFiles(e.target.files);
-            }} />
-          </div>
-          <button type="submit" disabled={submitting} className="btn-primary md:col-span-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
-            {submitting ? <><Loader2 size={16} className="mr-2 animate-spin" /> Saving...</> : <><PlusCircle size={16} className="mr-2" /> Save Vehicle</>}
-          </button>
-        </form>
-      )}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <button onClick={() => setActiveTab('vehicles')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'vehicles' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'vehicles' ? { color: 'white' } : { color: 'var(--text-secondary)' }}>
+          <BikeIcon className="mr-2" size={16} /> Vehicles
+        </button>
+        <button onClick={() => setActiveTab('maintenance')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'maintenance' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'maintenance' ? { color: 'white' } : { color: 'var(--text-secondary)' }}>
+          <Wrench className="mr-2" size={16} /> Maintenance
+        </button>
+      </div>
 
-      {bikes.length === 0 ? (
-        <EmptyState
-          icon={BikeIcon}
-          title="No vehicles yet"
-          description="Add your first vehicle to start renting"
-        />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bikes.map(bike => (
-            <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover">
-              {bike.images?.[0] && (
-                <img src={bike.images[0]} alt={bike.model} width="400" height="300" className="w-full h-48 object-cover" loading="lazy" onError={(e) => { e.target.src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
-              )}
-              <div className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-bold text-lg truncate" style={{ color: 'var(--text-primary)' }}>{bike.model}</h3>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand} - {bike.category?.name || 'N/A'}</p>
+      {activeTab === 'vehicles' && (
+        <>
+          {showForm && (
+            <form onSubmit={handleSubmit} className="glass p-6 rounded-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input type="text" placeholder="Model" className="input-dark text-sm" value={newBike.model} onChange={e => setNewBike({...newBike, model: e.target.value})} required />
+              <input type="text" placeholder="Brand" className="input-dark text-sm" value={newBike.brand} onChange={e => setNewBike({...newBike, brand: e.target.value})} required />
+              <select className="input-dark text-sm" value={newBike.category} onChange={e => setNewBike({...newBike, category: e.target.value})} required>
+                {categories.map(cat => <option key={cat._id} value={cat._id} style={{ background: 'var(--bg-surface)' }}>{cat.name}</option>)}
+              </select>
+              <select className="input-dark text-sm" value={newBike.zone || ''} onChange={e => setNewBike({...newBike, zone: e.target.value || ''})}>
+                <option value="">No Zone (optional)</option>
+                {zones.map(z => <option key={z._id} value={z._id} style={{ background: 'var(--bg-surface)' }}>{z.name}</option>)}
+              </select>
+              <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required />
+              <textarea placeholder="Description" className="input-dark text-sm md:col-span-2 min-h-[80px] resize-none" value={newBike.description} onChange={e => setNewBike({...newBike, description: e.target.value})} required />
+              <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
+              <TierBuilder packages={bikePackages} onChange={setBikePackages} basePrice={newBike.pricePerHour} />
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Upload Vehicle Photos</label>
+                <input type="file" multiple accept="image/jpeg,image/png" className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" onChange={e => {
+                  const files = Array.from(e.target.files || []);
+                  const oversized = files.find(f => f.size > 5 * 1024 * 1024);
+                  if (oversized) {
+                    alert('File too large: ' + oversized.name + '. Maximum 5MB allowed.');
+                    e.target.value = '';
+                    return;
+                  }
+                  setBikeFiles(e.target.files);
+                }} />
+              </div>
+              <button type="submit" disabled={submitting} className="btn-primary md:col-span-2 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                {submitting ? <><Loader2 size={16} className="mr-2 animate-spin" /> Saving...</> : <><PlusCircle size={16} className="mr-2" /> Save Vehicle</>}
+              </button>
+            </form>
+          )}
+
+          {bikes.length === 0 ? (
+            <EmptyState
+              icon={BikeIcon}
+              title="No vehicles yet"
+              description="Add your first vehicle to start renting"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {bikes.map(bike => (
+                <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover">
+                  {bike.images?.[0] && (
+                    <img src={bike.images[0]} alt={bike.model} width="400" height="300" className="w-full h-48 object-cover" loading="lazy" onError={(e) => { e.target.src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
+                  )}
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-bold text-lg truncate" style={{ color: 'var(--text-primary)' }}>{bike.model}</h3>
+                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand} - {bike.category?.name || 'N/A'}</p>
                     <p className="font-semibold text-sm mt-1" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour} TK/hr</p>
                     {bike.packages?.length > 0 && (
                       <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{bike.packages.length} pricing tiers</p>
                     )}
+                    {bike.zone && (
+                      <div className="flex items-center gap-1 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                        <MapPin size={10} />
+                        <span>{bike.zone.name}</span>
+                      </div>
+                    )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium border" style={{ background: bike.availability ? 'var(--success-bg)' : 'var(--danger-bg)', color: bike.availability ? 'var(--success-text)' : 'var(--danger-text)', borderColor: bike.availability ? 'var(--success-border)' : 'var(--danger-border)' }}>
+                        {bike.availability ? 'Available' : 'Booked'}
+                      </span>
+                      {bike.availability ? (
+                        <button onClick={() => toggleAvailability(bike._id)}
+                          className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all border" style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--success-bg)'}>
+                          <ToggleRight size={14} className="mr-1" /> Available
+                        </button>
+                      ) : (
+                        <button onClick={() => toggleAvailability(bike._id)}
+                          className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all"
+                          style={{ color: 'var(--text-muted)', background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }}>
+                          <ToggleLeft size={14} className="mr-1" /> Unavailable
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-medium border" style={{ background: bike.availability ? 'var(--success-bg)' : 'var(--danger-bg)', color: bike.availability ? 'var(--success-text)' : 'var(--danger-text)', borderColor: bike.availability ? 'var(--success-border)' : 'var(--danger-border)' }}>
-                    {bike.availability ? 'Available' : 'Booked'}
-                  </span>
-                  {bike.availability ? (
-                    <button onClick={() => toggleAvailability(bike._id)}
-                      className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all border" style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--success-bg)'}>
-                      <ToggleRight size={14} className="mr-1" /> Available
-                    </button>
-                  ) : (
-                    <button onClick={() => toggleAvailability(bike._id)}
-                      className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all"
-                      style={{ color: 'var(--text-muted)', background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }}>
-                      <ToggleLeft size={14} className="mr-1" /> Unavailable
-                    </button>
-                  )}
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
+        </>
+      )}
+
+      {activeTab === 'maintenance' && (
+        <div className="space-y-6">
+          <FleetOverview bikes={bikes} />
+          <MaintenanceSchedule bikes={bikes} />
+
+          <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
+            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Vehicle Health</h3>
+            {bikes.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No vehicles to display health status</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {bikes.map(bike => (
+                  <VehicleHealthCard key={bike._id} bike={bike} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {bikes.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Select Vehicle for Maintenance Log</label>
+                <select value={selectedBikeId || ''} onChange={e => setSelectedBikeId(e.target.value)} className="input-dark !py-1.5 !px-2.5 text-xs">
+                  <option value="">Choose a vehicle...</option>
+                  {bikes.map(bike => (
+                    <option key={bike._id} value={bike._id}>{bike.brand} {bike.model}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedBikeId && (
+                <>
+                  <MaintenanceLogForm bikeId={selectedBikeId} onCreated={() => {
+                    api.get('/dashboard/my-bikes').then(res => setBikes(res.data));
+                  }} />
+                  <MaintenanceHistory bikeId={selectedBikeId} />
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

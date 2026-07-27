@@ -3,6 +3,7 @@ const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const { BUFFER_MINUTES } = require('./pricing');
 const { addPaisa, subtractPaisa } = require('./safeAmount');
+const logger = require('./logger');
 
 const ACTIVE_STATUSES = ['Pending', 'Confirmed'];
 const bufferMs = BUFFER_MINUTES * 60 * 1000;
@@ -128,7 +129,7 @@ async function createBookingAtomically(bikeId, startTime, endTime, bookingData, 
     }
 
     if (err.name === 'MongoServerError' && err.code === 48) {
-      console.warn('[BookingLock] Transactions not supported — falling back to CAS');
+      logger.warn('Transactions not supported — falling back to CAS');
       return createBookingCAS(bikeId, startTime, endTime, bookingData, excludeUserId);
     }
 

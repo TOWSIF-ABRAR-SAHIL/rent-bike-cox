@@ -1,9 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
+import FleetOverview from '../components/FleetOverview';
+import MaintenanceSchedule from '../components/MaintenanceSchedule';
+import VehicleHealthCard from '../components/VehicleHealthCard';
+import MaintenanceLogForm from '../components/MaintenanceLogForm';
+import MaintenanceHistory from '../components/MaintenanceHistory';
+import ZoneCard from '../components/ZoneCard';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
@@ -43,6 +49,9 @@ const AdminDashboard = () => {
   const [editingBike, setEditingBike] = useState(null);
   const [editPackages, setEditPackages] = useState([]);
   const [editSaving, setEditSaving] = useState(false);
+  const [selectedBikeId, setSelectedBikeId] = useState(null);
+  const [zones, setZones] = useState([]);
+  const [newZone, setNewZone] = useState({ name: '', description: '', color: '#f59e0b' });
 
   useEffect(() => {
     Promise.allSettled([
@@ -50,14 +59,16 @@ const AdminDashboard = () => {
       api.get('/dashboard/admin/bikes'),
       api.get('/dashboard/admin/users'),
       api.get('/coupons'),
-      api.get('/dashboard/admin/categories')
-    ]).then(([settingsRes, bikesRes, usersRes, couponsRes, categoriesRes]) => {
+      api.get('/dashboard/admin/categories'),
+      api.get('/zones'),
+    ]).then(([settingsRes, bikesRes, usersRes, couponsRes, categoriesRes, zonesRes]) => {
       if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
       if (bikesRes.status === 'fulfilled') setBikes(bikesRes.value.data);
       if (usersRes.status === 'fulfilled') setUsers(usersRes.value.data);
       if (couponsRes.status === 'fulfilled') setCoupons(couponsRes.value.data);
       if (categoriesRes.status === 'fulfilled') setCategories(categoriesRes.value.data);
-      const failedCount = [settingsRes, bikesRes, usersRes, couponsRes, categoriesRes].filter(r => r.status === 'rejected').length;
+      if (zonesRes.status === 'fulfilled') setZones(zonesRes.value.data);
+      const failedCount = [settingsRes, bikesRes, usersRes, couponsRes, categoriesRes, zonesRes].filter(r => r.status === 'rejected').length;
       if (failedCount > 0) {
         addToast(`Failed to load ${failedCount} of 5 data sources`, 'error');
         if (failedCount === 5) setFetchError('Failed to load dashboard data. Please try again.');
@@ -255,6 +266,8 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'categories'} onClick={() => setActiveTab('categories')} icon={FolderOpen}>Categories</TabButton>
         <TabButton active={activeTab === 'walkin'} onClick={() => setActiveTab('walkin')} icon={UserPlus}>Walk-in</TabButton>
         <TabButton active={activeTab === 'finance'} onClick={() => { setActiveTab('finance'); if (!finance) fetchFinance(); }} icon={Shield}>Finance</TabButton>
+        <TabButton active={activeTab === 'maintenance'} onClick={() => setActiveTab('maintenance')} icon={Wrench}>Maintenance</TabButton>
+        <TabButton active={activeTab === 'zones'} onClick={() => setActiveTab('zones')} icon={MapPin}>Zones</TabButton>
       </div>
 
       {activeTab === 'settings' && (
@@ -885,6 +898,97 @@ const AdminDashboard = () => {
                 {editSaving ? 'Saving...' : 'Save Tiers'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'maintenance' && (
+        <div className="space-y-6">
+          <FleetOverview bikes={bikes} />
+          <MaintenanceSchedule bikes={bikes} />
+
+          <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
+            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>All Vehicle Health</h3>
+            {bikes.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No vehicles to display health status</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {bikes.map(bike => (
+                  <VehicleHealthCard key={bike._id} bike={bike} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {bikes.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <label className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Select Vehicle for Maintenance Log</label>
+                <select value={selectedBikeId || ''} onChange={e => setSelectedBikeId(e.target.value)} className="input-dark !py-1.5 !px-2.5 text-xs">
+                  <option value="">Choose a vehicle...</option>
+                  {bikes.map(bike => (
+                    <option key={bike._id} value={bike._id}>{bike.brand} {bike.model}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedBikeId && (
+                <>
+                  <MaintenanceLogForm bikeId={selectedBikeId} onCreated={() => {
+                    api.get('/dashboard/admin/bikes').then(res => setBikes(res.data));
+                  }} />
+                  <MaintenanceHistory bikeId={selectedBikeId} />
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'zones' && (
+        <div className="space-y-6">
+          <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
+            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Create New Zone</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input type="text" value={newZone.name} onChange={e => setNewZone({...newZone, name: e.target.value})} placeholder="Zone name" className="input-dark text-sm" />
+              <input type="text" value={newZone.description} onChange={e => setNewZone({...newZone, description: e.target.value})} placeholder="Description (optional)" className="input-dark text-sm" />
+              <div className="flex items-center gap-2">
+                <input type="color" value={newZone.color} onChange={e => setNewZone({...newZone, color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0" />
+                <button onClick={async () => {
+                  if (!newZone.name) return;
+                  try {
+                    await api.post('/zones', newZone);
+                    const res = await api.get('/zones');
+                    setZones(res.data);
+                    setNewZone({ name: '', description: '', color: '#f59e0b' });
+                    addToast('Zone created!', 'success');
+                  } catch (err) {
+                    addToast(err.response?.data?.message || 'Failed to create zone', 'error');
+                  }
+                }} disabled={!newZone.name} className="btn-primary flex-1 text-sm">
+                  <Plus size={16} className="mr-1" /> Create Zone
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>All Zones ({zones.length})</h3>
+            {zones.length === 0 ? (
+              <EmptyState icon={MapPin} title="No zones yet" description="Create your first zone to organize vehicles by location" />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {zones.map(zone => (
+                  <ZoneCard key={zone._id} zone={zone} onUpdate={async () => {
+                    const res = await api.get('/zones');
+                    setZones(res.data);
+                  }} onDelete={async () => {
+                    const res = await api.get('/zones');
+                    setZones(res.data);
+                  }} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

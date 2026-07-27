@@ -16,15 +16,31 @@ const documentRoutes = require('./routes/documents');
 const pricingRoutes = require('./routes/pricing');
 const { startCleanupScheduler } = require('./utils/checkoutCleanup');
 const correlationId = require('./middleware/correlationId');
+const requestLogger = require('./middleware/requestLogger');
+const errorHandler = require('./middleware/errorHandler');
+const notFoundHandler = require('./middleware/notFoundHandler');
 const healthRoutes = require('./routes/health');
 const auditRoutes = require('./routes/audit');
 const fraudRoutes = require('./routes/fraud');
 const payoutRoutes = require('./routes/payout');
+const maintenanceRoutes = require('./routes/maintenance');
+const availabilityRoutes = require('./routes/availability');
+const zoneRoutes = require('./routes/zone');
+const fleetRoutes = require('./routes/fleet');
+const bulkRoutes = require('./routes/bulk');
+const vehicleHistoryRoutes = require('./routes/vehicleHistory');
+const searchRoutes = require('./routes/search');
+const analyticsRoutes = require('./routes/analytics');
+const engagementRoutes = require('./routes/engagement');
+const seasonalRoutes = require('./routes/seasonal');
+const vehicleDocRoutes = require('./routes/vehicleDoc');
+const notificationPrefRoutes = require('./routes/notificationPref');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
 const { startDataRetention } = require('./jobs/dataRetention');
-const mongoSanitize = require('express-mongo-sanitize');
+const { startMaintenanceReminder } = require('./jobs/maintenanceReminder');
+const mongoSanitize = require('./middleware/sanitize');
 const hpp = require('hpp');
 const securityHeaders = require('./security/middleware/securityHeaders');
 const authMiddleware = require('./middleware/authMiddleware');
@@ -54,8 +70,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Correlation ID — before all routes
+// Correlation ID + request logging — before all routes
 app.use(correlationId);
+app.use(requestLogger);
 
 // Additional security middleware
 app.use(securityHeaders);
@@ -291,6 +308,34 @@ const globalLimiter = rateLimit({
 
 app.use('/api', globalLimiter);
 
+// Additional targeted rate limiters
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many search requests, please try again later' },
+});
+app.use('/api/search', searchLimiter);
+
+const dashboardLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many dashboard requests, please try again later' },
+});
+app.use('/api/dashboard', dashboardLimiter);
+
+const fleetLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many fleet requests, please try again later' },
+});
+app.use('/api/fleet', fleetLimiter);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -304,29 +349,24 @@ app.use('/api/pricing', pricingRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/fraud', fraudRoutes);
 app.use('/api/payouts', payoutRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/zones', zoneRoutes);
+app.use('/api/fleet', fleetRoutes);
+app.use('/api/bulk', bulkRoutes);
+app.use('/api/vehicle-history', vehicleHistoryRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api', engagementRoutes);
+app.use('/api', seasonalRoutes);
+app.use('/api', vehicleDocRoutes);
+app.use('/api', notificationPrefRoutes);
 
 // 404 handler
-app.use('/api/{*splat}', (req, res) => {
-  res.status(404).json({ message: 'API endpoint not found' });
-});
+app.use('/api/{*splat}', notFoundHandler);
 
 // Error handler
-app.use((err, req, res, next) => {
-  req.log?.error('Request error', { error: err.message, code: err.code });
-  if (err.message === 'Not allowed by CORS') {
-    return res.status(403).json({ message: 'Not allowed by CORS' });
-  }
-  if (err.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({ message: 'File too large. Maximum size is 5MB.' });
-  }
-  if (err.message && err.message.includes('Only JPG')) {
-    return res.status(400).json({ message: err.message });
-  }
-  if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).json({ message: 'Invalid CSRF token' });
-  }
-  res.status(500).json({ message: 'Internal server error' });
-});
+app.use(errorHandler);
 
 // MongoDB Connection
 const logger = require('./utils/logger');
@@ -334,11 +374,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentbike'
   .then(() => logger.info('Connected to MongoDB'))
   .catch(err => logger.error('MongoDB connection error', { error: err.message }));
 
+const gracefulShutdown = require('./utils/gracefulShutdown');
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`, { env: process.env.NODE_ENV });
   startCleanupScheduler();
   startExpiredIntentCleanup();
   startBookingStateTransition();
   startDataRetention();
+  startMaintenanceReminder();
 });
+
+gracefulShutdown(server, mongoose);

@@ -1,4 +1,3 @@
-Contact: mailto:support@rentbikecox.com
-Expires: 2027-01-01T00:00:00.000Z
+Contact: https://github.com/TOWSIF-ABRAR-SAHIL/rent-bike-cox/issues
 Preferred-Languages: en, bn
-Policy: https://rent-bike-cox.vercel.app/policies
+Policy: https://rent-bike-cox.vercel.app/privacy

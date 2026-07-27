@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const PaymentIntent = require('../models/PaymentIntent');
 const { releaseBikeLock } = require('../utils/bookingLock');
@@ -7,6 +8,7 @@ const CLEANUP_INTERVAL = 5 * 60 * 1000;
 let intervalId = null;
 
 async function cleanupExpiredIntents() {
+  if (mongoose.connection.readyState !== 1) return;
   const log = jobLogger('expiredIntentCleanup');
   try {
     const expiredIntents = await PaymentIntent.find({

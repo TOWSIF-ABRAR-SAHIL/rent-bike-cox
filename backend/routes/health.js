@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { defaultCache } = require('../utils/cache');
 const router = express.Router();
 
 router.get('/liveness', (req, res) => {
@@ -25,6 +26,30 @@ router.get('/readiness', async (req, res) => {
 
   const allOk = Object.values(checks).every(v => v === 'ok' || v === 'not_configured');
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'ready' : 'degraded', checks, timestamp: new Date().toISOString() });
+});
+
+router.get('/info', (req, res) => {
+  const cached = defaultCache.get('health:info');
+  if (cached) return res.json(cached);
+
+  const mem = process.memoryUsage();
+  const data = {
+    status: 'ok',
+    uptime: process.uptime(),
+    startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+    memory: {
+      rss: Math.round(mem.rss / 1024 / 1024),
+      heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+      heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+      external: Math.round(mem.external / 1024 / 1024),
+    },
+    pid: process.pid,
+    nodeVersion: process.version,
+    env: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+  };
+  defaultCache.set('health:info', data, 10000);
+  res.json(data);
 });
 
 module.exports = router;

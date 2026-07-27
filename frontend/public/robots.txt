@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /admin-dashboard
+Disallow: /renter-dashboard
+Disallow: /checkout/
+Disallow: /invoice/
+Disallow: /my-bookings
+Disallow: /notifications
+Disallow: /notification-settings
+Disallow: /fleet
+Disallow: /analytics
+Disallow: /vehicle-docs
+Disallow: /seasonal-pricing
+
+Sitemap: https://rent-bike-cox.vercel.app/sitemap.xml

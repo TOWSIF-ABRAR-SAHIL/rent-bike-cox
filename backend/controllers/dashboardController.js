@@ -4,6 +4,7 @@ const Settings = require('../models/Settings');
 const Category = require('../models/Category');
 const { sanitize } = require('../utils/sanitize');
 const logger = require('../utils/logger');
+const { defaultCache } = require('../utils/cache');
 
 const defaultCategories = [
   { name: 'Bike', slug: 'bike' },
@@ -35,7 +36,7 @@ const seedCategories = async () => {
 
 exports.addBike = async (req, res) => {
   try {
-    const { model, brand, category, description, pricePerHour, videoUrl, packages } = req.body;
+    const { model, brand, category, description, pricePerHour, videoUrl, packages, zone } = req.body;
     const cleanModel = sanitize(model);
     const cleanBrand = sanitize(brand);
     const cleanDescription = sanitize(description);
@@ -76,10 +77,12 @@ exports.addBike = async (req, res) => {
       images,
       videoUrl: cleanVideoUrl || undefined,
       renter: req.user.id,
-      packages: parsedPackages
+      packages: parsedPackages,
+      zone: zone || undefined,
     });
     await bike.save();
     res.status(201).json(bike);
+    defaultCache.del('bikes:available');
   } catch (error) {
     res.status(500).json({ message: 'Failed to add bike' });
   }
@@ -88,7 +91,7 @@ exports.addBike = async (req, res) => {
 exports.getRenterBikes = async (req, res) => {
   try {
     if (req.user.role !== 'Renter' && req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const bikes = await Bike.find({ renter: req.user.id }).populate('category', 'name slug');
+    const bikes = await Bike.find({ renter: req.user.id }).populate('category', 'name slug').populate('zone', 'name color').lean();
     res.json(bikes);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -100,12 +103,20 @@ exports.getRenterBikes = async (req, res) => {
 exports.getAvailableBikes = async (req, res) => {
   try {
     await seedCategories();
-    const { search, category } = req.query;
+    const { search, category, zone } = req.query;
+    if (!search && !category && !zone) {
+      const cached = defaultCache.get('bikes:available');
+      if (cached) return res.json(cached);
+    }
     const filter = { availability: true, isVerified: true };
 
     if (category) {
-      const cat = await Category.findOne({ slug: category });
+      const cat = await Category.findOne({ slug: category }).lean();
       if (cat) filter.category = cat._id;
+    }
+
+    if (zone) {
+      filter.zone = zone;
     }
 
     if (search) {
@@ -119,8 +130,13 @@ exports.getAvailableBikes = async (req, res) => {
     res.set('Cache-Control', 'public, max-age=60');
     const bikes = await Bike.find(filter)
       .populate('renter', 'name')
-      .populate('category', 'name slug');
+      .populate('category', 'name slug')
+      .populate('zone', 'name color')
+      .lean();
     res.json(bikes);
+    if (!search && !category && !zone) {
+      defaultCache.set('bikes:available', bikes, 120000);
+    }
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -134,7 +150,9 @@ exports.getBikeById = async (req, res) => {
     res.set('Cache-Control', 'public, max-age=120');
     const bike = await Bike.findById(req.params.id)
       .populate('renter', 'name')
-      .populate('category', 'name slug');
+      .populate('category', 'name slug')
+      .populate('zone', 'name color')
+      .lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
     res.json(bike);
   } catch (error) {
@@ -149,13 +167,14 @@ exports.updateBike = async (req, res) => {
     const bike = await Bike.findById(req.params.id);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
-    const { model, brand, category, description, pricePerHour, videoUrl, packages } = req.body;
+    const { model, brand, category, description, pricePerHour, videoUrl, packages, zone } = req.body;
 
     if (model !== undefined) bike.model = sanitize(model) || bike.model;
     if (brand !== undefined) bike.brand = sanitize(brand) || bike.brand;
     if (category !== undefined) bike.category = category;
     if (description !== undefined) bike.description = sanitize(description) || bike.description;
     if (videoUrl !== undefined) bike.videoUrl = sanitize(videoUrl);
+    if (zone !== undefined) bike.zone = zone || null;
 
     if (pricePerHour !== undefined) {
       const price = Number(pricePerHour);
@@ -192,6 +211,7 @@ exports.updateBike = async (req, res) => {
 
     await bike.save();
     res.json(bike);
+    defaultCache.del('bikes:available');
   } catch (error) {
     res.status(500).json({ message: 'Failed to update bike' });
   }
@@ -202,8 +222,11 @@ exports.updateBike = async (req, res) => {
 exports.getCategories = async (req, res) => {
   try {
     await seedCategories();
+    const cached = defaultCache.get('categories');
+    if (cached) return res.json(cached);
     res.set('Cache-Control', 'public, max-age=300');
-    const categories = await Category.find({ isActive: true });
+    const categories = await Category.find({ isActive: true }).lean();
+    defaultCache.set('categories', categories, 300000);
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -214,7 +237,7 @@ exports.getAllCategories = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     await seedCategories();
-    const categories = await Category.find().sort({ createdAt: 1 });
+    const categories = await Category.find().sort({ createdAt: 1 }).lean();
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -231,6 +254,7 @@ exports.createCategory = async (req, res) => {
     const category = new Category({ name: cleanName, slug });
     await category.save();
     res.status(201).json(category);
+    defaultCache.del('categories');
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Category already exists' });
@@ -254,6 +278,7 @@ exports.updateCategory = async (req, res) => {
     const category = await Category.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!category) return res.status(404).json({ message: 'Category not found' });
     res.json(category);
+    defaultCache.del('categories');
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Category name already exists' });
@@ -272,6 +297,7 @@ exports.deleteCategory = async (req, res) => {
     const category = await Category.findByIdAndDelete(req.params.id);
     if (!category) return res.status(404).json({ message: 'Category not found' });
     res.json({ message: 'Category deleted' });
+    defaultCache.del('categories');
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -281,6 +307,8 @@ exports.deleteCategory = async (req, res) => {
 
 exports.getGlobalSettings = async (req, res) => {
   try {
+    const cached = defaultCache.get('settings');
+    if (cached) return res.json(cached);
     let settings = await Settings.findOne();
     if (!settings) {
       settings = await Settings.create(defaultSettings);
@@ -292,8 +320,10 @@ exports.getGlobalSettings = async (req, res) => {
         await settings.save();
       }
     }
-    res.set('Cache-Control', 'public, max-age=600');
-    res.json(settings);
+    const data = settings.toObject ? settings.toObject() : settings;
+    defaultCache.set('settings', data, 300000);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(data);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -332,6 +362,7 @@ exports.updateGlobalSettings = async (req, res) => {
       await settings.save();
     }
     res.json(settings);
+    defaultCache.del('settings');
   } catch (error) {
     res.status(500).json({ message: 'Failed to update settings' });
   }
@@ -343,7 +374,7 @@ exports.getAllBikes = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await Bike.countDocuments();
-    const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name');
+    const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name').populate('zone', 'name color').lean();
     res.json(bikes);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -369,7 +400,7 @@ exports.getAllUsers = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await User.countDocuments();
-    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password -nid -license');
+    const users = await User.find().skip((page - 1) * limit).limit(limit).select('-password -nid -license').lean();
     res.json({ users, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -391,13 +422,14 @@ exports.toggleUserVerification = async (req, res) => {
 
 exports.deleteBike = async (req, res) => {
   try {
-    const bike = await Bike.findById(req.params.id);
+    const bike = await Bike.findById(req.params.id).lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
     if (req.user.role !== 'Admin' && !(req.user.role === 'Renter' && bike.renter.toString() === req.user.id)) {
       return res.status(403).json({ message: 'Not authorized to delete this bike' });
     }
     await Bike.findByIdAndDelete(req.params.id);
     res.json({ message: 'Bike deleted' });
+    defaultCache.del('bikes:available');
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -413,6 +445,7 @@ exports.toggleBikeAvailability = async (req, res) => {
     bike.availability = !bike.availability;
     await bike.save();
     res.json({ message: `Bike ${bike.availability ? 'available' : 'unavailable'}`, bike });
+    defaultCache.del('bikes:available');
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

@@ -12,12 +12,14 @@ const { sanitize } = require('../utils/sanitize');
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
+const { sendEmail, templates } = require('../services/emailService');
+const NotificationPreference = require('../models/NotificationPreference');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
 
 exports.createBooking = async (req, res) => {
   try {
-    const userDoc = await require('../models/User').findById(req.user.id);
+    const userDoc = await require('../models/User').findById(req.user.id).lean();
     if (!userDoc || !userDoc.isVerified) {
       return res.status(403).json({ message: 'Account not verified. Please upload your NID and license for admin verification.' });
     }
@@ -39,8 +41,12 @@ exports.createBooking = async (req, res) => {
       return res.status(400).json({ message: 'Start time must be at least 10 minutes from now' });
     }
 
-    const bike = await Bike.findById(bikeId);
+    const bike = await Bike.findById(bikeId).lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
+
+    if (bike.isUnderMaintenance) {
+      return res.status(400).json({ message: 'This bike is currently under maintenance and not available for booking' });
+    }
 
     const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, bike.packages);
 
@@ -201,6 +207,26 @@ exports.confirmPayment = async (req, res) => {
     }
 
     res.json({ message: 'Payment confirmed', booking });
+
+    try {
+      const userDoc = await require('../models/User').findById(booking.user);
+      if (userDoc?.email) {
+        const prefs = await NotificationPreference.findOne({ user: userDoc._id });
+        if (prefs?.email?.paymentConfirmation !== false) {
+          await sendEmail({
+            to: userDoc.email,
+            subject: 'Payment Confirmed — Rent Bike Cox\'s Bazar',
+            html: templates.paymentConfirmation({
+              userName: userDoc.name,
+              amount: computedAdvance,
+              bookingId: booking.invoiceNumber || bookingId,
+            }),
+          });
+        }
+      }
+    } catch (emailErr) {
+      logger.warn('Confirm email send failed (non-blocking)', { message: emailErr.message });
+    }
   } catch (error) {
     logger.error('confirmPayment error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Payment confirmation failed' });
@@ -277,6 +303,25 @@ exports.cancelBooking = async (req, res) => {
 
     increment('booking_cancelled');
     bus.emit('booking.cancelled', { bookingId: booking._id.toString(), userId: req.user.id, refundAmount: refund.refundableAmount });
+
+    try {
+      const userDoc = await require('../models/User').findById(booking.user);
+      if (userDoc?.email) {
+        const prefs = await NotificationPreference.findOne({ user: userDoc._id });
+        if (prefs?.email?.bookingCancellation !== false) {
+          await sendEmail({
+            to: userDoc.email,
+            subject: 'Booking Cancelled — Rent Bike Cox\'s Bazar',
+            html: templates.bookingCancellation({
+              userName: userDoc.name,
+              refundAmount: refund.refundableAmount,
+            }),
+          });
+        }
+      }
+    } catch (emailErr) {
+      logger.warn('Cancel email send failed (non-blocking)', { message: emailErr.message });
+    }
   } catch (error) {
     logger.error('cancelBooking error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Booking cancellation failed' });
@@ -323,7 +368,8 @@ exports.getMyBookings = async (req, res) => {
         select: 'model brand pricePerHour images category',
         populate: { path: 'category', select: 'name slug' },
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json(bookings);
   } catch (error) {
     logger.error('getMyBookings error', { tag: 'Booking', message: error.message });
@@ -334,7 +380,7 @@ exports.getMyBookings = async (req, res) => {
 exports.getRenterBookings = async (req, res) => {
   try {
     if (req.user.role !== 'Renter') return res.status(403).json({ message: 'Access denied' });
-    const renterBikes = await Bike.find({ renter: req.user.id }).select('_id');
+    const renterBikes = await Bike.find({ renter: req.user.id }).select('_id').lean();
     const bikeIds = renterBikes.map(b => b._id);
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
@@ -347,7 +393,8 @@ exports.getRenterBookings = async (req, res) => {
         select: 'model brand pricePerHour',
         populate: { path: 'category', select: 'name slug' },
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     logger.error('getRenterBookings error', { tag: 'Booking', message: error.message });
@@ -368,7 +415,8 @@ exports.getAllBookings = async (req, res) => {
         select: 'model brand pricePerHour',
         populate: { path: 'category', select: 'name slug' },
       })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
     res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     logger.error('getAllBookings error', { tag: 'Booking', message: error.message });
@@ -442,7 +490,7 @@ exports.extendBooking = async (req, res) => {
     const { newEndTime } = req.body;
     if (!newEndTime) return res.status(400).json({ message: 'newEndTime is required' });
 
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id).lean();
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
     if (booking.user.toString() !== req.user.id) {
@@ -462,7 +510,7 @@ exports.extendBooking = async (req, res) => {
     const additionalMs = newEnd - currentEnd;
     const additionalHours = Math.ceil(additionalMs / (1000 * 60 * 60));
 
-    const bike = await Bike.findById(booking.bike);
+    const bike = await Bike.findById(booking.bike).lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
     const additionalPricing = await calculateBookingPrice(bike.pricePerHour, currentEnd, newEndTime, bike.packages);
@@ -507,8 +555,12 @@ exports.createWalkInBooking = async (req, res) => {
       return res.status(400).json({ message: 'bikeId, startTime, and endTime are required' });
     }
 
-    const bike = await Bike.findById(bikeId);
+    const bike = await Bike.findById(bikeId).lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
+
+    if (bike.isUnderMaintenance) {
+      return res.status(400).json({ message: 'This bike is currently under maintenance and not available for booking' });
+    }
 
     const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, bike.packages);
 

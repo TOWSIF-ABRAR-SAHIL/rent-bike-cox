@@ -3,6 +3,7 @@ const Coupon = require('../models/Coupon');
 const { calculateBookingPrice, applyCoupon } = require('../utils/pricing');
 const { checkAvailability } = require('../utils/bookingLock');
 const { roundPaisa, multiplyPaisa } = require('../utils/safeAmount');
+const logger = require('../utils/logger');
 
 exports.pricingPreview = async (req, res) => {
   try {
@@ -68,7 +69,7 @@ exports.pricingPreview = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Pricing] preview error:', error.message);
+    logger.error('preview error:', error.message);
     res.status(500).json({ message: 'Failed to calculate pricing', available: false });
   }
 };

@@ -1,5 +1,6 @@
 const { toDhakaTime } = require('./timezone');
 const { multiplyPaisa, roundPaisa, percentOf } = require('./safeAmount');
+const { loadRates, getApplicableRate } = require('./seasonalPricing');
 
 const BUFFER_MINUTES = 30;
 const MIN_HOURLY_RATE = 150;
@@ -75,6 +76,17 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, prici
     }
   }
 
+  await loadRates();
+  const seasonalRate = getApplicableRate(start);
+  let seasonalMultiplier = 1;
+  let seasonalLabel = null;
+  if (seasonalRate) {
+    seasonalMultiplier = seasonalRate.multiplier;
+    seasonalLabel = seasonalRate.name;
+    hourlyRate = Math.round(hourlyRate * seasonalMultiplier);
+    packageName += ` + ${seasonalRate.name} (${seasonalMultiplier}x)`;
+  }
+
   let totalPrice = multiplyPaisa(hours, hourlyRate);
 
   const advancePercent = getAdvancePercent(hours);
@@ -91,6 +103,8 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, prici
     packageSource,
     startTimeDhaka: toDhakaTime(start),
     endTimeDhaka: toDhakaTime(end),
+    seasonalMultiplier,
+    seasonalLabel,
   };
 }
 

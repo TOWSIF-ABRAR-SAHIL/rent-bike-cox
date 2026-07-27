@@ -16,12 +16,24 @@ const bikeSchema = new mongoose.Schema({
     minHours: { type: Number, required: true, min: 1 },
     maxHours: { type: Number, default: null },
     hourlyRate: { type: Number, required: true, min: 0 }
-  }]
+  }],
+  currentMileage: { type: Number, min: 0, default: 0 },
+  lastServiceDate: { type: Date },
+  nextServiceDue: { type: Date },
+  nextServiceMileage: { type: Number, min: 0 },
+  isUnderMaintenance: { type: Boolean, default: false },
+  condition: { type: String, enum: ['excellent', 'good', 'fair', 'poor'], default: 'good' },
+  zone: { type: mongoose.Schema.Types.ObjectId, ref: 'Zone', default: null },
 }, { timestamps: true });
 
 bikeSchema.index({ availability: 1, isVerified: 1 });
 bikeSchema.index({ renter: 1 });
 bikeSchema.index({ category: 1 });
 bikeSchema.index({ model: 'text', brand: 'text' });
+bikeSchema.index({ zone: 1 });
+
+bikeSchema.index({ category: 1, availability: 1, isVerified: 1 });
+bikeSchema.index({ renter: 1, createdAt: -1 });
+bikeSchema.index({ zone: 1, availability: 1 });
 
 module.exports = mongoose.model('Bike', bikeSchema);

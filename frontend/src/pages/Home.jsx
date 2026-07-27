@@ -4,6 +4,7 @@ import api from '../api/axios';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
+import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 
 const categoryIcons = { Bike, Car, Jeep: Truck };
 
@@ -29,6 +30,8 @@ const Home = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [fetchError, setFetchError] = useState('');
   const [slowNetwork, setSlowNetwork] = useState(false);
+  const [zones, setZones] = useState([]);
+  const [activeZone, setActiveZone] = useState('');
 
   useEffect(() => {
     if (!loading) {
@@ -46,6 +49,7 @@ const Home = () => {
 
   useEffect(() => {
     api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
+    api.get('/zones/active').then(res => setZones(res.data)).catch(() => setZones([]));
   }, []);
 
   useEffect(() => {
@@ -55,6 +59,7 @@ const Home = () => {
         const params = {};
         if (debouncedSearch) params.search = debouncedSearch;
         if (activeCategory) params.category = activeCategory;
+        if (activeZone) params.zone = activeZone;
         const res = await api.get('/dashboard/bikes/available', { params });
         setBikes(res.data);
       } catch {
@@ -64,7 +69,7 @@ const Home = () => {
       }
     };
     fetchBikes();
-  }, [debouncedSearch, activeCategory]);
+  }, [debouncedSearch, activeCategory, activeZone]);
 
   const handleCategoryClick = (slug) => {
     setActiveCategory(prev => prev === slug ? '' : slug);
@@ -78,8 +83,27 @@ const Home = () => {
     [categories, bikes]
   );
 
+  const orgSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Rent Bike Cox's Bazar",
+    "url": "https://rent-bike-cox.vercel.app",
+    "description": "Bike, car, and jeep rental in Cox's Bazar, Bangladesh",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Cox's Bazar",
+      "addressCountry": "BD"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+880-189154443",
+      "contactType": "customer service"
+    }
+  };
+
   return (
     <div>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
       {fetchError && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
           <div className="border p-4 rounded-2xl text-sm text-center" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
@@ -123,6 +147,9 @@ const Home = () => {
               <Link to="/policies" className="btn-ghost !px-8 !py-3.5 text-sm">
                 Learn More
               </Link>
+            </div>
+            <div className="mt-6">
+              <CurrentSeasonalInfo />
             </div>
           </div>
         </div>
@@ -233,6 +260,38 @@ const Home = () => {
                 style={activeCategory !== cat.slug ? { color: 'var(--text-secondary)' } : undefined}
               >
                 {cat.name}s
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Zone Filter */}
+        {zones.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            <button
+              onClick={() => setActiveZone('')}
+              className={`px-4 py-2 min-h-9 rounded-lg text-xs font-medium transition-all duration-200 ${
+                activeZone === ''
+                  ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
+                  : 'glass'
+              }`}
+              style={activeZone !== '' ? { color: 'var(--text-secondary)' } : undefined}
+            >
+              All Zones
+            </button>
+            {zones.map(z => (
+              <button
+                key={z._id}
+                onClick={() => setActiveZone(prev => prev === z._id ? '' : z._id)}
+                className={`px-4 py-2 min-h-9 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                  activeZone === z._id
+                    ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
+                    : 'glass'
+                }`}
+                style={activeZone !== z._id ? { color: 'var(--text-secondary)' } : undefined}
+              >
+                <span className="w-2 h-2 rounded-full" style={{ background: z.color || '#f59e0b' }} />
+                {z.name}
               </button>
             ))}
           </div>

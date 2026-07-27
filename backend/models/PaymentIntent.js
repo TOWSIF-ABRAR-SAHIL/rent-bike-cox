@@ -29,4 +29,6 @@ const paymentIntentSchema = new mongoose.Schema({
 paymentIntentSchema.index({ status: 1, createdAt: 1 });
 paymentIntentSchema.index({ bookingId: 1, purpose: 1 });
 
+paymentIntentSchema.index({ status: 1, expiresAt: 1 });
+
 module.exports = mongoose.model('PaymentIntent', paymentIntentSchema);

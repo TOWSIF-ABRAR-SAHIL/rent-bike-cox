@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const { releaseBikeLock } = require('../utils/bookingLock');
 const bus = require('../events/EventBus');
@@ -7,6 +8,7 @@ const INTERVAL = 60 * 1000;
 let intervalId = null;
 
 async function transitionBookingStates() {
+  if (mongoose.connection.readyState !== 1) return;
   const log = jobLogger('bookingStateTransition');
   try {
     const now = new Date();

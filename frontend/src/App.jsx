@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import PageSpinner from './components/PageSpinner';
 
 const Home = lazy(() => import('./pages/Home'));
 const BikeDetails = lazy(() => import('./pages/BikeDetails'));
@@ -22,17 +23,15 @@ const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const MyBookings = lazy(() => import('./pages/MyBookings'));
+const FleetDashboard = lazy(() => import('./pages/FleetDashboard'));
+const AdvancedSearch = lazy(() => import('./pages/AdvancedSearch'));
+const AnalyticsDashboard = lazy(() => import('./pages/AnalyticsDashboard'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const SeasonalPricingManager = lazy(() => import('./pages/SeasonalPricingManager'));
+const VehicleDocuments = lazy(() => import('./pages/VehicleDocuments'));
+const NotificationPreferences = lazy(() => import('./pages/NotificationPreferences'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
-
-const Loading = () => (
-  <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-    <div className="relative w-12 h-12">
-      <div className="absolute inset-0 rounded-full" style={{ border: '2px solid var(--border-base)' }} />
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-500 animate-spin" />
-    </div>
-  </div>
-);
 
 function App() {
   return (
@@ -43,7 +42,7 @@ function App() {
             <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
               <Navbar />
               <main className="pt-16">
-                <Suspense fallback={<Loading />}>
+                <Suspense fallback={<PageSpinner />}>
                   <ErrorBoundary>
                     <Routes>
                     <Route path="/" element={<Home />} />
@@ -79,6 +78,37 @@ function App() {
                     <Route path="/admin-dashboard" element={
                       <ProtectedRoute roles={['Admin']}>
                         <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/fleet" element={
+                      <ProtectedRoute roles={['Renter', 'Admin']}>
+                        <FleetDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/search" element={<AdvancedSearch />} />
+                    <Route path="/analytics" element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <AnalyticsDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/notifications" element={
+                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                        <Notifications />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/seasonal-pricing" element={
+                      <ProtectedRoute roles={['Admin']}>
+                        <SeasonalPricingManager />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/vehicle-docs" element={
+                      <ProtectedRoute roles={['Renter', 'Admin']}>
+                        <VehicleDocuments />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/notification-settings" element={
+                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                        <NotificationPreferences />
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />

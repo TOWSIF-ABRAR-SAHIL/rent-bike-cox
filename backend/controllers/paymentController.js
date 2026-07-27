@@ -12,6 +12,8 @@ const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buil
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
+const { sendEmail, templates } = require('../services/emailService');
+const NotificationPreference = require('../models/NotificationPreference');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASS || process.env.SSLCOMMERZ_STORE_PASSWORD;
@@ -33,7 +35,8 @@ exports.initPayment = async (req, res) => {
 
     const booking = await Booking.findById(bookingId)
       .populate('user', 'name email address phoneNumber')
-      .populate('bike', 'model brand pricePerHour images');
+      .populate('bike', 'model brand pricePerHour images')
+      .lean();
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
@@ -121,7 +124,7 @@ exports.paymentSuccess = async (req, res) => {
     const alreadyProcessed = await isProcessed(nonce);
     if (alreadyProcessed) {
       logger.info('Replay detected — already processed', { tag: 'Payment', nonce });
-      const existingBooking = await Booking.findById(bookingId);
+      const existingBooking = await Booking.findById(bookingId).lean();
       if (existingBooking && (existingBooking.status === 'Confirmed' || existingBooking.status === 'Completed')) {
         return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
       }
@@ -261,6 +264,29 @@ exports.paymentSuccess = async (req, res) => {
     logger.info('Confirmed booking', { tag: 'Payment', bookingId });
     increment('payment_success');
     bus.emit('payment.confirmed', { bookingId, tranId, source: 'redirect' });
+
+    try {
+      const userDoc = await require('../models/User').findById(booking.user);
+      const bikeDoc = await Bike ? await require('../models/Bike').findById(booking.bike).lean() : null;
+      if (userDoc?.email) {
+        const prefs = await NotificationPreference.findOne({ user: userDoc._id }).lean();
+        if (prefs?.email?.paymentConfirmation !== false) {
+          await sendEmail({
+            to: userDoc.email,
+            subject: 'Payment Confirmed — Rent Bike Cox\'s Bazar',
+            html: templates.paymentConfirmation({
+              userName: userDoc.name,
+              amount: expectedAdvance,
+              bookingId: booking.invoiceNumber || bookingId,
+              tranId,
+            }),
+          });
+        }
+      }
+    } catch (emailErr) {
+      logger.warn('Email send failed (non-blocking)', { message: emailErr.message });
+    }
+
     return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
   } catch (error) {
     logger.error('success error', { tag: 'Payment', message: error.message, stack: error.stack });
@@ -467,6 +493,28 @@ exports.paymentIPN = async (req, res) => {
 
     await markProcessed(ipnNonce);
     logger.info('Confirmed booking via IPN', { tag: 'IPN', bookingId: booking._id });
+
+    try {
+      const userDoc = await require('../models/User').findById(booking.user).lean();
+      if (userDoc?.email) {
+        const prefs = await NotificationPreference.findOne({ user: userDoc._id }).lean();
+        if (prefs?.email?.paymentConfirmation !== false) {
+          await sendEmail({
+            to: userDoc.email,
+            subject: 'Payment Confirmed — Rent Bike Cox\'s Bazar',
+            html: templates.paymentConfirmation({
+              userName: userDoc.name,
+              amount: booking.advancePaid,
+              bookingId: booking.invoiceNumber || booking._id.toString(),
+              tranId: tran_id,
+            }),
+          });
+        }
+      }
+    } catch (emailErr) {
+      logger.warn('IPN email send failed (non-blocking)', { message: emailErr.message });
+    }
+
     res.status(200).json({ status: 'OK' });
   } catch (error) {
     logger.error('Error', { tag: 'IPN', message: error.message });

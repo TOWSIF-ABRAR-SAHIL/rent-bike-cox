@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
 
@@ -91,6 +92,10 @@ const Navbar = () => {
               <ShieldCheck size={16} className="mr-1.5" />
               Policies
             </Link>
+            <Link to="/search" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+              <Search size={16} className="mr-1.5" />
+              Search
+            </Link>
             {user ? (
               <>
                 {(user.role === 'Admin' || user.role === 'Renter') && (
@@ -103,6 +108,31 @@ const Navbar = () => {
                   <Clock size={16} className="mr-1.5" />
                   My Bookings
                 </Link>
+                <NotificationBell />
+                {(user.role === 'Admin' || user.role === 'Renter') && (
+                  <Link to="/fleet" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <BarChart3 size={16} className="mr-1.5" />
+                    Fleet
+                  </Link>
+                )}
+                {user.role === 'Admin' && (
+                  <Link to="/analytics" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <PieChart size={16} className="mr-1.5" />
+                    Analytics
+                  </Link>
+                )}
+                {user.role === 'Admin' && (
+                  <Link to="/seasonal-pricing" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <Calendar size={16} className="mr-1.5" />
+                    Seasonal
+                  </Link>
+                )}
+                {(user.role === 'Admin' || user.role === 'Renter') && (
+                  <Link to="/vehicle-docs" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <FileText size={16} className="mr-1.5" />
+                    Docs
+                  </Link>
+                )}
                 <div className="relative" ref={dropdownRef}>
                   <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="User menu" aria-expanded={dropdownOpen} aria-haspopup="true">
                     <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-2">
@@ -119,6 +149,16 @@ const Navbar = () => {
                         <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-md w-fit" style={{ color: 'var(--accent-text)', background: 'var(--accent-bg)' }}>{user.role}</span>
                       </div>
                       <div className="py-1">
+                        <Link
+                          to="/notification-settings"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
+                          style={{ color: 'var(--text-secondary)' }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                          onMouseLeave={e => e.currentTarget.style.background = ''}
+                        >
+                          <Bell size={14} className="mr-2" /> Notification Settings
+                        </Link>
                         <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
                           <LogOut size={14} className="mr-2" /> Logout
                         </button>
@@ -154,6 +194,9 @@ const Navbar = () => {
             <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
               <ShieldCheck size={16} className="mr-2" /> Policies
             </Link>
+            <Link to="/search" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+              <Search size={16} className="mr-2" /> Search
+            </Link>
             {user ? (
               <>
                 <div className="px-3 py-2.5 border-t mt-2 pt-3 min-h-11" style={{ borderColor: 'var(--border-base)' }}>
@@ -168,6 +211,29 @@ const Navbar = () => {
                 <Link to="/my-bookings" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                   <Clock size={16} className="mr-2" /> My Bookings
                 </Link>
+                <div className="flex items-center px-3 py-2.5 min-h-11">
+                  <NotificationBell />
+                </div>
+                {(user.role === 'Admin' || user.role === 'Renter') && (
+                  <Link to="/fleet" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <BarChart3 size={16} className="mr-2" /> Fleet
+                  </Link>
+                )}
+                {user.role === 'Admin' && (
+                  <Link to="/analytics" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <PieChart size={16} className="mr-2" /> Analytics
+                  </Link>
+                )}
+                {user.role === 'Admin' && (
+                  <Link to="/seasonal-pricing" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <Calendar size={16} className="mr-2" /> Seasonal
+                  </Link>
+                )}
+                {(user.role === 'Admin' || user.role === 'Renter') && (
+                  <Link to="/vehicle-docs" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <FileText size={16} className="mr-2" /> Docs
+                  </Link>
+                )}
                 <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>

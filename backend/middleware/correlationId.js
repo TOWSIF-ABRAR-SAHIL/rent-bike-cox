@@ -12,8 +12,16 @@ function correlationId(req, res, next) {
     id = uuidv4();
   }
   req.correlationId = id;
-  res.setHeader('X-Correlation-Id', id);
+  res.setHeader('X-Request-Id', id);
   req.log = withCorrelation(id);
+
+  req._startTime = Date.now();
+  const originalEnd = res.end;
+  res.end = function (...args) {
+    req._duration = Date.now() - req._startTime;
+    originalEnd.apply(this, args);
+  };
+
   next();
 }
 

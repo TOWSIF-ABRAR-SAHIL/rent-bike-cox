@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { SkeletonPage } from '../components/ui/Skeleton';
+import AvailabilityCalendar from '../components/AvailabilityCalendar';
+import ReviewForm from '../components/ReviewForm';
+import ReviewList from '../components/ReviewList';
+import SeasonalBadge from '../components/SeasonalBadge';
 
 const BikeDetails = () => {
   const { id } = useParams();
@@ -14,6 +18,40 @@ const BikeDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTierHours, setSelectedTierHours] = useState(null);
   const [fetchError, setFetchError] = useState('');
+  const [availabilityStatus, setAvailabilityStatus] = useState(null);
+  const [selectedDateRange, setSelectedDateRange] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState(null);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewPages, setReviewPages] = useState(1);
+  const [reviewSort, setReviewSort] = useState('newest');
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  const fetchReviews = useCallback(async (page = 1) => {
+    try {
+      setReviewLoading(true);
+      const sortParam = reviewSort === 'oldest' ? 'oldest' : reviewSort === 'highest' ? 'newest' : reviewSort === 'lowest' ? 'oldest' : 'newest';
+      const { data } = await api.get(`/reviews/${id}?page=${page}&limit=5&sort=${sortParam}`);
+      setReviews(data.reviews);
+      setReviewStats(data.stats);
+      setReviewPage(data.page);
+      setReviewPages(data.pages);
+    } catch {
+      setReviews([]);
+    } finally {
+      setReviewLoading(false);
+    }
+  }, [id, reviewSort]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchReviews(1);
+  }, [fetchReviews]);
+
+  const handleReviewSubmit = async ({ rating, title, comment }) => {
+    await api.post(`/reviews/${id}`, { rating, title, comment });
+    fetchReviews(1);
+  };
 
   useEffect(() => {
     api.get(`/dashboard/bikes/${id}`).then(res => {
@@ -21,6 +59,10 @@ const BikeDetails = () => {
     }).catch(() => {
       setFetchError('Failed to load vehicle details. Please try again.');
     }).finally(() => setLoading(false));
+
+    api.get(`/availability/bike/${id}`).then(res => {
+      setAvailabilityStatus(res.data);
+    }).catch(() => {});
   }, [id]);
 
   const handleBooking = (hoursOverride) => {
@@ -105,10 +147,29 @@ const BikeDetails = () => {
           <div>
             <div className="flex items-center gap-2 mb-3">
               <span className="px-3 py-1 glass rounded-lg text-xs font-medium" style={{ color: 'var(--pill-text)' }}>{bike.category?.name || 'Vehicle'}</span>
-              {bike.availability !== false && <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }}>Available</span>}
+              {bike.isUnderMaintenance ? (
+                <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
+                  Under Maintenance
+                </span>
+              ) : availabilityStatus?.availabilityStatus === 'booked_today' ? (
+                <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)', color: 'var(--warning-text)' }}>
+                  Booked Today
+                </span>
+              ) : bike.availability !== false ? (
+                <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }}>Available</span>
+              ) : (
+                <span className="px-3 py-1 border rounded-lg text-xs font-medium" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>Unavailable</span>
+              )}
             </div>
+            <SeasonalBadge startTime={selectedDateRange?.start || null} />
             <h1 className="text-3xl sm:text-4xl font-bold break-words" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
             <p className="mt-1 break-words" style={{ color: 'var(--text-secondary)' }}>{bike.brand}</p>
+            {bike.zone && (
+              <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                <MapPin size={12} />
+                <span>{bike.zone.name}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-baseline gap-2">
@@ -191,11 +252,49 @@ const BikeDetails = () => {
             ))}
           </div>
 
+          {/* Availability Calendar */}
+          <AvailabilityCalendar
+            bikeId={id}
+            selectedRange={selectedDateRange}
+            onDateSelect={(date) => {
+              if (!selectedDateRange?.start || (selectedDateRange.start && selectedDateRange.end)) {
+                setSelectedDateRange({ start: date, end: null });
+              } else {
+                const start = new Date(selectedDateRange.start);
+                if (date > start) {
+                  setSelectedDateRange({ start: selectedDateRange.start, end: date });
+                } else {
+                  setSelectedDateRange({ start: date, end: null });
+                }
+              }
+            }}
+          />
+
           {/* Book Button */}
           <button onClick={() => handleBooking()} className="btn-primary w-full text-lg !py-4 flex items-center justify-center">
             {token ? (selectedTierHours ? `Book Now (${selectedTierHours}h)` : 'Book Now') : 'Login to Book'}
           </button>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-12">
+        {token && (
+          <div className="mb-6">
+            <ReviewForm onSubmit={handleReviewSubmit} loading={reviewLoading} />
+          </div>
+        )}
+        {reviewStats && (
+          <ReviewList
+            stats={reviewStats}
+            reviews={reviews}
+            page={reviewPage}
+            pages={reviewPages}
+            onPageChange={fetchReviews}
+            sort={reviewSort}
+            onSortChange={setReviewSort}
+          />
+        )}
       </div>
     </div>
   );
