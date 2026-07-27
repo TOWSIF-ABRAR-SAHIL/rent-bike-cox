@@ -19,7 +19,7 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await api.post('/auth/login', formData);
-      login(response.data.accessToken, response.data.refreshToken);
+      login(response.data.accessToken, response.data.refreshToken, response.data.user);
       navigate('/');
     } catch (err) {
       if (err.response?.status === 423) {

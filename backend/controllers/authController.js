@@ -389,6 +389,42 @@ exports.deleteAccount = async (req, res) => {
   }
 };
 
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('name email role phoneNumber address nid license nidImage licenseImage isVerified date');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ user });
+  } catch (error) {
+    logger.error('getProfile error', { error: error.message });
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+};
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, phoneNumber, address } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (name !== undefined) {
+      const cleanName = sanitize(name);
+      if (!cleanName || cleanName.length > 100) return res.status(400).json({ message: 'Invalid name' });
+      user.name = cleanName;
+    }
+    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
+    if (address !== undefined) user.address = sanitize(address) || '';
+
+    if (req.files?.['nidImage']?.[0]) user.nidImage = req.files['nidImage'][0].path;
+    if (req.files?.['licenseImage']?.[0]) user.licenseImage = req.files['licenseImage'][0].path;
+
+    await user.save();
+    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, phoneNumber: user.phoneNumber, address: user.address } });
+  } catch (error) {
+    logger.error('updateProfile error', { error: error.message });
+    res.status(500).json({ message: 'Profile update failed' });
+  }
+};
+
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;

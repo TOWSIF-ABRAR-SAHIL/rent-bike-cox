@@ -3,6 +3,7 @@ const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buil
 const AuditLog = require('../models/AuditLog');
 const bus = require('../events/EventBus');
 const logger = require('../utils/logger');
+const notificationService = require('./NotificationService');
 
 class FraudDetectionService {
   async runFraudChecks({ bookingId, userId, ip, amountPaisa, bikePricePerHour, accountAge, correlationId }) {
@@ -74,6 +75,12 @@ class FraudDetectionService {
       });
 
       bus.emit('fraud.detected', { bookingId, userId, score: results.score, decision: results.decision, flags: results.flags, correlationId });
+
+      try {
+        await notificationService.notifyFraudDetected({ bookingId, userId, score: results.score, decision: results.decision });
+      } catch (nErr) {
+        logger.warn('Fraud notification failed (non-blocking)', { error: nErr.message });
+      }
     }
 
     logger.info('Fraud check complete', { bookingId, score: results.score, decision: results.decision, flags: results.flags });

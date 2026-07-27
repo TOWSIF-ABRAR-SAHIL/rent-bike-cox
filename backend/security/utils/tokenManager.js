@@ -14,6 +14,8 @@ function generateAccessToken(user, fingerprint) {
     role: user.role,
     type: 'access',
   };
+  if (user.name) payload.name = user.name;
+  if (user.email) payload.email = user.email;
   if (fingerprint) payload.fp = fingerprint;
 
   return jwt.sign(payload, JWT_SECRET, {

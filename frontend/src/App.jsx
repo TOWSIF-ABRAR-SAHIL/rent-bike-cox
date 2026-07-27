@@ -31,6 +31,8 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const SeasonalPricingManager = lazy(() => import('./pages/SeasonalPricingManager'));
 const VehicleDocuments = lazy(() => import('./pages/VehicleDocuments'));
 const NotificationPreferences = lazy(() => import('./pages/NotificationPreferences'));
+const Profile = lazy(() => import('./pages/Profile'));
+const ChangePassword = lazy(() => import('./pages/ChangePassword'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
 
@@ -131,6 +133,20 @@ function App() {
                       <PageErrorBoundary>
                         <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
                           <NotificationPreferences />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
+                    } />
+                    <Route path="/profile" element={
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <Profile />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
+                    } />
+                    <Route path="/change-password" element={
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <ChangePassword />
                         </ProtectedRoute>
                       </PageErrorBoundary>
                     } />

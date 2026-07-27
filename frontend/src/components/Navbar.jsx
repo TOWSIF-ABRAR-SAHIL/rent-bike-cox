@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
@@ -150,6 +150,28 @@ const Navbar = () => {
                       </div>
                       <div className="py-1">
                         <Link
+                          to="/profile"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
+                          style={{ color: 'var(--text-secondary)' }}
+                          aria-label="Edit profile"
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                          onMouseLeave={e => e.currentTarget.style.background = ''}
+                        >
+                          <User size={14} className="mr-2" /> Profile
+                        </Link>
+                        <Link
+                          to="/change-password"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
+                          style={{ color: 'var(--text-secondary)' }}
+                          aria-label="Change password"
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                          onMouseLeave={e => e.currentTarget.style.background = ''}
+                        >
+                          <KeyRound size={14} className="mr-2" /> Change Password
+                        </Link>
+                        <Link
                           to="/notification-settings"
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
@@ -235,6 +257,12 @@ const Navbar = () => {
                     <FileText size={16} className="mr-2" /> Docs
                   </Link>
                 )}
+                <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <User size={16} className="mr-2" /> Profile
+                </Link>
+                <Link to="/change-password" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <KeyRound size={16} className="mr-2" /> Change Password
+                </Link>
                 <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} aria-label="Log out" onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>

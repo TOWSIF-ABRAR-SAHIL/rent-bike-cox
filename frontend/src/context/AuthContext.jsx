@@ -14,12 +14,18 @@ function getInitialUser() {
     if (decoded.exp < currentTime) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
       return null;
+    }
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try { return { ...decoded, ...JSON.parse(stored) }; } catch { return decoded; }
     }
     return decoded;
   } catch {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     return null;
   }
 }
@@ -45,10 +51,17 @@ export function AuthProvider({ children }) {
             localStorage.setItem('accessToken', newAccess);
             localStorage.setItem('refreshToken', newRefresh);
             setToken(newAccess);
-            setUser(jwtDecode(newAccess));
+            const newDecoded = jwtDecode(newAccess);
+            const stored = localStorage.getItem('user');
+            if (stored) {
+              try { setUser({ ...newDecoded, ...JSON.parse(stored) }); } catch { setUser(newDecoded); }
+            } else {
+              setUser(newDecoded);
+            }
           } catch {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
             setToken(null);
             setUser(null);
           }
@@ -70,26 +83,39 @@ export function AuthProvider({ children }) {
     } catch { /* ignore */ }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
     if (refreshTimeout.current) clearTimeout(refreshTimeout.current);
   }, []);
 
-  const login = useCallback((accessToken, refreshToken) => {
+  const login = useCallback((accessToken, refreshToken, userData) => {
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
     setToken(accessToken);
     try {
       const decoded = jwtDecode(accessToken);
-      setUser(decoded);
+      const fullUser = { ...decoded, ...userData };
+      if (userData) localStorage.setItem('user', JSON.stringify(userData));
+      setUser(fullUser);
       scheduleRefresh(accessToken);
     } catch {
       setUser(null);
     }
   }, [scheduleRefresh]);
 
+  const refreshProfile = useCallback(async () => {
+    try {
+      const res = await api.get('/auth/profile');
+      if (res.data?.user) {
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        setUser(prev => prev ? { ...prev, ...res.data.user } : prev);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

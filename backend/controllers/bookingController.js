@@ -14,6 +14,7 @@ const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
 const { sendEmail, templates } = require('../services/emailService');
 const NotificationPreference = require('../models/NotificationPreference');
+const notificationService = require('../services/NotificationService');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -127,6 +128,15 @@ exports.createBooking = async (req, res) => {
 
     increment('booking_created');
     bus.emit('booking.created', { bookingId: lockResult.booking._id.toString(), userId: req.user.id, bikeId, totalPrice: pricing.totalPrice });
+
+    try {
+      await notificationService.notifyBookingCreated(
+        { _id: lockResult.booking._id, bikeName: `${bike.brand} ${bike.model}`, startTime, hours: pricing.hours, totalPrice: pricing.totalPrice, advancePaid: 0 },
+        { _id: req.user.id, name: userDoc.name }
+      );
+    } catch (nErr) {
+      logger.warn('Booking notification failed (non-blocking)', { error: nErr.message });
+    }
   } catch (error) {
     logger.error('createBooking error', { tag: 'Booking', message: error.message, stack: error.stack });
     res.status(500).json({ message: 'Booking creation failed' });
@@ -208,6 +218,18 @@ exports.confirmPayment = async (req, res) => {
     }
 
     res.json({ message: 'Payment confirmed', booking });
+
+    try {
+      const notifyUser = await require('../models/User').findById(booking.user).lean();
+      if (notifyUser) {
+        await notificationService.notifyPaymentConfirmed(
+          { _id: booking._id, advancePaid: computedAdvance, invoiceNumber: booking.invoiceNumber },
+          { _id: notifyUser._id, name: notifyUser.name }
+        );
+      }
+    } catch (nErr) {
+      logger.warn('Payment notification failed (non-blocking)', { error: nErr.message });
+    }
 
     try {
       const userDoc = await require('../models/User').findById(booking.user);
@@ -305,6 +327,19 @@ exports.cancelBooking = async (req, res) => {
 
     increment('booking_cancelled');
     bus.emit('booking.cancelled', { bookingId: booking._id.toString(), userId: req.user.id, refundAmount: refund.refundableAmount });
+
+    try {
+      const cancelUser = await require('../models/User').findById(booking.user).lean();
+      if (cancelUser) {
+        await notificationService.notifyBookingCancelled(
+          { _id: booking._id, invoiceNumber: booking.invoiceNumber },
+          { _id: cancelUser._id, name: cancelUser.name },
+          { refundAmount: refund.refundableAmount }
+        );
+      }
+    } catch (nErr) {
+      logger.warn('Cancel notification failed (non-blocking)', { error: nErr.message });
+    }
 
     try {
       const userDoc = await require('../models/User').findById(booking.user);

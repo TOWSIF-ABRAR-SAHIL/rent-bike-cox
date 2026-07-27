@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
 const auth = require('../middleware/authMiddleware');
-const { register, login, refresh, logout, changePassword, forgotPassword, verifyOtp, resetPassword, exportData, deleteAccount } = require('../controllers/authController');
+const { register, login, refresh, logout, changePassword, forgotPassword, verifyOtp, resetPassword, exportData, deleteAccount, getProfile, updateProfile } = require('../controllers/authController');
 const upload = require('../middleware/uploadMiddleware');
 const { registerRules, loginRules } = require('../security/validators/index');
 
@@ -27,5 +27,10 @@ router.post('/verify-otp', otpLimiter, verifyOtp);
 router.post('/reset-password', otpLimiter, resetPassword);
 router.get('/export-data', auth, exportData);
 router.delete('/delete-account', auth, deleteAccount);
+router.get('/profile', auth, getProfile);
+router.put('/profile', auth, upload.docUpload.fields([
+  { name: 'nidImage', maxCount: 1 },
+  { name: 'licenseImage', maxCount: 1 }
+]), updateProfile);
 
 module.exports = router;

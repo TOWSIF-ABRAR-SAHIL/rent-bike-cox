@@ -14,6 +14,7 @@ const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
 const { sendEmail, templates } = require('../services/emailService');
 const NotificationPreference = require('../models/NotificationPreference');
+const notificationService = require('../services/NotificationService');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASS || process.env.SSLCOMMERZ_STORE_PASSWORD;
@@ -267,6 +268,19 @@ exports.paymentSuccess = async (req, res) => {
     bus.emit('payment.confirmed', { bookingId, tranId, source: 'redirect' });
 
     try {
+      const payUser = await require('../models/User').findById(booking.user).lean();
+      if (payUser) {
+        await notificationService.notifyPaymentConfirmed(
+          { _id: booking._id, advancePaid: expectedAdvance, invoiceNumber: booking.invoiceNumber },
+          { _id: payUser._id, name: payUser.name },
+          { tranId }
+        );
+      }
+    } catch (nErr) {
+      logger.warn('Payment notification failed (non-blocking)', { error: nErr.message });
+    }
+
+    try {
       const userDoc = await require('../models/User').findById(booking.user);
       if (userDoc?.email) {
         const prefs = await NotificationPreference.findOne({ user: userDoc._id }).lean();
@@ -334,6 +348,17 @@ exports.paymentFail = async (req, res) => {
         await booking.save();
         increment('payment_fail');
         bus.emit('payment.failed', { bookingId, reason: 'user_fail' });
+        try {
+          const failUser = await require('../models/User').findById(booking.user).lean();
+          if (failUser) {
+            await notificationService.notifyPaymentFailed(
+              { _id: booking._id, invoiceNumber: booking.invoiceNumber },
+              { _id: failUser._id, name: failUser.name }
+            );
+          }
+        } catch (nErr) {
+          logger.warn('Payment fail notification failed (non-blocking)', { error: nErr.message });
+        }
       }
     } catch (err) {
       logger.error('fail cleanup error', { tag: 'Payment', message: err.message });
@@ -365,6 +390,17 @@ exports.paymentCancel = async (req, res) => {
         await booking.save();
         increment('payment_cancel');
         bus.emit('payment.cancelled', { bookingId });
+        try {
+          const cancelUser = await require('../models/User').findById(booking.user).lean();
+          if (cancelUser) {
+            await notificationService.notifyPaymentFailed(
+              { _id: booking._id, invoiceNumber: booking.invoiceNumber },
+              { _id: cancelUser._id, name: cancelUser.name }
+            );
+          }
+        } catch (nErr) {
+          logger.warn('Payment cancel notification failed (non-blocking)', { error: nErr.message });
+        }
       }
     } catch (err) {
       logger.error('cancel cleanup error', { tag: 'Payment', message: err.message });
@@ -499,6 +535,19 @@ exports.paymentIPN = async (req, res) => {
 
     await markProcessed(ipnNonce);
     logger.info('Confirmed booking via IPN', { tag: 'IPN', bookingId: booking._id });
+
+    try {
+      const ipnUser = await require('../models/User').findById(booking.user).lean();
+      if (ipnUser) {
+        await notificationService.notifyPaymentConfirmed(
+          { _id: booking._id, advancePaid: booking.advancePaid, invoiceNumber: booking.invoiceNumber },
+          { _id: ipnUser._id, name: ipnUser.name },
+          { tranId: tran_id }
+        );
+      }
+    } catch (nErr) {
+      logger.warn('IPN notification failed (non-blocking)', { error: nErr.message });
+    }
 
     try {
       const userDoc = await require('../models/User').findById(booking.user).lean();
