@@ -44,6 +44,7 @@ const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortCha
               onChange={e => onSortChange(e.target.value)}
               className="px-2 py-1 rounded-lg text-xs outline-none"
               style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+              aria-label="Sort reviews"
             >
               <option value="newest">Newest</option>
               <option value="oldest">Oldest</option>
@@ -106,6 +107,8 @@ const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortCha
                     color: p === page ? 'var(--accent-text)' : 'var(--text-muted)',
                     border: `1px solid ${p === page ? 'var(--accent-border)' : 'var(--border-base)'}`,
                   }}
+                  aria-label={`Go to page ${p}`}
+                  aria-current={p === page ? 'page' : undefined}
                 >
                   {p}
                 </button>

@@ -60,7 +60,7 @@ const Notifications = () => {
             <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>{unread} unread</p>
           </div>
           {unread > 0 && (
-            <button onClick={markAllRead} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}>
+            <button onClick={markAllRead} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }} aria-label="Mark all notifications as read" >
               <CheckCheck size={14} /> Mark all read
             </button>
           )}
@@ -97,7 +97,7 @@ const Notifications = () => {
                   </p>
                 </div>
                 {!n.read && (
-                  <button onClick={(e) => { e.stopPropagation(); markRead(n._id); }} className="p-1 rounded" style={{ color: 'var(--accent-text)' }}>
+                  <button onClick={(e) => { e.stopPropagation(); markRead(n._id); }} className="p-1 rounded" style={{ color: 'var(--accent-text)' }} aria-label="Mark as read">
                     <Check size={14} />
                   </button>
                 )}

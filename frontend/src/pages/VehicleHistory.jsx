@@ -104,7 +104,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
             onClick={handleExport}
             className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
             style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--input-border)' }}
-          >
+           aria-label="Export data">
             Export CSV
           </button>
           {onClose && (
@@ -112,7 +112,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
               onClick={onClose}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
               style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--input-border)' }}
-            >
+             aria-label="Close">
               Close
             </button>
           )}
@@ -159,7 +159,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
                 color: p === pagination.page ? 'var(--accent-text)' : 'var(--text-muted)',
                 border: `1px solid ${p === pagination.page ? 'var(--accent-border)' : 'var(--border-base)'}`,
               }}
-            >
+             aria-label="Go to page">
               {p}
             </button>
           ))}

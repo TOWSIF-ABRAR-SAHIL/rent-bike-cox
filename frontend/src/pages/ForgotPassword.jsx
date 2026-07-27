@@ -86,7 +86,7 @@ const ForgotPassword = () => {
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div className="relative">
                 <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" className="input-dark !pl-11" required />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" className="input-dark !pl-11" required aria-label="Email address" />
               </div>
               <button type="submit" disabled={loading} className="btn-primary w-full">
                 {loading ? 'Sending...' : 'Send OTP'}
@@ -98,7 +98,7 @@ const ForgotPassword = () => {
             <form onSubmit={handleOtpSubmit} className="space-y-4">
               <div className="relative">
                 <KeyRound size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6-digit OTP" maxLength={6} className="input-dark !pl-11" required />
+                <input type="text" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6-digit OTP" maxLength={6} className="input-dark !pl-11" required aria-label="6-digit OTP" />
               </div>
               <button type="submit" disabled={loading} className="btn-primary w-full">
                 {loading ? 'Verifying...' : 'Verify OTP'}
@@ -110,7 +110,7 @@ const ForgotPassword = () => {
             <form onSubmit={handleResetSubmit} className="space-y-4">
               <div className="relative">
                 <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password (min 8 chars, uppercase, number, special)" className="input-dark !pl-11" required minLength={8} />
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password (min 8 chars, uppercase, number, special)" className="input-dark !pl-11" required minLength={8} aria-label="New password (min 8 chars, uppercase, number, special)" />
               </div>
               <button type="submit" disabled={loading} className="btn-primary w-full">
                 {loading ? 'Resetting...' : 'Reset Password'}

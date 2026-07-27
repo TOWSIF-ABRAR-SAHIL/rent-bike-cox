@@ -142,9 +142,9 @@ const AdvancedSearch = () => {
               onFocus={() => setShowSuggestions(true)}
               className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
-            />
+             aria-label="Search by brand, model, or keyword..."/>
             {query && (
-              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md" style={{ color: 'var(--text-muted)' }}>
+              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md" style={{ color: 'var(--text-muted)' }} aria-label="Clear search">
                 <X size={14} />
               </button>
             )}
@@ -156,6 +156,8 @@ const AdvancedSearch = () => {
             onClick={() => setShowFilters(!showFilters)}
             className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all sm:w-auto"
             style={{ background: 'var(--bg-card)', color: showFilters ? 'var(--accent-text)' : 'var(--text-secondary)', border: `1px solid ${showFilters ? 'var(--accent-border)' : 'var(--border-base)'}` }}
+            aria-label={showFilters ? 'Hide filters' : 'Show filters'}
+            aria-expanded={showFilters}
           >
             <SlidersHorizontal size={16} />
             Filters
@@ -195,7 +197,8 @@ const AdvancedSearch = () => {
             <Search size={48} className="mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
             <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No vehicles found</p>
             <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Try adjusting your filters or search terms</p>
-            <button onClick={handleClearFilters} className="mt-4 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+            <button onClick={handleClearFilters} className="mt-4 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}
+              aria-label="Clear all filters">
               Clear Filters
             </button>
           </div>
@@ -210,6 +213,8 @@ const AdvancedSearch = () => {
                 key={p}
                 onClick={() => fetchResults(p)}
                 className="w-9 h-9 rounded-lg text-sm font-medium transition-all"
+                aria-label={`Go to page ${p}`}
+                aria-current={p === pagination.page ? 'page' : undefined}
                 style={{
                   background: p === pagination.page ? 'var(--accent-bg)' : 'transparent',
                   color: p === pagination.page ? 'var(--accent-text)' : 'var(--text-muted)',

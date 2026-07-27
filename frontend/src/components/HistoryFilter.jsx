@@ -12,6 +12,7 @@ const HistoryFilter = ({ filters, onFilterChange }) => {
           onChange={e => onFilterChange('type', e.target.value)}
           className="px-3 py-2 rounded-lg text-sm outline-none"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+          aria-label="Filter by event type"
         >
           <option value="all">All Events</option>
           <option value="booking">Bookings</option>
@@ -23,6 +24,8 @@ const HistoryFilter = ({ filters, onFilterChange }) => {
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-secondary)' }}
+          aria-label="Toggle date range filter"
+          aria-expanded={showAdvanced}
         >
           <SlidersHorizontal size={14} />
           Date Range

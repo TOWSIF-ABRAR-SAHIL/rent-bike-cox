@@ -91,7 +91,7 @@ const BikeDetails = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -101,14 +101,14 @@ const BikeDetails = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Vehicle Not Found</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>The vehicle you're looking for doesn't exist or has been removed.</p>
-        <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+        <button onClick={() => navigate(-1)} className="btn-primary" aria-label="Go back">Go Back</button>
       </div>
     </div>
   );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-      <button onClick={() => navigate(-1)} className="flex items-center text-sm mb-6 transition-colors min-h-11 px-3 py-2 rounded-lg" style={{ color: 'var(--text-secondary)' }}>
+      <button onClick={() => navigate(-1)} className="flex items-center text-sm mb-6 transition-colors min-h-11 px-3 py-2 rounded-lg" style={{ color: 'var(--text-secondary)' }} aria-label="Go back">
         <ArrowLeft size={16} className="mr-1" /> Back
       </button>
 
@@ -216,7 +216,7 @@ const BikeDetails = () => {
                       style={{
                         border: isSelected ? '1.5px solid var(--accent-text)' : '1px solid var(--border-base)',
                         background: isSelected ? 'var(--accent-bg)' : undefined,
-                      }}>
+                      }} aria-label="Select pricing tier">
                       <div>
                         <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{tier.label}</p>
                         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -284,7 +284,7 @@ const BikeDetails = () => {
           />
 
           {/* Book Button */}
-          <button onClick={() => handleBooking()} className="btn-primary w-full text-lg !py-4 flex items-center justify-center">
+          <button onClick={() => handleBooking()} className="btn-primary w-full text-lg !py-4 flex items-center justify-center" aria-label="Book this vehicle">
             {token ? (selectedTierHours ? `Book Now (${selectedTierHours}h)` : 'Book Now') : 'Login to Book'}
           </button>
         </div>

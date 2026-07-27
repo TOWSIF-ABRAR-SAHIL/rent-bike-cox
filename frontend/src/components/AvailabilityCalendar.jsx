@@ -65,6 +65,7 @@ const DayCell = ({ day, year, month, bookedSlots, maintenanceSlots, selectedRang
       disabled={disabled}
       onClick={() => !disabled && onDayClick(date)}
       title={tip}
+      aria-label={`${MONTHS[month]} ${day}, ${year} - ${tip}`}
       className={`h-10 rounded-lg text-sm font-medium transition-all relative ${cls} ${disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-amber-500/10'}`}
       style={{ background: bg || undefined, color: isSelected ? '#f59e0b' : 'var(--text-primary)' }}
     >
@@ -116,13 +117,13 @@ const AvailabilityCalendar = ({ bikeId, onDateSelect, selectedRange }) => {
   return (
     <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--border-base)' }}>
       <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setCurrentMonth(new Date(year, month - 1))} className="p-2 rounded-lg transition-all hover:bg-amber-500/10" style={{ color: 'var(--text-secondary)' }}>
+        <button onClick={() => setCurrentMonth(new Date(year, month - 1))} className="p-2 rounded-lg transition-all hover:bg-amber-500/10" style={{ color: 'var(--text-secondary)' }} aria-label="Previous month">
           <ChevronLeft size={18} />
         </button>
         <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
           {MONTHS[month]} {year}
         </h3>
-        <button onClick={() => setCurrentMonth(new Date(year, month + 1))} className="p-2 rounded-lg transition-all hover:bg-amber-500/10" style={{ color: 'var(--text-secondary)' }}>
+        <button onClick={() => setCurrentMonth(new Date(year, month + 1))} className="p-2 rounded-lg transition-all hover:bg-amber-500/10" style={{ color: 'var(--text-secondary)' }} aria-label="Next month">
           <ChevronRight size={18} />
         </button>
       </div>

@@ -48,6 +48,7 @@ const FleetBikeRow = ({ bike, selected, onToggle }) => {
           onChange={() => onToggle(bike._id)}
           onClick={e => e.stopPropagation()}
           className="w-4 h-4 rounded accent-amber-500 flex-shrink-0"
+          aria-label={`Select ${bike.brand} ${bike.model}`}
         />
       )}
       <div
@@ -105,6 +106,7 @@ const FleetBikeRow = ({ bike, selected, onToggle }) => {
             className="p-1.5 rounded-lg transition-all hover:scale-110"
             style={{ color: 'var(--text-muted)', background: 'var(--input-bg)' }}
             title="View history"
+            aria-label="View history"
           >
             <History size={14} />
           </button>

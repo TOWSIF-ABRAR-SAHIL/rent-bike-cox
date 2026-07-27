@@ -19,7 +19,7 @@ const PaymentFailed = () => {
         <Link to="/" className="btn-primary flex-1 flex items-center justify-center">
           <Home size={18} className="mr-2" /> Go Home
         </Link>
-        <button onClick={() => navigate(-1)} className="btn-ghost flex-1 flex items-center justify-center">
+        <button onClick={() => navigate(-1)} className="btn-ghost flex-1 flex items-center justify-center" aria-label="Go back">
           <RefreshCw size={18} className="mr-2" /> Try Again
         </button>
       </div>

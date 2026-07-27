@@ -32,6 +32,7 @@ const FleetFilter = ({ filters, onFilterChange }) => {
             onChange={e => onFilterChange('search', e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg text-sm outline-none transition-all"
             style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+            aria-label="Search vehicles"
           />
         </div>
 
@@ -40,6 +41,7 @@ const FleetFilter = ({ filters, onFilterChange }) => {
           onChange={e => onFilterChange('status', e.target.value)}
           className="px-3 py-2 rounded-lg text-sm outline-none"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+          aria-label="Filter by status"
         >
           <option value="all">All Status</option>
           <option value="active">Active</option>
@@ -51,6 +53,8 @@ const FleetFilter = ({ filters, onFilterChange }) => {
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-secondary)' }}
+          aria-label="Toggle advanced filters"
+          aria-expanded={showAdvanced}
         >
           <SlidersHorizontal size={14} />
           Filters
@@ -64,8 +68,8 @@ const FleetFilter = ({ filters, onFilterChange }) => {
             onChange={e => onFilterChange('condition', e.target.value)}
             className="px-3 py-2 rounded-lg text-sm outline-none"
             style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+            aria-label="Filter by condition"
           >
-            <option value="all">All Conditions</option>
             <option value="excellent">Excellent</option>
             <option value="good">Good</option>
             <option value="fair">Fair</option>
@@ -77,8 +81,8 @@ const FleetFilter = ({ filters, onFilterChange }) => {
             onChange={e => onFilterChange('zone', e.target.value)}
             className="px-3 py-2 rounded-lg text-sm outline-none"
             style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+            aria-label="Filter by zone"
           >
-            <option value="all">All Zones</option>
             {zones.map(z => (
               <option key={z._id} value={z._id}>{z.name}</option>
             ))}
@@ -89,8 +93,8 @@ const FleetFilter = ({ filters, onFilterChange }) => {
             onChange={e => onFilterChange('sort', e.target.value)}
             className="px-3 py-2 rounded-lg text-sm outline-none"
             style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+            aria-label="Sort vehicles"
           >
-            <option value="-createdAt">Newest First</option>
             <option value="createdAt">Oldest First</option>
             <option value="-pricePerHour">Price: High to Low</option>
             <option value="pricePerHour">Price: Low to High</option>

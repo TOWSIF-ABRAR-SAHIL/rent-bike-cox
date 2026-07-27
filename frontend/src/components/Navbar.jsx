@@ -154,12 +154,13 @@ const Navbar = () => {
                           onClick={() => setDropdownOpen(false)}
                           className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
                           style={{ color: 'var(--text-secondary)' }}
+                          aria-label="Notification settings"
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
                           onMouseLeave={e => e.currentTarget.style.background = ''}
                         >
                           <Bell size={14} className="mr-2" /> Notification Settings
                         </Link>
-                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
+                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }} aria-label="Log out" onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
                           <LogOut size={14} className="mr-2" /> Logout
                         </button>
                       </div>
@@ -188,7 +189,7 @@ const Navbar = () => {
               <Phone size={14} className="mr-2" style={{ color: 'var(--accent-text)' }} />
               01891154443 | 01764466757
             </div>
-            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }}>
+            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }} aria-label="Toggle theme">
               <ThemeIcon size={16} className="mr-2" /> Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}
             </button>
             <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
@@ -234,7 +235,7 @@ const Navbar = () => {
                     <FileText size={16} className="mr-2" /> Docs
                   </Link>
                 )}
-                <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
+                <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} aria-label="Log out" onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>
               </>

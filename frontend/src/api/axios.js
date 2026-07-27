@@ -56,4 +56,21 @@ api.interceptors.response.use(
   }
 );
 
+export async function apiWithRetry(config, retries = 2, delay = 500) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await api(config);
+    } catch (err) {
+      const isNetworkError = !err.response;
+      const isServerError = err.response?.status >= 500;
+      const isLastAttempt = attempt === retries;
+      if ((isNetworkError || isServerError) && !isLastAttempt) {
+        await new Promise((r) => setTimeout(r, delay * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 export default api;

@@ -56,6 +56,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
           onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
           className="rounded-lg px-3 py-2 text-sm outline-none"
           style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
+          aria-label="Document type"
         >
           {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
@@ -67,6 +68,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
           required
           className="rounded-lg px-3 py-2 text-sm outline-none"
           style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
+          aria-label="Document name"
         />
         <input
           type="text"
@@ -75,6 +77,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
           onChange={e => setForm(f => ({ ...f, documentNumber: e.target.value }))}
           className="rounded-lg px-3 py-2 text-sm outline-none"
           style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
+          aria-label="Document number"
         />
         <input
           type="text"
@@ -83,6 +86,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
           onChange={e => setForm(f => ({ ...f, issuingAuthority: e.target.value }))}
           className="rounded-lg px-3 py-2 text-sm outline-none"
           style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
+          aria-label="Issuing authority"
         />
         <div>
           <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Issue date</label>
@@ -112,6 +116,10 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
         className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors"
+        role="button"
+        aria-label="Upload file"
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click(); }}
         style={{
           borderColor: dragOver ? 'var(--accent-border)' : file ? '#10b981' : 'var(--border-base)',
           background: dragOver ? 'var(--accent-bg)' : file ? 'rgba(16,185,129,0.05)' : 'var(--hover-bg)',
@@ -123,7 +131,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
           <div className="flex items-center justify-center gap-2">
             <FileText size={16} className="text-emerald-400" />
             <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
-            <button type="button" onClick={e => { e.stopPropagation(); setFile(null); }} className="text-red-400 hover:text-red-300">
+            <button type="button" onClick={e => { e.stopPropagation(); setFile(null); }} className="text-red-400 hover:text-red-300" aria-label="Remove file">
               <X size={14} />
             </button>
           </div>
@@ -137,6 +145,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
         disabled={saving || !file || !form.name}
         className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
         style={{ background: 'var(--accent-bg-solid, #f59e0b)' }}
+        aria-label="Upload document"
       >
         {saving ? 'Uploading...' : <><Check size={14} /> Upload</>}
       </button>

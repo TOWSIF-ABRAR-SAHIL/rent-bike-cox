@@ -45,7 +45,8 @@ const TierBuilder = ({ packages, onChange, basePrice }) => {
         </label>
         <button type="button" onClick={() => autoGenerate(basePrice || 200)}
           className="text-xs px-2.5 py-1 rounded-lg border transition-all hover:opacity-80"
-          style={{ color: 'var(--accent-text)', borderColor: 'var(--accent-border)', background: 'var(--accent-bg)' }}>
+          style={{ color: 'var(--accent-text)', borderColor: 'var(--accent-border)', background: 'var(--accent-bg)' }}
+          aria-label="Auto-generate pricing tiers">
           Auto-Generate
         </button>
       </div>
@@ -59,23 +60,23 @@ const TierBuilder = ({ packages, onChange, basePrice }) => {
             <div key={i} className="flex gap-2 items-start p-2.5 rounded-xl border" style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)' }}>
               <input type="text" placeholder="Label (e.g. 1-2 Hours)" value={tier.label}
                 onChange={e => updateTier(i, 'label', e.target.value)}
-                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-28" />
+                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-28"  aria-label="Label (e.g. 1-2 Hours)"/>
               <input type="number" placeholder="Min H" min="1" value={tier.minHours}
                 onChange={e => updateTier(i, 'minHours', Number(e.target.value) || 1)}
-                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-16" />
+                className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-16"  aria-label="Min H"/>
               <input type="number" placeholder="Max H" min="0" value={tier.maxHours ?? ''}
                 onChange={e => updateTier(i, 'maxHours', e.target.value === '' ? null : Number(e.target.value))}
                 className="input-dark !py-1.5 !px-2.5 text-xs flex-shrink-0 w-16"
-                title="Leave empty for unlimited" />
+                title="Leave empty for unlimited"  aria-label="Max H"/>
               <div className="flex items-center flex-shrink-0">
                 <input type="number" placeholder="Rate" min="0" value={tier.hourlyRate}
                   onChange={e => updateTier(i, 'hourlyRate', Number(e.target.value) || 0)}
-                  className="input-dark !py-1.5 !px-2.5 text-xs w-20" />
+                  className="input-dark !py-1.5 !px-2.5 text-xs w-20"  aria-label="Rate"/>
                 <span className="text-xs ml-1" style={{ color: 'var(--text-muted)' }}>TK</span>
               </div>
               <button type="button" onClick={() => removeTier(i)}
                 className="p-1.5 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
-                style={{ color: 'var(--danger-text)' }}>
+                style={{ color: 'var(--danger-text)' }} aria-label="Remove pricing tier">
                 <X size={14} />
               </button>
             </div>
@@ -85,7 +86,7 @@ const TierBuilder = ({ packages, onChange, basePrice }) => {
 
       <button type="button" onClick={addTier}
         className="w-full py-2 rounded-xl border-2 border-dashed text-xs font-medium transition-all hover:opacity-80"
-        style={{ borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}>
+        style={{ borderColor: 'var(--border-base)', color: 'var(--text-muted)' }} aria-label="Add pricing tier">
         + Add Tier
       </button>
     </div>
@@ -165,7 +166,7 @@ const RenterDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -177,16 +178,16 @@ const RenterDashboard = () => {
           <h1 className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Renter Dashboard</h1>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Manage your vehicles</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center">
+        <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center" aria-label="Toggle add vehicle form">
           <PlusCircle className="mr-2" size={20} /> Add New Vehicle
         </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        <button onClick={() => setActiveTab('vehicles')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'vehicles' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'vehicles' ? { color: 'white' } : { color: 'var(--text-secondary)' }}>
+        <button onClick={() => setActiveTab('vehicles')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'vehicles' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'vehicles' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to vehicles tab" aria-pressed={activeTab === 'vehicles'}>
           <BikeIcon className="mr-2" size={16} /> Vehicles
         </button>
-        <button onClick={() => setActiveTab('maintenance')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'maintenance' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'maintenance' ? { color: 'white' } : { color: 'var(--text-secondary)' }}>
+        <button onClick={() => setActiveTab('maintenance')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'maintenance' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'maintenance' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to maintenance tab" aria-pressed={activeTab === 'maintenance'}>
           <Wrench className="mr-2" size={16} /> Maintenance
         </button>
       </div>
@@ -195,22 +196,22 @@ const RenterDashboard = () => {
         <>
           {showForm && (
             <form onSubmit={handleSubmit} className="glass p-6 rounded-2xl mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input type="text" placeholder="Model" className="input-dark text-sm" value={newBike.model} onChange={e => setNewBike({...newBike, model: e.target.value})} required />
-              <input type="text" placeholder="Brand" className="input-dark text-sm" value={newBike.brand} onChange={e => setNewBike({...newBike, brand: e.target.value})} required />
-              <select className="input-dark text-sm" value={newBike.category} onChange={e => setNewBike({...newBike, category: e.target.value})} required>
+              <input type="text" placeholder="Model" className="input-dark text-sm" value={newBike.model} onChange={e => setNewBike({...newBike, model: e.target.value})} required aria-label="Model" />
+              <input type="text" placeholder="Brand" className="input-dark text-sm" value={newBike.brand} onChange={e => setNewBike({...newBike, brand: e.target.value})} required aria-label="Brand" />
+              <select className="input-dark text-sm" value={newBike.category} onChange={e => setNewBike({...newBike, category: e.target.value})} required aria-label="Select category">
                 {categories.map(cat => <option key={cat._id} value={cat._id} style={{ background: 'var(--bg-surface)' }}>{cat.name}</option>)}
               </select>
-              <select className="input-dark text-sm" value={newBike.zone || ''} onChange={e => setNewBike({...newBike, zone: e.target.value || ''})}>
+              <select className="input-dark text-sm" value={newBike.zone || ''} onChange={e => setNewBike({...newBike, zone: e.target.value || ''})} aria-label="Select zone">
                 <option value="">No Zone (optional)</option>
                 {zones.map(z => <option key={z._id} value={z._id} style={{ background: 'var(--bg-surface)' }}>{z.name}</option>)}
               </select>
-              <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required />
+              <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required aria-label="Price Per Hour" />
               <textarea placeholder="Description" className="input-dark text-sm md:col-span-2 min-h-[80px] resize-none" value={newBike.description} onChange={e => setNewBike({...newBike, description: e.target.value})} required />
-              <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} />
+              <input type="text" placeholder="Video URL (optional, YouTube/Vimeo)" className="input-dark text-sm md:col-span-2" value={newBike.videoUrl} onChange={e => setNewBike({...newBike, videoUrl: e.target.value})} aria-label="Video URL (optional, YouTube/Vimeo)" />
               <TierBuilder packages={bikePackages} onChange={setBikePackages} basePrice={newBike.pricePerHour} />
               <div className="md:col-span-2">
                 <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Upload Vehicle Photos</label>
-                <input type="file" multiple accept="image/jpeg,image/png" className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" onChange={e => {
+                <input type="file" multiple accept="image/jpeg,image/png" className="input-dark !py-2 !px-3 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-amber-500/10 file:text-[var(--accent-text)] hover:file:bg-amber-500/20" aria-label="Upload vehicle photos" onChange={e => {
                   const files = Array.from(e.target.files || []);
                   const oversized = files.find(f => f.size > 5 * 1024 * 1024);
                   if (oversized) {
@@ -263,13 +264,13 @@ const RenterDashboard = () => {
                       </span>
                       {bike.availability ? (
                         <button onClick={() => toggleAvailability(bike._id)}
-                          className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all border" style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--success-bg)'}>
+                          className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all border" style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--success-bg)'} aria-label="Toggle vehicle availability">
                           <ToggleRight size={14} className="mr-1" /> Available
                         </button>
                       ) : (
                         <button onClick={() => toggleAvailability(bike._id)}
                           className="flex items-center px-3 py-2.5 min-h-11 rounded-lg text-xs font-medium transition-all"
-                          style={{ color: 'var(--text-muted)', background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }}>
+                          style={{ color: 'var(--text-muted)', background: 'var(--hover-bg)', borderColor: 'var(--border-base)' }} aria-label="Toggle vehicle availability">
                           <ToggleLeft size={14} className="mr-1" /> Unavailable
                         </button>
                       )}
@@ -304,7 +305,7 @@ const RenterDashboard = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <label className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Select Vehicle for Maintenance Log</label>
-                <select value={selectedBikeId || ''} onChange={e => setSelectedBikeId(e.target.value)} className="input-dark !py-1.5 !px-2.5 text-xs">
+                <select value={selectedBikeId || ''} onChange={e => setSelectedBikeId(e.target.value)} className="input-dark !py-1.5 !px-2.5 text-xs" aria-label="Vehicle for Maintenance Log">
                   <option value="">Choose a vehicle...</option>
                   {bikes.map(bike => (
                     <option key={bike._id} value={bike._id}>{bike.brand} {bike.model}</option>

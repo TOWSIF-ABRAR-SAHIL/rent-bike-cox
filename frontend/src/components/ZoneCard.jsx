@@ -40,15 +40,15 @@ const ZoneCard = ({ zone, onUpdate, onDelete }) => {
     return (
       <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
         <div className="space-y-3">
-          <input type="text" value={name} onChange={e => setName(e.target.value)} className="input-dark text-sm w-full" placeholder="Zone name" />
-          <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="input-dark text-sm w-full" placeholder="Description (optional)" />
+          <input type="text" value={name} onChange={e => setName(e.target.value)} className="input-dark text-sm w-full" placeholder="Zone name" aria-label="Zone name" />
+          <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="input-dark text-sm w-full" placeholder="Description (optional)" aria-label="Zone description" />
           <div className="flex items-center gap-2">
             <label className="text-xs" style={{ color: 'var(--text-muted)' }}>Color:</label>
-            <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+            <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" aria-label="Zone color" />
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setEditing(false)} className="flex-1 py-2 rounded-lg text-xs font-medium border" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }}>Cancel</button>
-            <button onClick={handleSave} disabled={saving || !name} className="flex-1 btn-primary text-xs flex items-center justify-center">
+            <button onClick={() => setEditing(false)} className="flex-1 py-2 rounded-lg text-xs font-medium border" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }} aria-label="Cancel editing">Cancel</button>
+            <button onClick={handleSave} disabled={saving || !name} className="flex-1 btn-primary text-xs flex items-center justify-center" aria-label="Save zone">
               {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -68,10 +68,10 @@ const ZoneCard = ({ zone, onUpdate, onDelete }) => {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg transition-all hover:bg-amber-500/10" style={{ color: 'var(--text-muted)' }}>
+          <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg transition-all hover:bg-amber-500/10" style={{ color: 'var(--text-muted)' }} aria-label="Edit zone">
             <Edit2 size={14} />
           </button>
-          <button onClick={handleDelete} className="p-1.5 rounded-lg transition-all hover:bg-red-500/10" style={{ color: 'var(--danger-text)' }}>
+          <button onClick={handleDelete} className="p-1.5 rounded-lg transition-all hover:bg-red-500/10" style={{ color: 'var(--danger-text)' }} aria-label="Delete zone">
             <Trash2 size={14} />
           </button>
         </div>

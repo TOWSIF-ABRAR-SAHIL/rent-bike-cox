@@ -95,7 +95,7 @@ const MyBookings = () => {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -105,10 +105,10 @@ const MyBookings = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>My Bookings</h1>
         <div className="flex gap-2">
-          <button onClick={handleExport} disabled={exporting} className="btn-ghost text-sm flex items-center gap-1">
+          <button onClick={handleExport} disabled={exporting} className="btn-ghost text-sm flex items-center gap-1" aria-label="Export data" >
             <Download size={14} /> {exporting ? 'Exporting...' : 'Export Data'}
           </button>
-          <button onClick={handleDeleteAccount} disabled={deleting} className="text-sm flex items-center gap-1 px-3 py-2 rounded-lg" style={{ color: 'var(--danger-text)' }}>
+          <button onClick={handleDeleteAccount} disabled={deleting} className="text-sm flex items-center gap-1 px-3 py-2 rounded-lg" style={{ color: 'var(--danger-text)' }} aria-label="Delete" >
             <Trash2 size={14} /> {deleting ? 'Deleting...' : 'Delete Account'}
           </button>
         </div>
@@ -173,10 +173,10 @@ const MyBookings = () => {
                 {canExtend && (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-3 border-t" style={{ borderColor: 'var(--border-base)' }}>
                     <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Extend booking:</span>
-                    <input type="datetime-local" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} className="input-dark text-sm !py-1.5 !px-3 flex-1 max-w-xs" />
+                    <input type="datetime-local" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} className="input-dark text-sm !py-1.5 !px-3 flex-1 max-w-xs" aria-label="Enter name" />
                     <button onClick={() => handleExtend(booking._id)} disabled={extendingId === booking._id || !newEndTime}
                       className="flex items-center px-3 py-2 min-h-10 rounded-lg text-xs font-medium transition-all"
-                      style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}>
+                      style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }} aria-label="Extend booking">
                       {extendingId === booking._id ? <Loader2 size={14} className="animate-spin" /> : <><Clock size={14} className="mr-1" /> Extend</>}
                     </button>
                   </div>
@@ -186,7 +186,7 @@ const MyBookings = () => {
                   <div className="pt-3 border-t" style={{ borderColor: 'var(--border-base)' }}>
                     <button onClick={() => handleCancel(booking._id)}
                       className="flex items-center px-3 py-2 min-h-10 rounded-lg text-xs font-medium transition-all"
-                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }}>
+                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }} aria-label="Cancel booking">
                       <AlertTriangle size={14} className="mr-1" /> Cancel Booking
                     </button>
                   </div>

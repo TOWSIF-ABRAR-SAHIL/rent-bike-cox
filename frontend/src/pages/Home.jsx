@@ -107,7 +107,7 @@ const Home = () => {
       {fetchError && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
           <div className="border p-4 rounded-2xl text-sm text-center" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
-            {fetchError} <button onClick={() => { setFetchError(''); setLoading(true); }} className="font-semibold underline ml-2">Retry</button>
+            {fetchError} <button onClick={() => { setFetchError(''); setLoading(true); }} className="font-semibold underline ml-2" aria-label="Retry">Retry</button>
           </div>
         </div>
       )}
@@ -194,7 +194,7 @@ const Home = () => {
                   style={activeCategory !== cat.slug ? { '--hover-bg': 'var(--hover-bg)' } : undefined}
                   onMouseEnter={e => { if (activeCategory !== cat.slug) e.currentTarget.style.background = 'var(--hover-bg)'; }}
                   onMouseLeave={e => { if (activeCategory !== cat.slug) e.currentTarget.style.background = ''; }}
-                >
+                 aria-label="Filter by category">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     activeCategory === cat.slug ? 'gradient-primary' : ''
                   }`}
@@ -245,7 +245,7 @@ const Home = () => {
                   : 'glass'
               }`}
               style={activeCategory !== '' ? { color: 'var(--text-secondary)' } : undefined}
-            >
+             aria-label="Filter by category">
               All Vehicles
             </button>
             {categories.map(cat => (
@@ -258,7 +258,7 @@ const Home = () => {
                     : 'glass'
                 }`}
                 style={activeCategory !== cat.slug ? { color: 'var(--text-secondary)' } : undefined}
-              >
+               aria-label="Filter by category">
                 {cat.name}s
               </button>
             ))}
@@ -276,7 +276,7 @@ const Home = () => {
                   : 'glass'
               }`}
               style={activeZone !== '' ? { color: 'var(--text-secondary)' } : undefined}
-            >
+             aria-label="Filter by zone">
               All Zones
             </button>
             {zones.map(z => (
@@ -289,7 +289,7 @@ const Home = () => {
                     : 'glass'
                 }`}
                 style={activeZone !== z._id ? { color: 'var(--text-secondary)' } : undefined}
-              >
+               aria-label="Filter by zone">
                 <span className="w-2 h-2 rounded-full" style={{ background: z.color || '#f59e0b' }} />
                 {z.name}
               </button>
@@ -309,7 +309,7 @@ const Home = () => {
                 <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Taking longer than usual?</p>
                 <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>The server may be slow to respond. You can wait or retry.</p>
                 <button onClick={() => { setSlowNetwork(false); setLoading(true); window.location.reload(); }}
-                  className="btn-primary !px-5 !py-2.5 text-sm">
+                  className="btn-primary !px-5 !py-2.5 text-sm" aria-label="Reload page">
                   Retry
                 </button>
               </div>
@@ -321,7 +321,7 @@ const Home = () => {
             title={search || activeCategory ? 'No vehicles match your search' : 'No vehicles available yet'}
             description={search || activeCategory ? 'Try adjusting your filters' : 'Check back soon for new listings'}
             action={(search || activeCategory) && (
-              <button onClick={() => { setSearch(''); setActiveCategory(''); }} className="text-amber-400 hover:text-amber-300 text-sm font-medium min-h-11 px-4 py-2 rounded-lg transition-all" style={{ color: 'var(--accent-text)' }}>
+              <button onClick={() => { setSearch(''); setActiveCategory(''); }} className="text-amber-400 hover:text-amber-300 text-sm font-medium min-h-11 px-4 py-2 rounded-lg transition-all" style={{ color: 'var(--accent-text)' }} aria-label="Filter by category">
                 Clear filters
               </button>
             )}

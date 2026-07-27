@@ -17,6 +17,8 @@ const TabButton = ({ active, onClick, icon: Icon, children }) => (
       active ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'
     }`}
     style={active ? { color: 'white' } : { color: 'var(--text-secondary)' }}
+    aria-label={`Switch to ${children} tab`}
+    aria-pressed={active}
     onMouseEnter={!active ? e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.color = 'var(--text-primary)'; } : undefined}
     onMouseLeave={!active ? e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = ''; } : undefined}>
     <Icon className="mr-2" size={16} /> {children}
@@ -239,7 +241,7 @@ const AdminDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Retry loading dashboard">Try Again</button>
       </div>
     </div>
   );
@@ -276,9 +278,9 @@ const AdminDashboard = () => {
           <form onSubmit={handleUpdateSettings} className="space-y-4">
             <div>
               <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Base Price Per Hour (TK)</label>
-              <input type="number" min="1" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Math.max(1, Number(e.target.value) || 1)})} className="input-dark" />
+              <input type="number" min="1" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Math.max(1, Number(e.target.value) || 1)})} className="input-dark" aria-label="Base Price Per Hour (TK)" />
             </div>
-            <button type="submit" className="btn-primary">Save Changes</button>
+            <button type="submit" className="btn-primary" aria-label="Save settings">Save Changes</button>
           </form>
         </div>
       )}
@@ -317,7 +319,7 @@ const AdminDashboard = () => {
                         background: bike.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
                         color: bike.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
                         borderColor: bike.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
-                      }}>
+                      }} aria-label="Toggle bike verification">
                       {bike.isVerified ? 'Unverify' : 'Verify'}
                     </button>
                   </div>
@@ -360,7 +362,8 @@ const AdminDashboard = () => {
                         <div className="flex gap-2">
                           <button onClick={() => openEditPackages(bike)}
                             className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
-                            style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', borderColor: 'var(--accent-border)' }}>
+                            style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', borderColor: 'var(--accent-border)' }}
+                            aria-label="Edit pricing tiers">
                             <Timer size={12} />
                           </button>
                           <button onClick={() => toggleBikeVerification(bike._id)}
@@ -369,7 +372,7 @@ const AdminDashboard = () => {
                               background: bike.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
                               color: bike.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
                               borderColor: bike.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
-                            }}>
+                            }} aria-label="Toggle bike verification">
                             {bike.isVerified ? 'Unverify' : 'Verify'}
                           </button>
                         </div>
@@ -416,7 +419,7 @@ const AdminDashboard = () => {
                         background: user.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
                         color: user.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
                         borderColor: user.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
-                      }}>
+                      }} aria-label="Toggle user verification">
                       {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
                     </button>
                   </div>
@@ -461,7 +464,7 @@ const AdminDashboard = () => {
                             background: user.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
                             color: user.isVerified ? 'var(--warning-text)' : 'var(--success-text)',
                             borderColor: user.isVerified ? 'var(--warning-border)' : 'var(--success-border)',
-                          }}>
+                          }} aria-label="Toggle user verification">
                           {user.isVerified ? <><XCircle size={14} className="inline mr-1" />Unverify</> : <><CheckCircle size={14} className="inline mr-1" />Verify</>}
                         </button>
                       </td>
@@ -480,14 +483,14 @@ const AdminDashboard = () => {
             <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Create Coupon</h2>
             <form onSubmit={handleCreateCoupon} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="text" value={newCoupon.code} onChange={e => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="CODE" className="input-dark text-sm" required />
-                <input type="number" value={newCoupon.discountPercent} onChange={e => setNewCoupon({...newCoupon, discountPercent: parseInt(e.target.value, 10) || 0})} min="1" max="100" placeholder="Discount %" className="input-dark text-sm" required />
+                <input type="text" value={newCoupon.code} onChange={e => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})} placeholder="CODE" className="input-dark text-sm" required aria-label="Coupon code" />
+                <input type="number" value={newCoupon.discountPercent} onChange={e => setNewCoupon({...newCoupon, discountPercent: parseInt(e.target.value, 10) || 0})} min="1" max="100" placeholder="Discount %" className="input-dark text-sm" required aria-label="Discount percentage" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="number" value={newCoupon.maxUses} onChange={e => setNewCoupon({...newCoupon, maxUses: parseInt(e.target.value, 10) || 0})} min="0" placeholder="Max uses (0=unlimited)" className="input-dark text-sm" />
-                <input type="datetime-local" value={newCoupon.expiresAt} onChange={e => setNewCoupon({...newCoupon, expiresAt: e.target.value})} className="input-dark text-sm" />
+                <input type="number" value={newCoupon.maxUses} onChange={e => setNewCoupon({...newCoupon, maxUses: parseInt(e.target.value, 10) || 0})} min="0" placeholder="Max uses (0=unlimited)" className="input-dark text-sm" aria-label="Maximum coupon uses" />
+                <input type="datetime-local" value={newCoupon.expiresAt} onChange={e => setNewCoupon({...newCoupon, expiresAt: e.target.value})} className="input-dark text-sm" aria-label="Coupon expiration date" />
               </div>
-              <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Create</button>
+              <button type="submit" className="btn-primary !py-2.5 text-sm" aria-label="Create coupon"><Plus size={16} className="inline mr-1" /> Create</button>
             </form>
           </div>
           <>
@@ -524,12 +527,12 @@ const AdminDashboard = () => {
                         background: c.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
                         color: c.isActive ? 'var(--warning-text)' : 'var(--success-text)',
                         borderColor: c.isActive ? 'var(--warning-border)' : 'var(--success-border)',
-                      }}>
+                      }} aria-label="Toggle coupon active status">
                       {c.isActive ? 'Deactivate' : 'Activate'}
                     </button>
                     <button onClick={() => handleDeleteCoupon(c._id)}
                       className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
-                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }} aria-label="Delete coupon">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -575,12 +578,12 @@ const AdminDashboard = () => {
                             background: c.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
                             color: c.isActive ? 'var(--warning-text)' : 'var(--success-text)',
                             borderColor: c.isActive ? 'var(--warning-border)' : 'var(--success-border)',
-                          }}>
+                          }} aria-label="Toggle coupon active status">
                           {c.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                         <button onClick={() => handleDeleteCoupon(c._id)}
                           className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
-                          style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                          style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }} aria-label="Delete coupon">
                           <Trash2 size={14} />
                         </button>
                       </td>
@@ -600,7 +603,7 @@ const AdminDashboard = () => {
           <div className="glass p-6 rounded-2xl max-w-xl">
             <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Add Category</h2>
             <form onSubmit={handleCreateCategory} className="flex gap-3">
-              <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Microbus" className="input-dark flex-1 text-sm" required />
+              <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="e.g. Microbus" className="input-dark flex-1 text-sm" required aria-label="e.g. Microbus" />
               <button type="submit" className="btn-primary !py-2.5 text-sm"><Plus size={16} className="inline mr-1" /> Add</button>
             </form>
           </div>
@@ -635,12 +638,12 @@ const AdminDashboard = () => {
                         background: cat.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
                         color: cat.isActive ? 'var(--warning-text)' : 'var(--success-text)',
                         borderColor: cat.isActive ? 'var(--warning-border)' : 'var(--success-border)',
-                      }}>
+                      }} aria-label="Toggle category active status">
                       {cat.isActive ? 'Deactivate' : 'Activate'}
                     </button>
                     <button onClick={() => handleDeleteCategory(cat._id)}
                       className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
-                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                      style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }} aria-label="Delete category">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -682,12 +685,12 @@ const AdminDashboard = () => {
                             background: cat.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
                             color: cat.isActive ? 'var(--warning-text)' : 'var(--success-text)',
                             borderColor: cat.isActive ? 'var(--warning-border)' : 'var(--success-border)',
-                          }}>
+                          }} aria-label="Toggle category active status">
                           {cat.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                         <button onClick={() => handleDeleteCategory(cat._id)}
                           className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
-                          style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}>
+                          style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }} aria-label="Delete category">
                           <Trash2 size={14} />
                         </button>
                       </td>
@@ -711,7 +714,7 @@ const AdminDashboard = () => {
           <form onSubmit={handleWalkIn} className="space-y-3">
             <div>
               <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Vehicle</label>
-              <select value={walkIn.bikeId} onChange={e => setWalkIn({...walkIn, bikeId: e.target.value})} className="input-dark text-sm" required>
+              <select value={walkIn.bikeId} onChange={e => setWalkIn({...walkIn, bikeId: e.target.value})} className="input-dark text-sm" required aria-label="Vehicle">
                 <option value="">Select a vehicle</option>
                 {bikes.filter(b => b.availability).map(bike => (
                   <option key={bike._id} value={bike._id} style={{ background: 'var(--bg-surface)' }}>{bike.model} ({bike.brand}) — {bike.pricePerHour} TK/hr</option>
@@ -723,32 +726,32 @@ const AdminDashboard = () => {
                 <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
                   <Clock size={12} className="inline mr-1" /> Start Time
                 </label>
-                <input type="datetime-local" value={walkIn.startTime} onChange={e => setWalkIn({...walkIn, startTime: e.target.value})} className="input-dark text-sm" required />
+                <input type="datetime-local" value={walkIn.startTime} onChange={e => setWalkIn({...walkIn, startTime: e.target.value})} className="input-dark text-sm" required aria-label="Enter name" />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
                   <Clock size={12} className="inline mr-1" /> End Time
                 </label>
-                <input type="datetime-local" value={walkIn.endTime} onChange={e => setWalkIn({...walkIn, endTime: e.target.value})} className="input-dark text-sm" required />
+                <input type="datetime-local" value={walkIn.endTime} onChange={e => setWalkIn({...walkIn, endTime: e.target.value})} className="input-dark text-sm" required aria-label="Enter name" />
               </div>
             </div>
             <div>
               <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Customer Name</label>
-              <input type="text" value={walkIn.customerName} onChange={e => setWalkIn({...walkIn, customerName: e.target.value})} placeholder="Full name" className="input-dark text-sm" required />
+              <input type="text" value={walkIn.customerName} onChange={e => setWalkIn({...walkIn, customerName: e.target.value})} placeholder="Full name" className="input-dark text-sm" required aria-label="Full name" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Phone</label>
-                <input type="tel" value={walkIn.customerPhone} onChange={e => setWalkIn({...walkIn, customerPhone: e.target.value})} placeholder="01XXXXXXXXX" className="input-dark text-sm" required />
+                <input type="tel" value={walkIn.customerPhone} onChange={e => setWalkIn({...walkIn, customerPhone: e.target.value})} placeholder="01XXXXXXXXX" className="input-dark text-sm" required aria-label="01XXXXXXXXX" />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>NID Number</label>
-                <input type="text" value={walkIn.customerNid} onChange={e => setWalkIn({...walkIn, customerNid: e.target.value})} placeholder="National ID" className="input-dark text-sm" required />
+                <input type="text" value={walkIn.customerNid} onChange={e => setWalkIn({...walkIn, customerNid: e.target.value})} placeholder="National ID" className="input-dark text-sm" required aria-label="National ID" />
               </div>
             </div>
             <div>
               <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Destination</label>
-              <input type="text" value={walkIn.destination} onChange={e => setWalkIn({...walkIn, destination: e.target.value})} placeholder="e.g. Cox's Bazar Beach" className="input-dark text-sm" />
+              <input type="text" value={walkIn.destination} onChange={e => setWalkIn({...walkIn, destination: e.target.value})} placeholder="e.g. Cox's Bazar Beach" className="input-dark text-sm" aria-label="e.g. Cox's Bazar Beach" />
             </div>
             <button type="submit" disabled={walkInSubmitting || !walkIn.bikeId} className="btn-primary flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
               {walkInSubmitting ? <><Clock size={16} className="mr-2 animate-spin" /> Creating...</> : <><UserPlus size={16} className="mr-2" /> Create Walk-in Booking</>}
@@ -777,7 +780,7 @@ const AdminDashboard = () => {
                   <AlertTriangle size={18} className="text-amber-500" /> Refund Circuit Breaker
                 </h3>
                 {finance.overview.circuitBreaker.isTripped && (
-                  <button onClick={handleUnlockBreaker} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">
+                  <button onClick={handleUnlockBreaker} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors" aria-label="Unlock circuit breaker" >
                     Unlock Breaker
                   </button>
                 )}
@@ -852,7 +855,7 @@ const AdminDashboard = () => {
           <div className="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slideIn" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Edit Pricing Tiers — {editingBike.model}</h3>
-              <button onClick={() => setEditingBike(null)} className="p-2 rounded-lg hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
+              <button onClick={() => setEditingBike(null)} className="p-2 rounded-lg hover:opacity-80" style={{ color: 'var(--text-muted)' }} aria-label="Close pricing tiers modal">
                 <X size={18} />
               </button>
             </div>
@@ -866,18 +869,19 @@ const AdminDashboard = () => {
                 <div key={i} className="flex gap-2 items-start p-3 rounded-xl border" style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)' }}>
                   <input type="text" placeholder="Label (e.g. 1-2 Hours)" value={tier.label}
                     onChange={e => updateEditPackage(i, 'label', e.target.value)}
-                    className="input-dark !py-1.5 !px-2.5 text-xs flex-1" />
+                    className="input-dark !py-1.5 !px-2.5 text-xs flex-1"  aria-label="Label (e.g. 1-2 Hours)"/>
                   <input type="number" placeholder="Min H" min="1" value={tier.minHours}
                     onChange={e => updateEditPackage(i, 'minHours', Number(e.target.value) || 1)}
-                    className="input-dark !py-1.5 !px-2.5 text-xs w-16" />
+                    className="input-dark !py-1.5 !px-2.5 text-xs w-16"  aria-label="Min H"/>
                   <input type="number" placeholder="Max H" min="0" value={tier.maxHours ?? ''}
                     onChange={e => updateEditPackage(i, 'maxHours', e.target.value === '' ? null : Number(e.target.value))}
-                    className="input-dark !py-1.5 !px-2.5 text-xs w-16" />
+                    className="input-dark !py-1.5 !px-2.5 text-xs w-16"  aria-label="Max H"/>
                   <input type="number" placeholder="Rate" min="0" value={tier.hourlyRate}
                     onChange={e => updateEditPackage(i, 'hourlyRate', Number(e.target.value) || 0)}
-                    className="input-dark !py-1.5 !px-2.5 text-xs w-20" />
-                  <button type="button" onClick={() => removeEditPackage(i)}
-                    className="p-1.5 rounded-lg hover:opacity-80" style={{ color: 'var(--danger-text)' }}>
+                    className="input-dark !py-1.5 !px-2.5 text-xs w-20"  aria-label="Rate"/>
+                   <button type="button" onClick={() => removeEditPackage(i)}
+                    className="p-1.5 rounded-lg hover:opacity-80" style={{ color: 'var(--danger-text)' }}
+                    aria-label="Remove pricing tier">
                     <X size={14} />
                   </button>
                 </div>
@@ -886,15 +890,18 @@ const AdminDashboard = () => {
 
             <button type="button" onClick={addEditPackage}
               className="w-full py-2.5 rounded-xl border-2 border-dashed text-xs font-medium mb-4 transition-all hover:opacity-80"
-              style={{ borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}>
+              style={{ borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}
+              aria-label="Add pricing tier">
               + Add Tier
             </button>
 
             <div className="flex gap-3">
-              <button onClick={() => setEditingBike(null)} className="flex-1 py-3 rounded-xl text-sm font-medium border transition-all" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }}>
+              <button onClick={() => setEditingBike(null)} className="flex-1 py-3 rounded-xl text-sm font-medium border transition-all" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }}
+                aria-label="Cancel editing pricing tiers">
                 Cancel
               </button>
-              <button onClick={saveEditPackages} disabled={editSaving} className="flex-1 btn-primary flex items-center justify-center">
+              <button onClick={saveEditPackages} disabled={editSaving} className="flex-1 btn-primary flex items-center justify-center"
+                aria-label="Save pricing tiers">
                 {editSaving ? 'Saving...' : 'Save Tiers'}
               </button>
             </div>
@@ -924,7 +931,7 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-2">
                 <label className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Select Vehicle for Maintenance Log</label>
-                <select value={selectedBikeId || ''} onChange={e => setSelectedBikeId(e.target.value)} className="input-dark !py-1.5 !px-2.5 text-xs">
+                <select value={selectedBikeId || ''} onChange={e => setSelectedBikeId(e.target.value)} className="input-dark !py-1.5 !px-2.5 text-xs" aria-label="Vehicle for Maintenance Log">
                   <option value="">Choose a vehicle...</option>
                   {bikes.map(bike => (
                     <option key={bike._id} value={bike._id}>{bike.brand} {bike.model}</option>
@@ -950,8 +957,8 @@ const AdminDashboard = () => {
           <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
             <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Create New Zone</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input type="text" value={newZone.name} onChange={e => setNewZone({...newZone, name: e.target.value})} placeholder="Zone name" className="input-dark text-sm" />
-              <input type="text" value={newZone.description} onChange={e => setNewZone({...newZone, description: e.target.value})} placeholder="Description (optional)" className="input-dark text-sm" />
+              <input type="text" value={newZone.name} onChange={e => setNewZone({...newZone, name: e.target.value})} placeholder="Zone name" className="input-dark text-sm" aria-label="Zone name" />
+              <input type="text" value={newZone.description} onChange={e => setNewZone({...newZone, description: e.target.value})} placeholder="Description (optional)" className="input-dark text-sm" aria-label="Description (optional)" />
               <div className="flex items-center gap-2">
                 <input type="color" value={newZone.color} onChange={e => setNewZone({...newZone, color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0" />
                 <button onClick={async () => {
@@ -965,7 +972,8 @@ const AdminDashboard = () => {
                   } catch (err) {
                     addToast(err.response?.data?.message || 'Failed to create zone', 'error');
                   }
-                }} disabled={!newZone.name} className="btn-primary flex-1 text-sm">
+                }} disabled={!newZone.name} className="btn-primary flex-1 text-sm"
+                  aria-label="Create zone">
                   <Plus size={16} className="mr-1" /> Create Zone
                 </button>
               </div>

@@ -14,7 +14,7 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 | Frontend | React 19, Vite 8, Tailwind CSS 4, React Router DOM 7, Axios |
 | Backend | Express 5, Mongoose 9, MongoDB |
 | Auth | JWT (bcryptjs), password policy (8+ chars, uppercase, number, special) |
-| Payments | SSLCommerz (bKash, Nagad, bank, card) |
+| Payments | SSLCommerz (bKash, Nagad, card, internet banking) |
 | Uploads | Multer + Cloudinary (NID, license, bike photos) |
 | Logging | Winston (structured, redaction, file rotation) |
 | Email | Nodemailer (SMTP) |
@@ -52,7 +52,7 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 
 ### Prerequisites
 
-- Node.js 18+ (via nvm recommended)
+- Node.js 20+ (via nvm recommended)
 - MongoDB (local or Atlas)
 - Cloudinary account
 - SSLCommerz sandbox account
@@ -113,9 +113,9 @@ rent-bike-cox/
 │   ├── routes/           # 20+ route files
 │   ├── middleware/        # auth, upload, error handling, sanitize, logging
 │   ├── security/         # validators, sanitizers, authorization
-│   ├── services/         # Pricing, Payment, Refund, Email, Fraud, Notification
+│   ├── services/         # Pricing, Payment, Refund, Cancellation, Coupon, Fraud, Payout, Email, Notification
 │   ├── stateMachines/    # Booking, PaymentIntent, Refund
-│   ├── gateways/         # SSLCommerz, Bkash, Stripe
+│   ├── gateways/         # GatewayRegistry + SSLCommerz
 │   ├── domain/           # Money (Decimal.js), enums
 │   ├── events/           # EventBus
 │   ├── jobs/             # Background jobs (cleanup, state transition, retention)

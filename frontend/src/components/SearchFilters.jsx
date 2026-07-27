@@ -3,7 +3,7 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
     <div className="p-5 rounded-xl mb-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Filters</h3>
-        <button onClick={onClear} className="text-xs px-2 py-1 rounded-md" style={{ color: 'var(--accent-text)' }}>Clear all</button>
+        <button onClick={onClear} className="text-xs px-2 py-1 rounded-md" style={{ color: 'var(--accent-text)' }} aria-label="Clear all filters">Clear all</button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

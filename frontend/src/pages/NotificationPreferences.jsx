@@ -80,6 +80,8 @@ export default function NotificationPreferences() {
                 <button
                   onClick={() => toggle(ch.key, type.key)}
                   className="w-10 h-5 rounded-full transition-colors relative mx-auto"
+                  aria-label={`Toggle ${type.label} ${ch.label} notifications`}
+                  aria-pressed={prefs[ch.key]?.[type.key]}
                   style={{
                     background: prefs[ch.key]?.[type.key] ? 'var(--accent-bg-solid, #f59e0b)' : 'var(--border-base)',
                   }}
@@ -100,7 +102,7 @@ export default function NotificationPreferences() {
         disabled={saving}
         className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm text-white mt-6 disabled:opacity-50 transition-all"
         style={{ background: 'var(--accent-bg-solid, #f59e0b)' }}
-      >
+       aria-label="Save changes">
         {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
         Save Preferences
       </button>

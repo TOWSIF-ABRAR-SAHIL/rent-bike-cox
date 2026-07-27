@@ -75,6 +75,7 @@ const AnalyticsDashboard = () => {
               onChange={e => setDays(Number(e.target.value))}
               className="px-3 py-2 rounded-lg text-sm outline-none"
               style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+              aria-label="Select time period"
             >
               <option value={7}>Last 7 days</option>
               <option value={30}>Last 30 days</option>
@@ -85,7 +86,7 @@ const AnalyticsDashboard = () => {
               onClick={handleExport}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
               style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
-            >
+             aria-label="Export data">
               <Download size={16} />
               Export
             </button>

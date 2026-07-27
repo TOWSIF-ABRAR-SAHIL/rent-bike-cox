@@ -294,7 +294,7 @@ const Checkout = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -315,7 +315,7 @@ const Checkout = () => {
               </Link>
             )}
           </div>
-          <button onClick={() => setError('')} className="text-xs font-bold flex-shrink-0" style={{ color: 'var(--danger-text)' }}>&times;</button>
+          <button onClick={() => setError('')} className="text-xs font-bold flex-shrink-0" style={{ color: 'var(--danger-text)' }} aria-label="Close">&times;</button>
         </div>
       )}
 
@@ -344,7 +344,7 @@ const Checkout = () => {
             <span className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
               Selected: {selectedPackage.label} ({selectedPackage.hourlyRate} TK/hr)
             </span>
-            <button onClick={() => setSelectedPackage(null)} className="ml-auto text-xs font-bold px-2 py-0.5 rounded" style={{ color: 'var(--text-muted)' }}>&times;</button>
+            <button onClick={() => setSelectedPackage(null)} className="ml-auto text-xs font-bold px-2 py-0.5 rounded" style={{ color: 'var(--text-muted)' }} aria-label="Close">&times;</button>
           </div>
         )}
 
@@ -392,7 +392,7 @@ const Checkout = () => {
           <div className="flex items-center gap-3">
             <button type="button" onClick={decrementHours}
               className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all active:scale-95"
-              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}>
+              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} aria-label="Decrease hours">
               <Minus size={18} />
             </button>
             <div className="flex-1">
@@ -401,11 +401,11 @@ const Checkout = () => {
                   const v = parseInt(e.target.value, 10);
                   if (!isNaN(v) && v >= 1 && v <= 720) setHours(v);
                 }}
-                className="input-dark text-center text-2xl font-bold !py-3" />
+                className="input-dark text-center text-2xl font-bold !py-3"  aria-label="Enter number"/>
             </div>
             <button type="button" onClick={incrementHours}
               className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all active:scale-95"
-              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }}>
+              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} aria-label="Increase hours">
               <Plus size={18} />
             </button>
           </div>
@@ -417,7 +417,7 @@ const Checkout = () => {
           <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
             <Clock size={12} className="inline mr-1" /> Start Time
           </label>
-          <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" />
+          <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" aria-label="Enter name" />
           {isStartTooSoon && (
             <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--warning-text)' }}>
               <AlertTriangle size={11} />
@@ -465,7 +465,7 @@ const Checkout = () => {
           <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
             <Tag size={12} className="inline mr-1" /> Coupon Code (optional)
           </label>
-          <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="input-dark text-sm" />
+          <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="input-dark text-sm" aria-label="Enter coupon code" />
         </div>
 
         {/* Destination */}
@@ -473,7 +473,7 @@ const Checkout = () => {
           <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
             <MapPin size={12} className="inline mr-1" /> Destination / Trip Plan
           </label>
-          <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Cox's Bazar Beach, Inani, Himchari" className="input-dark text-sm" />
+          <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Cox's Bazar Beach, Inani, Himchari" className="input-dark text-sm" aria-label="e.g. Cox's Bazar Beach, Inani, Himchari" />
         </div>
 
         {/* Price Breakdown */}
@@ -535,7 +535,7 @@ const Checkout = () => {
                     ? 'cursor-not-allowed'
                     : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
                 }`}
-                style={isDisabled ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}>
+                style={isDisabled ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined} aria-label="Pay via SSLCommerz">
                 {creating ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
                 {creating ? 'Processing...' : `Pay ${pricing.minAdvance} TK via SSLCommerz`}
               </button>
@@ -545,7 +545,7 @@ const Checkout = () => {
                     ? 'cursor-not-allowed'
                     : ''
                 }`}
-                style={isDisabled ? { borderColor: 'var(--border-base)', color: 'var(--text-muted)' } : { borderColor: 'var(--success-border)', color: 'var(--success-text)', background: 'var(--success-bg)' }}>
+                style={isDisabled ? { borderColor: 'var(--border-base)', color: 'var(--text-muted)' } : { borderColor: 'var(--success-border)', color: 'var(--success-text)', background: 'var(--success-bg)' }} aria-label="Confirm booking directly">
                 <CheckCircle size={20} className="mr-2" />
                 {creating ? 'Processing...' : `Confirm Booking (${pricing.minAdvance} TK Advance)`}
               </button>

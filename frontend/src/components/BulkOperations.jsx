@@ -97,7 +97,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
       <div className="flex items-center gap-3 p-3 rounded-xl mb-4" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>{selectedBikes.length} selected</span>
-          <button onClick={onClearSelection} className="p-1 rounded-md transition-all" style={{ color: 'var(--accent-text)' }} title="Clear selection">
+          <button onClick={onClearSelection} className="p-1 rounded-md transition-all" style={{ color: 'var(--accent-text)' }} title="Clear selection" aria-label="Clear selection">
             <X size={14} />
           </button>
         </div>
@@ -107,6 +107,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
           onChange={e => { setAction(e.target.value); setShowConfirm(false); setMessage(null); }}
           className="px-3 py-1.5 rounded-lg text-sm outline-none"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+          aria-label="Choose bulk action"
         >
           <option value="">Choose action...</option>
           <option value="status">Update Status</option>
@@ -120,6 +121,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
             onClick={() => setShowConfirm(true)}
             className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
             style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
+            aria-label="Execute bulk action"
           >
             Execute
           </button>
@@ -138,10 +140,10 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
 
       {showConfirm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
+          <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} role="dialog" aria-modal="true" aria-label="Confirm bulk action">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Confirm Action</h3>
-              <button onClick={() => setShowConfirm(false)} className="p-1 rounded-md" style={{ color: 'var(--text-muted)' }}>
+              <button onClick={() => setShowConfirm(false)} className="p-1 rounded-md" style={{ color: 'var(--text-muted)' }} aria-label="Close">
                 <X size={18} />
               </button>
             </div>
@@ -158,8 +160,8 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                   onChange={e => setStatusValue(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                   style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+                  aria-label="Set status"
                 >
-                  <option value="active">Active</option>
                   <option value="unavailable">Unavailable</option>
                   <option value="maintenance">Under Maintenance</option>
                 </select>
@@ -174,8 +176,8 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                   onChange={e => setZoneValue(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                   style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+                  aria-label="Assign to zone"
                 >
-                  <option value="">No Zone</option>
                   {zones.map(z => (
                     <option key={z._id} value={z._id}>{z.name}</option>
                   ))}
@@ -192,8 +194,8 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                     onChange={e => setMaintenanceType(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                     style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+                    aria-label="Maintenance type"
                   >
-                    <option value="service">Service</option>
                     <option value="repair">Repair</option>
                     <option value="inspection">Inspection</option>
                   </select>
@@ -207,6 +209,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                     placeholder="e.g., Oil change, Tire rotation"
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                     style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+                    aria-label="Maintenance title"
                   />
                 </div>
                 <div>
@@ -217,6 +220,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                     onChange={e => setMaintenanceDate(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                     style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+                    aria-label="Next service due date"
                   />
                 </div>
               </div>
@@ -237,6 +241,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                 onClick={() => setShowConfirm(false)}
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--input-border)' }}
+                aria-label="Cancel"
               >
                 Cancel
               </button>
@@ -245,6 +250,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                 disabled={loading || (action === 'maintenance' && (!maintenanceTitle || !maintenanceDate))}
                 className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
                 style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
+                aria-label="Confirm action"
               >
                 {loading ? 'Processing...' : 'Confirm'}
               </button>

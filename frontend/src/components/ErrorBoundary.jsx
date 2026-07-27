@@ -47,10 +47,10 @@ class ErrorBoundary extends Component {
             </p>
 
             <div className="flex items-center justify-center gap-3">
-              <button onClick={this.handleReset} className="btn-primary flex items-center gap-2">
+              <button onClick={this.handleReset} className="btn-primary flex items-center gap-2" aria-label="Retry">
                 <RefreshCw size={16} /> Try Again
               </button>
-              <button onClick={this.handleGoHome} className="btn-ghost flex items-center gap-2">
+              <button onClick={this.handleGoHome} className="btn-ghost flex items-center gap-2" aria-label="Go to homepage">
                 <Home size={16} /> Go Home
               </button>
             </div>

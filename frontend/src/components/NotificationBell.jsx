@@ -85,6 +85,8 @@ const NotificationBell = () => {
         className="relative p-2 rounded-lg transition-all"
         style={{ color: 'var(--text-secondary)' }}
         title="Notifications"
+        aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}
+        aria-expanded={open}
       >
         <Bell size={18} />
         {unread > 0 && (
@@ -99,7 +101,7 @@ const NotificationBell = () => {
           <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid var(--border-base)' }}>
             <h3 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Notifications</h3>
             {unread > 0 && (
-              <button onClick={markAllRead} className="text-xs flex items-center gap-1" style={{ color: 'var(--accent-text)' }}>
+              <button onClick={markAllRead} className="text-xs flex items-center gap-1" style={{ color: 'var(--accent-text)' }} aria-label="Mark all as read">
                 <CheckCheck size={12} /> Mark all read
               </button>
             )}
@@ -114,6 +116,10 @@ const NotificationBell = () => {
                   className="px-4 py-3 flex items-start gap-3 transition-all cursor-pointer"
                   style={{ background: n.read ? 'transparent' : 'var(--hover-bg)' }}
                   onClick={() => !n.read && markRead(n._id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={n.read ? `${n.title} - ${n.message}` : `Mark "${n.title}" as read`}
+                  onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !n.read) markRead(n._id); }}
                 >
                   <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: n.read ? 'transparent' : typeColors[n.type] || 'var(--text-muted)' }} />
                   <div className="flex-1 min-w-0">
@@ -129,7 +135,7 @@ const NotificationBell = () => {
             )}
           </div>
           <div className="px-4 py-2 text-center" style={{ borderTop: '1px solid var(--border-base)' }}>
-            <Link to="/notifications" onClick={() => setOpen(false)} className="text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
+            <Link to="/notifications" onClick={() => setOpen(false)} className="text-xs font-medium" style={{ color: 'var(--accent-text)' }} aria-label="View all notifications">
               View all notifications
             </Link>
           </div>

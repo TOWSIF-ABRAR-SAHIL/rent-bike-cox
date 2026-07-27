@@ -56,7 +56,7 @@ const Invoice = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary">Try Again</button>
+        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -66,7 +66,7 @@ const Invoice = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Invoice Not Found</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>This invoice doesn't exist or has been removed.</p>
-        <button onClick={() => navigate(-1)} className="btn-primary">Go Back</button>
+        <button onClick={() => navigate(-1)} className="btn-primary" aria-label="Go back">Go Back</button>
       </div>
     </div>
   );
@@ -176,11 +176,11 @@ const Invoice = () => {
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3 mt-6 no-print">
-        <button onClick={() => window.print()} className="btn-primary flex items-center">
+        <button onClick={() => window.print()} className="btn-primary flex items-center" aria-label="Print invoice">
           <Printer className="mr-2" size={18} /> Print Invoice
         </button>
         {canCancel && (
-          <button onClick={handleCancel} disabled={cancelling} className="btn-danger flex items-center">
+          <button onClick={handleCancel} disabled={cancelling} className="btn-danger flex items-center" aria-label="Cancel" >
             <XCircle className="mr-2" size={18} /> {cancelling ? 'Cancelling...' : 'Cancel Booking'}
           </button>
         )}

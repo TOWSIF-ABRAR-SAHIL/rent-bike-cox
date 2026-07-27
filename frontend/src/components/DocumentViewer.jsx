@@ -71,16 +71,17 @@ export default function DocumentViewer({ documents, onVerify, onDelete }) {
                 className="p-2 rounded-lg transition-colors hover:bg-amber-500/10"
                 style={{ color: 'var(--text-muted)' }}
                 title="View"
+                aria-label="View document"
               >
                 <ExternalLink size={16} />
               </a>
               {onVerify && !doc.verified && (
-                <button onClick={() => onVerify(doc._id)} className="p-2 rounded-lg transition-colors hover:bg-emerald-500/10 text-emerald-400" title="Verify">
+                <button onClick={() => onVerify(doc._id)} className="p-2 rounded-lg transition-colors hover:bg-emerald-500/10 text-emerald-400" title="Verify" aria-label="Verify document">
                   <CheckCircle size={16} />
                 </button>
               )}
               {onDelete && (
-                <button onClick={() => { if (window.confirm('Delete this document?')) onDelete(doc._id); }} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" title="Delete">
+                <button onClick={() => { if (window.confirm('Delete this document?')) onDelete(doc._id); }} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" title="Delete" aria-label="Delete document">
                   <Trash2 size={16} />
                 </button>
               )}

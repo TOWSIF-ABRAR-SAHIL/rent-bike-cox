@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import PageErrorBoundary from './components/PageErrorBoundary';
 import PageSpinner from './components/PageSpinner';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -45,73 +46,95 @@ function App() {
                 <Suspense fallback={<PageSpinner />}>
                   <ErrorBoundary>
                     <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/bike/:id" element={<BikeDetails />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/payment-failed" element={<PaymentFailed />} />
-                    <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    <Route path="/" element={<PageErrorBoundary><Home /></PageErrorBoundary>} />
+                    <Route path="/bike/:id" element={<PageErrorBoundary><BikeDetails /></PageErrorBoundary>} />
+                    <Route path="/login" element={<PageErrorBoundary><Login /></PageErrorBoundary>} />
+                    <Route path="/signup" element={<PageErrorBoundary><Signup /></PageErrorBoundary>} />
+                    <Route path="/forgot-password" element={<PageErrorBoundary><ForgotPassword /></PageErrorBoundary>} />
+                    <Route path="/payment-failed" element={<PageErrorBoundary><PaymentFailed /></PageErrorBoundary>} />
+                    <Route path="/payment-cancelled" element={<PageErrorBoundary><PaymentCancelled /></PageErrorBoundary>} />
                     <Route path="/my-bookings" element={
-                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                        <MyBookings />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <MyBookings />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
-                    <Route path="/policies" element={<Policies />} />
-                    <Route path="/privacy" element={<PrivacyPolicy />} />
-                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/policies" element={<PageErrorBoundary><Policies /></PageErrorBoundary>} />
+                    <Route path="/privacy" element={<PageErrorBoundary><PrivacyPolicy /></PageErrorBoundary>} />
+                    <Route path="/terms" element={<PageErrorBoundary><TermsOfService /></PageErrorBoundary>} />
                     <Route path="/checkout/:bikeId" element={
-                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                        <Checkout />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <Checkout />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/invoice/:bookingId" element={
-                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                        <Invoice />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <Invoice />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/renter-dashboard" element={
-                      <ProtectedRoute roles={['Renter', 'Admin']}>
-                        <RenterDashboard />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Renter', 'Admin']}>
+                          <RenterDashboard />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/admin-dashboard" element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <AdminDashboard />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Admin']}>
+                          <AdminDashboard />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/fleet" element={
-                      <ProtectedRoute roles={['Renter', 'Admin']}>
-                        <FleetDashboard />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Renter', 'Admin']}>
+                          <FleetDashboard />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
-                    <Route path="/search" element={<AdvancedSearch />} />
+                    <Route path="/search" element={<PageErrorBoundary><AdvancedSearch /></PageErrorBoundary>} />
                     <Route path="/analytics" element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <AnalyticsDashboard />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Admin']}>
+                          <AnalyticsDashboard />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/notifications" element={
-                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                        <Notifications />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <Notifications />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/seasonal-pricing" element={
-                      <ProtectedRoute roles={['Admin']}>
-                        <SeasonalPricingManager />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Admin']}>
+                          <SeasonalPricingManager />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/vehicle-docs" element={
-                      <ProtectedRoute roles={['Renter', 'Admin']}>
-                        <VehicleDocuments />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Renter', 'Admin']}>
+                          <VehicleDocuments />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
                     <Route path="/notification-settings" element={
-                      <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
-                        <NotificationPreferences />
-                      </ProtectedRoute>
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <NotificationPreferences />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
                     } />
-                    <Route path="*" element={<NotFound />} />
+                    <Route path="*" element={<PageErrorBoundary><NotFound /></PageErrorBoundary>} />
                     </Routes>
                   </ErrorBoundary>
                 </Suspense>

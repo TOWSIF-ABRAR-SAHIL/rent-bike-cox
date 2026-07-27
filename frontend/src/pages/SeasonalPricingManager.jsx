@@ -105,12 +105,13 @@ export default function SeasonalPricingManager() {
             onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
             className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
             style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-          />
+           aria-label="Name (e.g., Eid Holiday)"/>
           <select
             value={form.type}
             onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
             className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
             style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
+            aria-label="Rate type"
           >
             {TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
@@ -125,7 +126,7 @@ export default function SeasonalPricingManager() {
               onChange={e => setForm(f => ({ ...f, multiplier: parseFloat(e.target.value) || 1 }))}
               className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none w-full"
               style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-            />
+             aria-label="Multiplier"/>
           </div>
           <div>
             <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Priority (higher wins)</label>
@@ -136,7 +137,7 @@ export default function SeasonalPricingManager() {
               onChange={e => setForm(f => ({ ...f, priority: parseInt(e.target.value) || 0 }))}
               className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none w-full"
               style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-            />
+             aria-label="(higher wins)"/>
           </div>
           {form.type !== 'weekend' && !form.recurringYearly && (
             <>
@@ -146,14 +147,14 @@ export default function SeasonalPricingManager() {
                 onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
                 className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-              />
+               aria-label="Select date"/>
               <input
                 type="date"
                 value={form.endDate}
                 onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
                 className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-              />
+               aria-label="Select date"/>
             </>
           )}
           <div className="flex items-center gap-3">
@@ -174,7 +175,7 @@ export default function SeasonalPricingManager() {
                 onChange={e => setForm(f => ({ ...f, month: parseInt(e.target.value) || '' }))}
                 className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-              >
+               aria-label="Select month">
                 <option value="">Month</option>
                 {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i) =>
                   <option key={i+1} value={i+1}>{m}</option>
@@ -189,7 +190,7 @@ export default function SeasonalPricingManager() {
                 onChange={e => setForm(f => ({ ...f, dayOfMonth: parseInt(e.target.value) || '' }))}
                 className="rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
                 style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-              />
+               aria-label="Day"/>
             </>
           )}
           {form.type === 'weekend' && (
@@ -207,7 +208,7 @@ export default function SeasonalPricingManager() {
                       color: form.daysOfWeek.includes(i) ? 'var(--accent-text)' : 'var(--text-secondary)',
                       border: `1px solid ${form.daysOfWeek.includes(i) ? 'var(--accent-border)' : 'var(--border-base)'}`,
                     }}
-                  >
+                   aria-label="Toggle day">
                     {d}
                   </button>
                 ))}
@@ -221,7 +222,7 @@ export default function SeasonalPricingManager() {
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             className="sm:col-span-2 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-amber-500 outline-none"
             style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--input-border)' }}
-          />
+           aria-label="Description (optional)"/>
         </div>
         <div className="flex gap-3 mt-4">
           <button
@@ -229,15 +230,16 @@ export default function SeasonalPricingManager() {
             disabled={saving || !form.name}
             className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-white transition-all disabled:opacity-50"
             style={{ background: 'var(--accent-bg-solid, #f59e0b)' }}
-          >
+           aria-label="Save changes">
             {saving ? <RefreshCw size={14} className="animate-spin" /> : editing ? <Check size={14} /> : <Plus size={14} />}
             {editing ? 'Update' : 'Create'}
           </button>
           {editing && (
-            <button
+              <button
               onClick={() => { setEditing(null); setForm(emptyForm); }}
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all"
               style={{ color: 'var(--text-secondary)', background: 'var(--hover-bg)', border: '1px solid var(--border-base)' }}
+              aria-label="Cancel editing"
             >
               <X size={14} /> Cancel
             </button>
@@ -285,10 +287,10 @@ export default function SeasonalPricingManager() {
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-4 shrink-0">
-                <button onClick={() => handleEdit(rate)} className="p-2 rounded-lg transition-colors hover:bg-amber-500/10" style={{ color: 'var(--text-muted)' }}>
+                <button onClick={() => handleEdit(rate)} className="p-2 rounded-lg transition-colors hover:bg-amber-500/10" style={{ color: 'var(--text-muted)' }} aria-label="Edit rate">
                   <Edit3 size={16} />
                 </button>
-                <button onClick={() => handleDelete(rate._id)} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400">
+                <button onClick={() => handleDelete(rate._id)} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" aria-label="Delete rate">
                   <Trash2 size={16} />
                 </button>
               </div>

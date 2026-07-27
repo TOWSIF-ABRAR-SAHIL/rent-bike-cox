@@ -8,15 +8,28 @@ jobs:
   deploy-backend:
     name: Deploy Backend to Render
     runs-on: ubuntu-latest
+    if: github.event.head_commit.message !~ /^docs:|^style:|^chore:/
     steps:
       - name: Trigger Render deploy
+        if: secrets.RENDER_DEPLOY_HOOK != ''
         run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" || echo "No deploy hook configured"
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" --fail-with-body
+          echo "Render deploy triggered"
 
   deploy-frontend:
     name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
+    if: github.event.head_commit.message !~ /^docs:|^style:|^chore:/
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Vercel
-        run: echo "Deploy via Vercel GitHub integration"
+      - uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend
+          vercel-args: '--prod'
+        if: secrets.VERCEL_TOKEN != ''
+      - name: Fallback (no Vercel token)
+        if: secrets.VERCEL_TOKEN == ''
+        run: echo "Vercel GitHub integration handles deployment"

@@ -46,6 +46,7 @@ const ReviewForm = ({ onSubmit, loading }) => {
               onMouseEnter={() => setHoverRating(star)}
               onMouseLeave={() => setHoverRating(0)}
               className="transition-transform hover:scale-110"
+              aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
             >
               <Star
                 size={24}
@@ -72,6 +73,7 @@ const ReviewForm = ({ onSubmit, loading }) => {
           maxLength={100}
           className="w-full px-3 py-2 rounded-lg text-sm outline-none"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+          aria-label="Review title"
         />
       </div>
 
@@ -85,6 +87,7 @@ const ReviewForm = ({ onSubmit, loading }) => {
           maxLength={1000}
           className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
           style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
+          aria-label="Review comment"
         />
         <p className="text-right text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{comment.length}/1000</p>
       </div>
@@ -94,6 +97,7 @@ const ReviewForm = ({ onSubmit, loading }) => {
         disabled={loading || rating === 0}
         className="w-full py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
         style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
+        aria-label="Submit review"
       >
         {loading ? 'Submitting...' : 'Submit Review'}
       </button>

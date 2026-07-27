@@ -79,7 +79,7 @@ export default function VehicleDocuments() {
                 onClick={() => fetchDocs(bike._id)}
                 className="w-full text-left flex items-center justify-between rounded-xl p-4 transition-all hover:opacity-90"
                 style={{ background: 'var(--card-bg)', border: '1px solid var(--border-base)' }}
-              >
+               aria-label="View vehicle documents">
                 <div>
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name || 'Vehicle'}</p>
@@ -95,7 +95,7 @@ export default function VehicleDocuments() {
             onClick={() => { setSelectedBike(null); setDocs([]); }}
             className="flex items-center gap-1 text-sm mb-4 transition-colors hover:opacity-80"
             style={{ color: 'var(--accent-text)' }}
-          >
+           aria-label="Go back to vehicle list">
             <ChevronLeft size={16} /> Back to vehicles
           </button>
 

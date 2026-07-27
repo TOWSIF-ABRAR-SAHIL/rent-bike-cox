@@ -83,7 +83,7 @@ const MaintenanceHistory = ({ bikeId }) => {
         </div>
         <div className="flex items-center gap-2">
           <Filter size={14} style={{ color: 'var(--text-muted)' }} />
-          <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }} className="input-dark !py-1.5 !px-2.5 text-xs">
+          <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setPage(1); }} className="input-dark !py-1.5 !px-2.5 text-xs" aria-label="Filter by maintenance type">
             <option value="">All Types</option>
             {Object.entries(TYPE_LABELS).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
@@ -120,7 +120,7 @@ const MaintenanceHistory = ({ bikeId }) => {
                     </div>
                     {log.notes && <p className="text-xs mt-1 italic" style={{ color: 'var(--text-muted)' }}>{log.notes}</p>}
                   </div>
-                  <button onClick={() => handleDelete(log._id)} disabled={deleting === log._id} className="p-1.5 rounded-lg transition-all hover:opacity-80 flex-shrink-0" style={{ color: 'var(--danger-text)' }}>
+                  <button onClick={() => handleDelete(log._id)} disabled={deleting === log._id} className="p-1.5 rounded-lg transition-all hover:opacity-80 flex-shrink-0" style={{ color: 'var(--danger-text)' }} aria-label="Delete maintenance log">
                     {deleting === log._id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                   </button>
                 </div>
@@ -132,9 +132,9 @@ const MaintenanceHistory = ({ bikeId }) => {
 
       {totalPages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 rounded-lg text-xs border disabled:opacity-50" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }}>Prev</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-3 py-1.5 rounded-lg text-xs border disabled:opacity-50" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }} aria-label="Previous page">Prev</button>
           <span className="px-3 py-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>Page {page} of {totalPages}</span>
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 rounded-lg text-xs border disabled:opacity-50" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }}>Next</button>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-3 py-1.5 rounded-lg text-xs border disabled:opacity-50" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }} aria-label="Next page">Next</button>
         </div>
       )}
     </div>
