@@ -79,7 +79,7 @@ exports.createBooking = async (req, res) => {
         return res.status(400).json({ message: 'Coupon not found' });
       }
 
-      const userUsageCount = couponDoc.usedBy ? couponDoc.usedBy.filter(id => id.toString() === req.user.id).length : 0;
+      const userUsageCount = couponDoc.usedBy ? couponDoc.usedBy.filter(entry => entry.user?.toString() === req.user.id).length : 0;
       if (couponDoc.maxUsesPerUser > 0 && userUsageCount >= couponDoc.maxUsesPerUser) {
         return res.status(400).json({ message: 'You have already used this coupon' });
       }
@@ -161,7 +161,7 @@ exports.confirmPayment = async (req, res) => {
       await session.withTransaction(async () => {
         booking.advancePaid = computedAdvance;
         booking.remainingBalance = remainingBalance;
-        booking.paymentStatus = 'Partial';
+        booking.paymentStatus = advancePercent >= 1 ? 'Paid' : 'Partial';
         booking.status = 'Confirmed';
         booking.paymentVerifiedBy = 'manual';
         booking.paymentDate = new Date();
@@ -266,6 +266,7 @@ exports.cancelBooking = async (req, res) => {
         if (booking.couponApplied && originalStatus !== 'Pending') {
           await Coupon.findByIdAndUpdate(booking.couponApplied, {
             $inc: { usedCount: -1 },
+            $min: { usedCount: 0 },
             $pull: { usedBy: booking.user },
           }, { session });
         }
@@ -431,6 +432,13 @@ exports.completeBooking = async (req, res) => {
 
     if (req.user.role !== 'Admin' && req.user.role !== 'Renter') {
       return res.status(403).json({ message: 'Access denied' });
+    }
+
+    if (req.user.role === 'Renter') {
+      const bike = await Bike.findById(booking.bike).select('renter').lean();
+      if (!bike || bike.renter?.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'Not authorized to complete this booking' });
+      }
     }
 
     if (booking.status !== 'Confirmed') {

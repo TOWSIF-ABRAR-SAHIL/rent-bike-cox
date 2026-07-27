@@ -110,15 +110,21 @@ const RenterDashboard = () => {
   const [zones, setZones] = useState([]);
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       api.get('/dashboard/my-bikes'),
       api.get('/dashboard/categories'),
       api.get('/zones/active'),
     ]).then(([bikesRes, catsRes, zonesRes]) => {
-      setBikes(bikesRes.data);
-      setCategories(catsRes.data);
-      setZones(zonesRes.data);
-      if (catsRes.data.length > 0) setNewBike(prev => ({ ...prev, category: catsRes.data[0]._id }));
+      if (bikesRes.status === 'fulfilled') setBikes(bikesRes.value.data);
+      if (catsRes.status === 'fulfilled') {
+        setCategories(catsRes.value.data);
+        if (catsRes.value.data.length > 0) setNewBike(prev => ({ ...prev, category: catsRes.value.data[0]._id }));
+      }
+      if (zonesRes.status === 'fulfilled') setZones(zonesRes.value.data);
+      const failedCount = [bikesRes, catsRes, zonesRes].filter(r => r.status === 'rejected').length;
+      if (failedCount > 0) {
+        addToast(`Failed to load ${failedCount} of 3 data sources`, 'error');
+      }
     }).catch(() => { addToast('Failed to fetch data', 'error'); setFetchError('Failed to load dashboard data.'); })
       .finally(() => setLoading(false));
   }, [addToast]);

@@ -100,18 +100,18 @@ const AnalyticsDashboard = () => {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Revenue</p>
-                  <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue.totalRevenue.toLocaleString()} TK</p>
+                  <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue?.totalRevenue?.toLocaleString() || 0} TK</p>
                   <p className="text-xs mt-1" style={{ color: revenue.revenueGrowth >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
-                    {revenue.revenueGrowth >= 0 ? '+' : ''}{revenue.revenueGrowth}% vs prev period
+                    {revenue?.revenueGrowth >= 0 ? '+' : ''}{revenue?.revenueGrowth || 0}% vs prev period
                   </p>
                 </div>
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Bookings</p>
-                  <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue.totalBookings}</p>
+                  <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue?.totalBookings || 0}</p>
                 </div>
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Avg Revenue/Day</p>
-                  <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue.avgRevenuePerDay.toLocaleString()} TK</p>
+                  <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue?.avgRevenuePerDay?.toLocaleString() || 0} TK</p>
                 </div>
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Period</p>

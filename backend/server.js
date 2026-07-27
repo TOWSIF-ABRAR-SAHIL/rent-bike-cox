@@ -143,10 +143,11 @@ const Bike = require('./models/Bike');
 
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/seed-temp', (req, res, next) => {
-    if (req.query.secret !== process.env.SEED_SECRET && !process.env.SEED_SECRET) {
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(404).json({ message: 'Not found' });
-      }
+    if (!process.env.SEED_SECRET) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+    if (req.query.secret !== process.env.SEED_SECRET) {
+      return res.status(404).json({ message: 'Invalid secret' });
     }
     next();
   }, async (req, res) => {

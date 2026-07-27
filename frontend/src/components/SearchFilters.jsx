@@ -8,8 +8,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Category</label>
+          <label htmlFor="filter-category" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Category</label>
           <select
+            id="filter-category"
             value={filters.category}
             onChange={e => onFilterChange('category', e.target.value)}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none"
@@ -23,8 +24,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
         </div>
 
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Zone</label>
+          <label htmlFor="filter-zone" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Zone</label>
           <select
+            id="filter-zone"
             value={filters.zone}
             onChange={e => onFilterChange('zone', e.target.value)}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none"
@@ -38,8 +40,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
         </div>
 
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Condition</label>
+          <label htmlFor="filter-condition" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Condition</label>
           <select
+            id="filter-condition"
             value={filters.condition}
             onChange={e => onFilterChange('condition', e.target.value)}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none"
@@ -54,8 +57,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
         </div>
 
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Availability</label>
+          <label htmlFor="filter-availability" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Availability</label>
           <select
+            id="filter-availability"
             value={filters.availability}
             onChange={e => onFilterChange('availability', e.target.value)}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none"
@@ -68,8 +72,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
         </div>
 
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Min Price (TK/hr)</label>
+          <label htmlFor="filter-minPrice" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Min Price (TK/hr)</label>
           <input
+            id="filter-minPrice"
             type="number"
             placeholder={priceRange.min}
             value={filters.minPrice}
@@ -80,8 +85,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
         </div>
 
         <div>
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Max Price (TK/hr)</label>
+          <label htmlFor="filter-maxPrice" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Max Price (TK/hr)</label>
           <input
+            id="filter-maxPrice"
             type="number"
             placeholder={priceRange.max}
             value={filters.maxPrice}
@@ -92,8 +98,9 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
         </div>
 
         <div className="sm:col-span-2">
-          <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Sort By</label>
+          <label htmlFor="filter-sort" className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Sort By</label>
           <select
+            id="filter-sort"
             value={filters.sort}
             onChange={e => onFilterChange('sort', e.target.value)}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none"

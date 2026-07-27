@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Wrench, Clock, History } from 'lucide-react';
-import VehicleHistory from '../pages/VehicleHistory';
+import PageSpinner from './PageSpinner';
+
+const VehicleHistory = lazy(() => import('../pages/VehicleHistory'));
 
 const conditionColors = {
   excellent: { text: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
@@ -25,7 +27,9 @@ const FleetBikeRow = ({ bike, selected, onToggle }) => {
   if (showHistory) {
     return (
       <div className="col-span-full">
-        <VehicleHistory bikeId={bike._id} onClose={() => setShowHistory(false)} />
+        <Suspense fallback={<PageSpinner />}>
+          <VehicleHistory bikeId={bike._id} onClose={() => setShowHistory(false)} />
+        </Suspense>
       </div>
     );
   }

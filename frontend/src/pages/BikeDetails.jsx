@@ -30,7 +30,7 @@ const BikeDetails = () => {
   const fetchReviews = useCallback(async (page = 1) => {
     try {
       setReviewLoading(true);
-      const sortParam = reviewSort === 'oldest' ? 'oldest' : reviewSort === 'highest' ? 'newest' : reviewSort === 'lowest' ? 'oldest' : 'newest';
+      const sortParam = reviewSort === 'oldest' ? 'oldest' : reviewSort === 'highest' ? 'highest' : reviewSort === 'lowest' ? 'lowest' : 'newest';
       const { data } = await api.get(`/reviews/${id}?page=${page}&limit=5&sort=${sortParam}`);
       setReviews(data.reviews);
       setReviewStats(data.stats);
@@ -49,8 +49,12 @@ const BikeDetails = () => {
   }, [fetchReviews]);
 
   const handleReviewSubmit = async ({ rating, title, comment }) => {
-    await api.post(`/reviews/${id}`, { rating, title, comment });
-    fetchReviews(1);
+    try {
+      await api.post(`/reviews/${id}`, { rating, title, comment });
+      fetchReviews(1);
+    } catch {
+      // review submit failed silently
+    }
   };
 
   useEffect(() => {
@@ -179,13 +183,22 @@ const BikeDetails = () => {
 
           {bike.description && <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{bike.description}</p>}
 
-          {bike.videoUrl && (
-            <div className="rounded-2xl overflow-hidden glass">
-              <div className="relative aspect-video flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
-                <iframe src={bike.videoUrl} className="w-full h-full" allowFullScreen title="Vehicle video" sandbox="allow-presentation" />
-              </div>
-            </div>
-          )}
+          {bike.videoUrl && (() => {
+            try {
+              const url = new URL(bike.videoUrl);
+              const allowedHosts = ['www.youtube.com', 'youtube.com', 'player.vimeo.com', 'vimeo.com'];
+              if (!allowedHosts.includes(url.hostname)) return null;
+              return (
+                <div className="rounded-2xl overflow-hidden glass">
+                  <div className="relative aspect-video flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
+                    <iframe src={bike.videoUrl} className="w-full h-full" allowFullScreen title="Vehicle video" sandbox="allow-presentation" />
+                  </div>
+                </div>
+              );
+            } catch {
+              return null;
+            }
+          })()}
 
           {/* Pricing Tiers */}
           {bike.packages?.length > 0 && (

@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { Bell, Check, CheckCheck } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const NotificationBell = () => {
   const [unread, setUnread] = useState(0);
@@ -13,7 +11,7 @@ const NotificationBell = () => {
 
   const fetchUnread = async () => {
     try {
-      const { data } = await axios.get(`${API}/notifications/unread`);
+      const { data } = await api.get('/notifications/unread');
       setUnread(data.unread);
     } catch {
       setUnread(0);
@@ -22,7 +20,7 @@ const NotificationBell = () => {
 
   const fetchNotifications = async () => {
     try {
-      const { data } = await axios.get(`${API}/notifications?limit=10`);
+      const { data } = await api.get('/notifications?limit=10');
       setNotifications(data.notifications);
       setUnread(data.unread);
     } catch {
@@ -54,7 +52,7 @@ const NotificationBell = () => {
 
   const markRead = async (id) => {
     try {
-      await axios.put(`${API}/notifications/${id}/read`);
+      await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
       setUnread(prev => Math.max(0, prev - 1));
     } catch {
@@ -64,7 +62,7 @@ const NotificationBell = () => {
 
   const markAllRead = async () => {
     try {
-      await axios.put(`${API}/notifications/read-all`);
+      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnread(0);
     } catch {

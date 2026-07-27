@@ -162,21 +162,78 @@ async function createBookingCAS(bikeId, startTime, endTime, bookingData, exclude
  * Extend an existing booking: check buffer after current endTime, create new lock if needed.
  */
 async function extendBookingAtomically(bookingId, newEndTime, additionalPrice) {
+  let session;
+  try {
+    session = await mongoose.startSession();
+    await session.startTransaction({
+      readConcern: { level: 'snapshot' },
+      writeConcern: { w: 'majority' },
+    });
+
+    const booking = await Booking.findById(bookingId).session(session);
+    if (!booking) {
+      await session.abortTransaction();
+      return { success: false, message: 'Booking not found' };
+    }
+    if (booking.status !== 'Confirmed') {
+      await session.abortTransaction();
+      return { success: false, message: 'Only confirmed bookings can be extended' };
+    }
+
+    const currentEnd = new Date(booking.endTime);
+    const newEnd = new Date(newEndTime);
+
+    if (newEnd <= currentEnd) {
+      await session.abortTransaction();
+      return { success: false, message: 'New end time must be after current end time' };
+    }
+
+    const availability = await checkAvailability(booking.bike, currentEnd, newEnd, booking._id, null, session);
+    if (!availability.available) {
+      await session.abortTransaction();
+      return { success: false, message: availability.message };
+    }
+
+    const updated = await Booking.findByIdAndUpdate(
+      bookingId,
+      {
+        $set: { endTime: newEnd },
+        $inc: { totalPrice: additionalPrice },
+      },
+      { new: true, session }
+    );
+
+    updated.remainingBalance = subtractPaisa(updated.totalPrice, updated.advancePaid);
+    await updated.save({ session });
+
+    await session.commitTransaction();
+    return { success: true, booking: updated };
+  } catch (err) {
+    if (session) {
+      try { await session.abortTransaction(); } catch {}
+    }
+
+    if (err.name === 'MongoServerError' && err.code === 48) {
+      return extendBookingCAS(bookingId, newEndTime, additionalPrice);
+    }
+
+    throw err;
+  } finally {
+    if (session) session.endSession();
+  }
+}
+
+async function extendBookingCAS(bookingId, newEndTime, additionalPrice) {
   const booking = await Booking.findById(bookingId);
   if (!booking) return { success: false, message: 'Booking not found' };
   if (booking.status !== 'Confirmed') return { success: false, message: 'Only confirmed bookings can be extended' };
 
   const currentEnd = new Date(booking.endTime);
   const newEnd = new Date(newEndTime);
-
-  if (newEnd <= currentEnd) {
-    return { success: false, message: 'New end time must be after current end time' };
-  }
+  if (newEnd <= currentEnd) return { success: false, message: 'New end time must be after current end time' };
 
   const availability = await checkAvailability(booking.bike, currentEnd, newEnd, booking._id);
-  if (!availability.available) {
-    return { success: false, message: availability.message };
-  }
+  if (!availability.available) return { success: false, message: availability.message };
 
   booking.endTime = newEnd;
   booking.totalPrice = addPaisa(booking.totalPrice, additionalPrice);

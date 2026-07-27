@@ -59,7 +59,6 @@ const upload = multer({
       }
     }
 
-    const isDoc = file.fieldname === 'nidImage' || file.fieldname === 'licenseImage';
     cb(null, true);
   }
 });

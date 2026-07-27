@@ -70,8 +70,8 @@ const AdminDashboard = () => {
       if (zonesRes.status === 'fulfilled') setZones(zonesRes.value.data);
       const failedCount = [settingsRes, bikesRes, usersRes, couponsRes, categoriesRes, zonesRes].filter(r => r.status === 'rejected').length;
       if (failedCount > 0) {
-        addToast(`Failed to load ${failedCount} of 5 data sources`, 'error');
-        if (failedCount === 5) setFetchError('Failed to load dashboard data. Please try again.');
+        addToast(`Failed to load ${failedCount} of 6 data sources`, 'error');
+        if (failedCount >= 6) setFetchError('Failed to load dashboard data. Please try again.');
       }
     }).catch(() => {
       addToast('Failed to fetch data', 'error');
@@ -276,7 +276,7 @@ const AdminDashboard = () => {
           <form onSubmit={handleUpdateSettings} className="space-y-4">
             <div>
               <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Base Price Per Hour (TK)</label>
-              <input type="number" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Number(e.target.value) || 0})} className="input-dark" />
+              <input type="number" min="1" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Math.max(1, Number(e.target.value) || 1)})} className="input-dark" />
             </div>
             <button type="submit" className="btn-primary">Save Changes</button>
           </form>

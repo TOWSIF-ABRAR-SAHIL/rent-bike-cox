@@ -66,12 +66,19 @@ class CancellationService {
             ],
           });
         }
+
+        const hasActive = await Booking.exists({
+          bike: booking.bike,
+          status: { $in: ['Pending', 'Confirmed'] },
+          _id: { $ne: bookingId },
+        }).session(session);
+        if (!hasActive) {
+          await require('../models/Bike').findByIdAndUpdate(booking.bike, { $set: { availability: true } }, { session });
+        }
       });
     } finally {
       await session.endSession();
     }
-
-    await releaseBikeLock(booking.bike);
 
     if (booking.couponApplied) {
       const Coupon = require('../models/Coupon');

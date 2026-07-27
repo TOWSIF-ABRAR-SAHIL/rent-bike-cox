@@ -34,7 +34,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
       setForm({ type: 'registration', name: '', documentNumber: '', issueDate: '', expiryDate: '', issuingAuthority: '', notes: '' });
       setFile(null);
       onUploaded?.();
-    } catch { /* */ } finally { setSaving(false); }
+    } catch (err) { console.error('Upload failed:', err); } finally { setSaving(false); }
   };
 
   const onDrop = (e) => {
@@ -117,7 +117,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
           background: dragOver ? 'var(--accent-bg)' : file ? 'rgba(16,185,129,0.05)' : 'var(--hover-bg)',
         }}
       >
-        <input ref={inputRef} type="file" accept="image/*,.pdf" className="hidden"
+        <input ref={inputRef} type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden"
           onChange={e => setFile(e.target.files?.[0] || null)} />
         {file ? (
           <div className="flex items-center justify-center gap-2">

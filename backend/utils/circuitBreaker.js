@@ -6,7 +6,9 @@ const DEFAULT_DAILY_CAP = 50000;
 
 function getTodayKey() {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const dhakaStr = now.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' });
+  const dhaka = new Date(dhakaStr);
+  return `${dhaka.getFullYear()}-${String(dhaka.getMonth() + 1).padStart(2, '0')}-${String(dhaka.getDate()).padStart(2, '0')}`;
 }
 
 async function checkCircuitBreaker(dailyCap) {

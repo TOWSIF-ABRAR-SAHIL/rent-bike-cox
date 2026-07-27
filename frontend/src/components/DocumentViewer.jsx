@@ -80,7 +80,7 @@ export default function DocumentViewer({ documents, onVerify, onDelete }) {
                 </button>
               )}
               {onDelete && (
-                <button onClick={() => onDelete(doc._id)} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" title="Delete">
+                <button onClick={() => { if (window.confirm('Delete this document?')) onDelete(doc._id); }} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" title="Delete">
                   <Trash2 size={16} />
                 </button>
               )}

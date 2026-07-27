@@ -31,7 +31,8 @@ function idempotencyMiddleware(ttlMs = DEFAULT_TTL_MS) {
         return;
       }
     } catch (err) {
-      logger.error('Lookup error (proceeding):', err.message);
+      logger.error('Lookup error — denying request:', err.message);
+      return res.status(503).json({ message: 'Service temporarily unavailable' });
     }
 
     const originalJson = res.json.bind(res);

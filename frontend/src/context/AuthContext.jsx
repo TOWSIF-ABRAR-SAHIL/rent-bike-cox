@@ -27,6 +27,7 @@ function getInitialUser() {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getInitialUser);
   const [token, setToken] = useState(() => localStorage.getItem('accessToken'));
+  const [loading] = useState(false);
   const refreshTimeout = useRef(null);
 
   const scheduleRefresh = useCallback((accessToken) => {
@@ -88,7 +89,7 @@ export function AuthProvider({ children }) {
   }, [scheduleRefresh]);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

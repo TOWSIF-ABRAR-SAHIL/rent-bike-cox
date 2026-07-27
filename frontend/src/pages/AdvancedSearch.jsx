@@ -51,7 +51,7 @@ const AdvancedSearch = () => {
       });
 
       const { data } = await axios.get(`${API}/search?${params}`);
-      setResults(data.bikes);
+      setResults(data.bikes || []);
       setCategories(data.categories);
       setZones(data.zones);
       if (data.priceRange) setPriceRange(data.priceRange);

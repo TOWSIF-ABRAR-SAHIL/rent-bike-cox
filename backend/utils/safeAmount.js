@@ -29,7 +29,7 @@ function dividePaisa(a, b) {
 }
 
 function percentOf(total, percent) {
-  return multiplyPaisa(total, dividePaisa(percent, 100));
+  return toDecimal(total).times(toDecimal(percent)).div(100).round().toNumber();
 }
 
 module.exports = {

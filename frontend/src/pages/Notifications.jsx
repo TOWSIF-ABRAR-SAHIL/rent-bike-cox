@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -13,7 +11,7 @@ const Notifications = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const { data } = await axios.get(`${API}/notifications?limit=50`);
+        const { data } = await api.get('/notifications?limit=50');
         setNotifications(data.notifications);
         setUnread(data.unread);
       } catch {
@@ -27,7 +25,7 @@ const Notifications = () => {
 
   const markRead = async (id) => {
     try {
-      await axios.put(`${API}/notifications/${id}/read`);
+      await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
       setUnread(prev => Math.max(0, prev - 1));
     } catch {
@@ -37,7 +35,7 @@ const Notifications = () => {
 
   const markAllRead = async () => {
     try {
-      await axios.put(`${API}/notifications/read-all`);
+      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnread(0);
     } catch {

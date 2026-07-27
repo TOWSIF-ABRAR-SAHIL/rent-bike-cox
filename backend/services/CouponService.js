@@ -31,9 +31,12 @@ class CouponService {
   async applyCoupon({ couponId, userId, bookingId }) {
     const coupon = await Coupon.findById(couponId);
     if (!coupon) throw new Error('Coupon not found');
+    if (!coupon.isActive) throw new Error('Coupon is no longer active');
+    if (coupon.expiresAt && new Date() > coupon.expiresAt) throw new Error('Coupon has expired');
+    if (coupon.maxUses > 0 && coupon.usedCount >= coupon.maxUses) throw new Error('Coupon usage limit reached');
 
     const userUses = coupon.usedBy.filter(u => u.user?.toString() === userId).length;
-    if (userUses >= (coupon.maxUsesPerUser || 1)) throw new Error('Per-user usage limit reached');
+    if (coupon.maxUsesPerUser > 0 && userUses >= coupon.maxUsesPerUser) throw new Error('Per-user usage limit reached');
 
     await Coupon.findByIdAndUpdate(couponId, {
       $inc: { usedCount: 1 },

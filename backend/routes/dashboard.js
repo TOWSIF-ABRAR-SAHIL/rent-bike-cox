@@ -42,7 +42,7 @@ router.put('/bikes/:id/availability', auth, authorize('Renter', 'Admin'), requir
 // Admin routes
 router.get('/admin/bikes', auth, authorize('Admin'), getAllBikes);
 router.put('/admin/bikes/:id', auth, authorize('Admin'), upload.array('bikeImages', 5), createBikeRules, updateBike);
-router.delete('/admin/bikes/:id', auth, authorize('Admin'), requireOwnership(Bike, 'id', 'renter'), deleteBike);
+router.delete('/admin/bikes/:id', auth, authorize('Admin'), deleteBike);
 router.put('/admin/settings', auth, authorize('Admin'), updateGlobalSettings);
 router.put('/admin/bikes/:id/verify', auth, authorize('Admin'), toggleBikeVerification);
 router.get('/admin/users', auth, authorize('Admin'), getAllUsers);

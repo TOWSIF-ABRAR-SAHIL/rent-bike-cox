@@ -304,10 +304,13 @@ exports.paymentFail = async (req, res) => {
     const ip = getClientIp(req);
     try {
       const booking = await Booking.findById(bookingId);
-      if (booking && booking.status !== 'Pending') {
-        if (booking.status === 'Confirmed' || booking.status === 'Completed') {
+      if (!booking || booking.status === 'Confirmed' || booking.status === 'Completed') {
+        if (booking && (booking.status === 'Confirmed' || booking.status === 'Completed')) {
           return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
         }
+        return res.redirect(`${frontendUrl}/payment-failed`);
+      }
+      if (booking.status === 'Expired' || booking.status === 'Cancelled') {
         return res.redirect(`${frontendUrl}/payment-failed`);
       }
       if (booking) {
@@ -344,10 +347,13 @@ exports.paymentCancel = async (req, res) => {
   if (bookingId) {
     try {
       const booking = await Booking.findById(bookingId);
-      if (booking && booking.status !== 'Pending') {
-        if (booking.status === 'Confirmed' || booking.status === 'Completed') {
+      if (!booking || booking.status === 'Confirmed' || booking.status === 'Completed') {
+        if (booking && (booking.status === 'Confirmed' || booking.status === 'Completed')) {
           return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
         }
+        return res.redirect(`${frontendUrl}/payment-cancelled`);
+      }
+      if (booking.status === 'Expired' || booking.status === 'Cancelled') {
         return res.redirect(`${frontendUrl}/payment-cancelled`);
       }
       if (booking) {
@@ -518,6 +524,6 @@ exports.paymentIPN = async (req, res) => {
     res.status(200).json({ status: 'OK' });
   } catch (error) {
     logger.error('Error', { tag: 'IPN', message: error.message });
-    res.status(500).json({ status: 'ERROR', message: 'IPN processing failed' });
+    res.status(200).json({ status: 'OK' });
   }
 };

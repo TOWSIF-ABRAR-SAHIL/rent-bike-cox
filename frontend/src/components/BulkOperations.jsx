@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { X } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
   const [zones, setZones] = useState([]);
@@ -20,7 +18,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
   useEffect(() => {
     const fetchZones = async () => {
       try {
-        const { data } = await axios.get(`${API}/zones/active`);
+        const { data } = await api.get('/zones/active');
         setZones(data);
       } catch (err) {
         console.error('Failed to fetch zones:', err);
@@ -38,20 +36,20 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
       let result;
       switch (action) {
         case 'status':
-          result = await axios.post(`${API}/bulk/status`, {
+          result = await api.post('/bulk/status', {
             bikeIds: selectedBikes,
             availability: statusValue === 'active',
             isUnderMaintenance: statusValue === 'maintenance',
           });
           break;
         case 'zone':
-          result = await axios.post(`${API}/bulk/zone`, {
+          result = await api.post('/bulk/zone', {
             bikeIds: selectedBikes,
             zoneId: zoneValue || null,
           });
           break;
         case 'maintenance':
-          result = await axios.post(`${API}/bulk/maintenance`, {
+          result = await api.post('/bulk/maintenance', {
             bikeIds: selectedBikes,
             type: maintenanceType,
             title: maintenanceTitle,
@@ -59,7 +57,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
           });
           break;
         case 'export': {
-          result = await axios.post(`${API}/bulk/export-selected`, {
+          result = await api.post('/bulk/export-selected', {
             bikeIds: selectedBikes,
           }, { responseType: 'blob' });
           const url = window.URL.createObjectURL(new Blob([result.data]));
@@ -72,7 +70,7 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
           break;
         }
         case 'delete':
-          result = await axios.post(`${API}/bulk/delete`, {
+          result = await api.post('/bulk/delete', {
             bikeIds: selectedBikes,
           });
           break;

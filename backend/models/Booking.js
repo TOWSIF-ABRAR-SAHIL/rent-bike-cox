@@ -28,7 +28,7 @@ const bookingSchema = new mongoose.Schema({
   paymentMethod: { type: String },
   paymentVerifiedBy: { type: String, enum: ['redirect', 'ipn', 'manual'] },
   paymentDate: { type: Date },
-  serialNumber: { type: Date },
+  serialNumber: { type: String },
 
   // Booking lifecycle
   lockedAt: { type: Date },
@@ -89,14 +89,7 @@ bookingSchema.index({ tranId: 1 }, { sparse: true });
 bookingSchema.index({ state: 1, createdAt: -1 });
 
 bookingSchema.index({ status: 1, expiresAt: 1 });
-bookingSchema.index({ status: 1, endDate: 1 });
 bookingSchema.index({ user: 1, status: 1, createdAt: -1 });
-bookingSchema.index({ renter: 1, createdAt: -1 });
 bookingSchema.index({ bike: 1, createdAt: -1 });
-
-// Backward compat: map status → state on read if state not set
-bookingSchema.pre('findOne', function() {
-  // no-op; handled at application layer for new fields
-});
 
 module.exports = mongoose.model('Booking', bookingSchema);

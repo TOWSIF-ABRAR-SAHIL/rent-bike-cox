@@ -69,13 +69,6 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, prici
     packageSource = 'tier';
   }
 
-  if (hourlyRate < MIN_HOURLY_RATE) {
-    hourlyRate = MIN_HOURLY_RATE;
-    if (matchedTier) {
-      packageName = `${matchedTier.label} (${hours}h × ${MIN_HOURLY_RATE} TK/hr — min floor)`;
-    }
-  }
-
   await loadRates();
   const seasonalRate = getApplicableRate(start);
   let seasonalMultiplier = 1;
@@ -85,6 +78,15 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, prici
     seasonalLabel = seasonalRate.name;
     hourlyRate = Math.round(hourlyRate * seasonalMultiplier);
     packageName += ` + ${seasonalRate.name} (${seasonalMultiplier}x)`;
+  }
+
+  if (hourlyRate < MIN_HOURLY_RATE) {
+    hourlyRate = MIN_HOURLY_RATE;
+    if (matchedTier) {
+      packageName = `${matchedTier.label} (${hours}h × ${MIN_HOURLY_RATE} TK/hr — min floor)`;
+    } else if (seasonalLabel) {
+      packageName += ` (min floor applied)`;
+    }
   }
 
   let totalPrice = multiplyPaisa(hours, hourlyRate);
