@@ -35,6 +35,7 @@ const engagementRoutes = require('./routes/engagement');
 const seasonalRoutes = require('./routes/seasonal');
 const vehicleDocRoutes = require('./routes/vehicleDoc');
 const notificationPrefRoutes = require('./routes/notificationPref');
+const pushRoutes = require('./routes/push');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
@@ -362,6 +363,7 @@ app.use('/api', engagementRoutes);
 app.use('/api', seasonalRoutes);
 app.use('/api', vehicleDocRoutes);
 app.use('/api', notificationPrefRoutes);
+app.use('/api/push', pushRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', notFoundHandler);

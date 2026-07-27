@@ -1,6 +1,7 @@
 const Notification = require('../models/Notification');
 const NotificationPreference = require('../models/NotificationPreference');
 const { sendEmail, templates } = require('./emailService');
+const PushService = require('./PushService');
 const logger = require('../utils/logger');
 
 class NotificationService {
@@ -17,6 +18,13 @@ class NotificationService {
       }
 
       await Promise.allSettled([inAppPromise, emailPromise]);
+
+      if (prefType) {
+        const shouldPush = await this.shouldNotify(userId, prefType, 'push');
+        if (shouldPush) {
+          PushService.sendPushToUser(userId, { title, body: message, icon: '/favicon.svg', url: data?.action || '/' }).catch(() => {});
+        }
+      }
     } catch (err) {
       logger.error('createAndNotify error', { userId, type, error: err.message });
     }
