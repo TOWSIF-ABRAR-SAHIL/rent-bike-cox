@@ -38,7 +38,7 @@ class CancellationService {
             cancellationReason: reason,
             refundAmount: refundResult.refundableAmount,
             refundDate: refundResult.refundableAmount > 0 ? new Date() : undefined,
-            paymentStatus: refundResult.refundableAmount >= booking.advancePaid ? 'Refunded' : booking.paymentStatus,
+            paymentStatus: refundResult.refundableAmount >= booking.advancePaid ? 'Refunded' : 'Partial',
             state: 'CANCELLED',
           },
           $push: {

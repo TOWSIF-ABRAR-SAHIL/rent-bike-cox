@@ -17,7 +17,7 @@ exports.createCoupon = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { code: rawCode, discountPercent, maxUses, expiresAt } = req.body;
-    const code = sanitize(rawCode);
+    const code = rawCode?.toUpperCase().trim();
     if (!code) return res.status(400).json({ message: 'Coupon code is required' });
     
     const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() }).lean();

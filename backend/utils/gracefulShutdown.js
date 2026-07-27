@@ -17,9 +17,8 @@ function gracefulShutdown(server, mongoose, options = {}) {
     }, timeout);
     if (forceExit.unref) forceExit.unref();
 
-    server.close(() => {
-      logger.info('HTTP server closed');
-    });
+    await new Promise(resolve => server.close(resolve));
+    logger.info('HTTP server closed');
 
     try {
       if (mongoose && mongoose.connection.readyState === 1) {

@@ -359,6 +359,6 @@ html.light {
 
 @media print {
   .no-print { display: none !important; }
-  body { background: white !important; color: black !important; }
+  body { background: white !important; color: black !important; color-scheme: light; }
   #printable-invoice { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 20px !important; }
 }

@@ -24,8 +24,9 @@ exports.get = async (req, res) => {
 exports.create = async (req, res) => {
   try {
     defaultCache.del('seasonal:active');
+    const { name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly } = req.body;
     const rate = new SeasonalRate({
-      ...req.body,
+      name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly,
       createdBy: req.user.id,
     });
     await rate.save();
@@ -39,7 +40,8 @@ exports.create = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     defaultCache.del('seasonal:active');
-    const rate = await SeasonalRate.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const { name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly } = req.body;
+    const rate = await SeasonalRate.findByIdAndUpdate(req.params.id, { name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly }, { new: true, runValidators: true });
     if (!rate) return res.status(404).json({ message: 'Rate not found' });
     clearCache();
     res.json(rate);

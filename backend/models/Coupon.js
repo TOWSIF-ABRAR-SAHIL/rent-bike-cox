@@ -4,7 +4,7 @@ const couponSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true, uppercase: true, trim: true },
   discountPercent: { type: Number, min: 1, max: 100 },
   discountType: { type: String, enum: ['PERCENTAGE', 'FIXED'], default: 'PERCENTAGE' },
-  discountFixedPaisa: { type: Number },
+  discountFixedPaisa: { type: Number, min: 0 },
   maxDiscountPaisa: { type: Number },
   minBookingAmountPaisa: { type: Number },
   applicableCategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],

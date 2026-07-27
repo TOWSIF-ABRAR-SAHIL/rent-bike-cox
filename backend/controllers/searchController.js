@@ -40,7 +40,7 @@ exports.advancedSearch = async (req, res) => {
       filter.availability = true;
       filter.isUnderMaintenance = false;
     } else if (availability === 'false') {
-      filter.$or = [{ availability: false }, { isUnderMaintenance: true }];
+      filter.$and = [{ $or: [{ availability: false }, { isUnderMaintenance: true }] }];
     }
 
     if (condition && condition !== 'all') {

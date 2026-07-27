@@ -94,6 +94,7 @@ exports.getRenterBikes = async (req, res) => {
     const bikes = await Bike.find({ renter: req.user.id }).populate('category', 'name slug').populate('zone', 'name color').lean();
     res.json(bikes);
   } catch (error) {
+    logger.error('getRenterBikes error', { message: error.message });
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -375,7 +376,7 @@ exports.getAllBikes = async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await Bike.countDocuments();
     const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name').populate('zone', 'name color').lean();
-    res.json(bikes);
+    res.json({ bikes, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

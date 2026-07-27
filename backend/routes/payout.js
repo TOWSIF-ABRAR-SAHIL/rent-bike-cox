@@ -8,15 +8,17 @@ const PayoutService = require('../services/PayoutService');
 router.get('/', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
     const { page = 1, limit = 50, status } = req.query;
+    const cappedLimit = Math.min(parseInt(limit) || 50, 100);
     const query = {};
     if (status) query.status = status;
     const payouts = await Payout.find(query)
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .populate('renterId', 'name email');
+      .skip(((parseInt(page) || 1) - 1) * cappedLimit)
+      .limit(cappedLimit)
+      .populate('renterId', 'name email')
+      .lean();
     const total = await Payout.countDocuments(query);
-    res.json({ payouts, total, page: parseInt(page), limit: parseInt(limit) });
+    res.json({ payouts, total, page: parseInt(page) || 1, limit: cappedLimit });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch payouts' });
   }

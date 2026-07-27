@@ -51,8 +51,13 @@ class FraudDetectionService {
     else results.decision = 'ALLOW';
 
     if (results.decision !== 'ALLOW') {
+      const eventType = results.flags.includes('VELOCITY_EXCEEDED') ? 'velocity_check'
+        : results.flags.includes('HIGH_AMOUNT') || results.flags.includes('NEW_ACCOUNT_HIGH_AMOUNT') ? 'amount_mismatch'
+        : results.flags.includes('BLOCKED_FINGERPRINT') ? 'blocked_fingerprint'
+        : results.flags.includes('UNUSUAL_HOUR') ? 'unusual_hour'
+        : 'suspicious_activity';
       await recordFraudEvent({
-        eventType: 'amountMismatch',
+        eventType,
         userId,
         ip,
         metadata: { bookingId, amountPaisa, score: results.score, flags: results.flags, decision: results.decision },
@@ -82,7 +87,10 @@ class FraudDetectionService {
   async getEvents({ page = 1, limit = 50, severity }) {
     const query = {};
     if (severity) query.severity = severity;
-    return FraudEvent.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+    const cappedLimit = Math.min(parseInt(limit) || 50, 100);
+    const events = await FraudEvent.find(query).sort({ createdAt: -1 }).skip(((parseInt(page) || 1) - 1) * cappedLimit).limit(cappedLimit).lean();
+    const total = await FraudEvent.countDocuments(query);
+    return { events, total, page: parseInt(page) || 1, limit: cappedLimit };
   }
 }
 

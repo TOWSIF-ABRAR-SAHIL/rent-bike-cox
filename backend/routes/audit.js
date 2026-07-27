@@ -7,6 +7,7 @@ const AuditLog = require('../models/AuditLog');
 router.get('/', authMiddleware, authorize('Admin'), async (req, res) => {
   try {
     const { page = 1, limit = 50, action, startDate, endDate } = req.query;
+    const cappedLimit = Math.min(parseInt(limit) || 50, 100);
     const query = {};
     if (action) query.action = action;
     if (startDate || endDate) {
@@ -16,11 +17,12 @@ router.get('/', authMiddleware, authorize('Admin'), async (req, res) => {
     }
     const logs = await AuditLog.find(query)
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .populate('actorId', 'name email');
+      .skip(((parseInt(page) || 1) - 1) * cappedLimit)
+      .limit(cappedLimit)
+      .populate('actorId', 'name email')
+      .lean();
     const total = await AuditLog.countDocuments(query);
-    res.json({ logs, total, page: parseInt(page), limit: parseInt(limit) });
+    res.json({ logs, total, page: parseInt(page) || 1, limit: cappedLimit });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch audit logs' });
   }

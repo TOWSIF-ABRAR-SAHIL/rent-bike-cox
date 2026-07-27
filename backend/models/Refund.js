@@ -42,17 +42,18 @@ refundSchema.pre('save', function(next) {
   next();
 });
 
-refundSchema.pre('findOneAndUpdate', function(next) {
+refundSchema.pre('findOneAndUpdate', async function(next) {
   const update = this.getUpdate();
   if (update && update.$set && update.$set.status) {
-    const doc = this.model.findOne(this.getQuery());
-    doc.then(d => {
-      if (d) this._prevStatus = d.status;
-      next();
-    }).catch(() => next());
-  } else {
-    next();
+    const doc = await this.model.findOne(this.getQuery()).lean();
+    if (doc) {
+      const allowed = VALID_TRANSITIONS[doc.status] || [];
+      if (!allowed.includes(update.$set.status)) {
+        return next(new Error(`Invalid refund transition: ${doc.status} → ${update.$set.status}`));
+      }
+    }
   }
+  next();
 });
 
 module.exports = mongoose.model('Refund', refundSchema);

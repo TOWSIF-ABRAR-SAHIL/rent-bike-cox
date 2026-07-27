@@ -1,6 +1,7 @@
 const Money = require('../domain/Money');
 const { MIN_HOURLY_RATE, BUFFER_MINUTES } = require('../utils/pricing');
 const { findMatchingTier, getAdvancePercent } = require('../utils/pricing');
+const { loadRates, getApplicableRate } = require('../utils/seasonalPricing');
 const logger = require('../utils/logger');
 const Settings = require('../models/Settings');
 
@@ -40,6 +41,13 @@ class PricingService {
       }
     }
 
+    await loadRates();
+    const seasonalRate = getApplicableRate(start);
+    if (seasonalRate) {
+      hourlyRate = Math.round(hourlyRate * seasonalRate.multiplier);
+      packageName += ` + ${seasonalRate.name} (${seasonalRate.multiplier}x)`;
+    }
+
     const subtotal = Money.fromPaisa(hours * hourlyRate * 100);
     const advancePercent = getAdvancePercent(hours);
     const advance = subtotal.percentage(advancePercent * 100);
@@ -70,14 +78,18 @@ class PricingService {
     const total = Money.fromPaisa(totalPaisa);
     if (coupon.discountType === 'FIXED') {
       const discount = Money.fromPaisa(coupon.discountFixedPaisa || 0);
-      return { discounted: total.subtract(discount), discount };
+      const discounted = total.subtract(discount);
+      if (discounted.isNegative()) return { discounted: Money.zero(total.currency), discount: total };
+      return { discounted, discount };
     }
     const discount = total.percentage(coupon.discountPercent || 0);
     if (coupon.maxDiscountPaisa && discount.isGreaterThan(Money.fromPaisa(coupon.maxDiscountPaisa))) {
       const capped = Money.fromPaisa(coupon.maxDiscountPaisa);
       return { discounted: total.subtract(capped), discount: capped };
     }
-    return { discounted: total.subtract(discount), discount };
+    const discounted = total.subtract(discount);
+    if (discounted.isNegative()) return { discounted: Money.zero(total.currency), discount: total };
+    return { discounted, discount };
   }
 }
 

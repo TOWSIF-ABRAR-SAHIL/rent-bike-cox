@@ -6,7 +6,7 @@ const bikeSchema = new mongoose.Schema({
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   videoUrl: { type: String },
   description: { type: String, required: true },
-  pricePerHour: { type: Number, required: true, default: 200 },
+  pricePerHour: { type: Number, required: true, default: 200, min: 0 },
   images: [{ type: String, required: true }],
   availability: { type: Boolean, default: true },
   isVerified: { type: Boolean, default: false },

@@ -93,18 +93,19 @@ exports.initPayment = async (req, res) => {
     logger.info('init', { tag: 'Payment', bookingId, amount, tran_id, is_live });
 
     const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
-    sslcz.init(data).then(apiResponse => {
+    try {
+      const apiResponse = await sslcz.init(data);
       const gatewayUrl = apiResponse.GatewayPageURL || apiResponse.redirectGatewayURL;
       if (gatewayUrl) {
-        res.json({ url: gatewayUrl });
+        return res.json({ url: gatewayUrl });
       } else {
         logger.error('No gateway URL', { tag: 'Payment', apiResponse });
-        res.status(400).json({ message: 'Payment gateway did not return a URL' });
+        return res.status(400).json({ message: 'Payment gateway did not return a URL' });
       }
-    }).catch(err => {
+    } catch (err) {
       logger.error('SSLCommerz init error', { tag: 'Payment', error: err.message || err });
-      res.status(500).json({ message: 'Payment initialization failed' });
-    });
+      return res.status(500).json({ message: 'Payment initialization failed' });
+    }
   } catch (error) {
     logger.error('initPayment error', { tag: 'Payment', message: error.message });
     res.status(500).json({ message: 'Payment initialization failed' });
@@ -267,7 +268,6 @@ exports.paymentSuccess = async (req, res) => {
 
     try {
       const userDoc = await require('../models/User').findById(booking.user);
-      const bikeDoc = await Bike ? await require('../models/Bike').findById(booking.bike).lean() : null;
       if (userDoc?.email) {
         const prefs = await NotificationPreference.findOne({ user: userDoc._id }).lean();
         if (prefs?.email?.paymentConfirmation !== false) {

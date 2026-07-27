@@ -3,8 +3,8 @@ const { encrypt, decrypt } = require('../security/utils/cryptoUtils');
 const ENCRYPTION_AVAILABLE = !!process.env.ENCRYPTION_KEY;
 
 const UserSchema = new mongoose.Schema({
-  name: { type: String, required: true, maxlength: 100 },
-  email: { type: String, required: true, unique: true, maxlength: 254 },
+  name: { type: String, required: true, maxlength: 100, trim: true },
+  email: { type: String, required: true, unique: true, maxlength: 254, lowercase: true, trim: true },
   password: { type: String, required: true, select: false },
   role: { type: String, enum: ['Admin', 'Renter', 'User'], default: 'User' },
   nid: { type: String, required: true },

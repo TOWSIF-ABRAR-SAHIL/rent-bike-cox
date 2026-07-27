@@ -91,7 +91,7 @@ exports.register = async (req, res) => {
     res.status(201).json({
       accessToken,
       refreshToken,
-      user: { id: user._id, name, email, role: user.role },
+      user: { id: user._id, name: cleanName, email, role: user.role },
     });
   } catch (error) {
     if (error.code === 11000) return res.status(400).json({ message: 'Email or NID already exists' });
@@ -217,13 +217,14 @@ exports.refresh = async (req, res) => {
     if (!user) return res.status(401).json({ message: 'User not found' });
 
     storedToken.revoked = true;
-    storedToken.replacedByHash = RefreshToken.hashToken(refreshToken);
     await storedToken.save();
 
     const newFingerprint = buildFingerprint(req);
     const newAccessToken = generateAccessToken(user, newFingerprint);
     const newFamilyId = storedToken.familyId;
     const newRefreshToken = generateRefreshToken(user, newFamilyId);
+    storedToken.replacedByHash = RefreshToken.hashToken(newRefreshToken);
+    await storedToken.save();
     await storeRefreshToken(newRefreshToken, user._id, newFamilyId, req);
 
     res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
@@ -401,7 +402,7 @@ exports.forgotPassword = async (req, res) => {
     const PasswordReset = require('../models/PasswordReset');
     await PasswordReset.deleteMany({ userId: user._id, used: false });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
     const otpHash = PasswordReset.hashOtp(otp);
 
     await PasswordReset.create({

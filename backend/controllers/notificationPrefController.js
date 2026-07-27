@@ -18,7 +18,8 @@ exports.updatePreferences = async (req, res) => {
   try {
     let prefs = await NotificationPreference.findOne({ user: req.user.id });
     if (!prefs) {
-      prefs = new NotificationPreference({ user: req.user.id, ...req.body });
+      const { email, push, inApp } = req.body;
+      prefs = new NotificationPreference({ user: req.user.id, email, push, inApp });
     } else {
       if (req.body.email) Object.assign(prefs.email, req.body.email);
       if (req.body.push) Object.assign(prefs.push, req.body.push);

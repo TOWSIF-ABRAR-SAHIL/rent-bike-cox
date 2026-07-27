@@ -35,4 +35,16 @@ ledgerEntrySchema.pre('deleteOne', function () {
   throw new Error('Ledger entries are immutable');
 });
 
+ledgerEntrySchema.pre('deleteMany', function () {
+  throw new Error('Ledger entries are immutable');
+});
+
+ledgerEntrySchema.pre('updateMany', function () {
+  throw new Error('Ledger entries are immutable');
+});
+
+ledgerEntrySchema.pre('findOneAndDelete', function () {
+  throw new Error('Ledger entries are immutable');
+});
+
 module.exports = mongoose.model('LedgerEntry', ledgerEntrySchema);

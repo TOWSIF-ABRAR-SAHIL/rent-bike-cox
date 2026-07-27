@@ -52,6 +52,7 @@ exports.createBooking = async (req, res) => {
 
     if (req.body.totalPrice !== undefined && Number(req.body.totalPrice) !== pricing.totalPrice) {
       logger.warn('Price tampering detected', { userId: req.user.id, bikeId, clientPrice: req.body.totalPrice, serverPrice: pricing.totalPrice });
+      return res.status(400).json({ message: 'Invalid pricing data' });
     }
 
     let couponDoc = null;

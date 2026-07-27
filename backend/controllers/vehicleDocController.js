@@ -28,11 +28,22 @@ exports.upload = async (req, res) => {
     const { bikeId } = req.params;
     const bike = await Bike.findById(bikeId).lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
-    if (bike.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
+    if (bike.renter && bike.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const fileUrl = req.file?.path || req.file?.url || req.body.fileUrl;
+    let fileUrl = req.file?.path || req.file?.url;
+    if (!fileUrl && req.body.fileUrl) {
+      try {
+        const parsed = new URL(req.body.fileUrl);
+        if (parsed.protocol !== 'https:' || !parsed.hostname.includes('cloudinary')) {
+          return res.status(400).json({ message: 'Invalid file URL' });
+        }
+        fileUrl = req.body.fileUrl;
+      } catch {
+        return res.status(400).json({ message: 'Invalid file URL' });
+      }
+    }
     if (!fileUrl) return res.status(400).json({ message: 'File is required' });
 
     const doc = new VehicleDocument({
@@ -60,11 +71,13 @@ exports.update = async (req, res) => {
   try {
     const doc = await VehicleDocument.findById(req.params.id);
     if (!doc) return res.status(404).json({ message: 'Document not found' });
-    if (doc.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
+    if (doc.renter && doc.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    Object.assign(doc, req.body);
+    const { type, name, issueDate, expiryDate, issuingAuthority, documentNumber, notes } = req.body;
+    const allowed = { type, name, issueDate, expiryDate, issuingAuthority, documentNumber, notes };
+    Object.assign(doc, allowed);
     await doc.save();
     res.json(doc);
   } catch (err) {
@@ -90,7 +103,7 @@ exports.remove = async (req, res) => {
   try {
     const doc = await VehicleDocument.findById(req.params.id);
     if (!doc) return res.status(404).json({ message: 'Document not found' });
-    if (doc.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
+    if (doc.renter && doc.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Not authorized' });
     }
     await doc.deleteOne();

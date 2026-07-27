@@ -44,9 +44,12 @@ exports.getFleetSummary = async (req, res) => {
       { $group: { _id: null, total: { $sum: '$totalAmount' } } },
     ]);
 
+    const bikeIds = await Bike.find(bikeQuery).select('_id').lean();
+    const bikeIdList = bikeIds.map(b => b._id);
+
     const activeBookings = await Booking.countDocuments({
       status: { $in: ['Pending', 'Confirmed', 'Active'] },
-      ...(role === 'Admin' ? {} : {}),
+      ...(role === 'Admin' ? {} : { bike: { $in: bikeIdList } }),
     });
 
     res.json({
@@ -134,9 +137,10 @@ exports.getFleetBikes = async (req, res) => {
     const sort = req.query.sort || '-createdAt';
 
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       bikeQuery.$or = [
-        { model: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } },
+        { model: { $regex: escapedSearch, $options: 'i' } },
+        { brand: { $regex: escapedSearch, $options: 'i' } },
       ];
     }
 

@@ -37,7 +37,7 @@ function decrypt(ciphertext) {
   if (ciphertext === null || ciphertext === undefined) return ciphertext;
   if (typeof ciphertext !== 'string') return ciphertext;
 
-  if (!ciphertext.includes(':')) return ciphertext;
+  if (!ciphertext.includes(':')) throw new Error('Invalid ciphertext format');
 
   const key = getEncryptionKey();
   const parts = ciphertext.split(':');
@@ -55,7 +55,7 @@ function decrypt(ciphertext) {
     decrypted += decipher.final('utf8');
     return decrypted;
   } catch {
-    return ciphertext;
+    throw new Error('Decryption failed');
   }
 }
 

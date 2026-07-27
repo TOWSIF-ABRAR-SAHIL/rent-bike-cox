@@ -91,5 +91,21 @@ bookingSchema.index({ state: 1, createdAt: -1 });
 bookingSchema.index({ status: 1, expiresAt: 1 });
 bookingSchema.index({ user: 1, status: 1, createdAt: -1 });
 bookingSchema.index({ bike: 1, createdAt: -1 });
+bookingSchema.index({ paymentStatus: 1, createdAt: -1 });
+
+const STATUS_TO_STATE = {
+  'Pending': 'PAYMENT_PENDING',
+  'Confirmed': 'CONFIRMED',
+  'Completed': 'COMPLETED',
+  'Cancelled': 'CANCELLED',
+  'Expired': 'EXPIRED',
+};
+
+bookingSchema.pre('save', function(next) {
+  if (this.isModified('status') && !this.isModified('state')) {
+    this.state = STATUS_TO_STATE[this.status] || this.state;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Booking', bookingSchema);

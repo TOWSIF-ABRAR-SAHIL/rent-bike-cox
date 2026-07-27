@@ -34,4 +34,12 @@ auditLogSchema.pre('deleteOne', function () {
   throw new Error('Audit logs are immutable');
 });
 
+auditLogSchema.pre('deleteMany', function () {
+  throw new Error('Audit logs are immutable');
+});
+
+auditLogSchema.pre('updateMany', function () {
+  throw new Error('Audit logs are immutable');
+});
+
 module.exports = mongoose.model('AuditLog', auditLogSchema);

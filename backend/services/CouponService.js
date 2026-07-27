@@ -50,10 +50,10 @@ class CouponService {
   }
 
   async releaseCoupon({ couponId, userId, bookingId }) {
-    await Coupon.findByIdAndUpdate(couponId, {
-      $inc: { usedCount: -1 },
-      $pull: { usedBy: { user: userId, booking: bookingId } },
-    });
+    await Coupon.findOneAndUpdate(
+      { _id: couponId, usedCount: { $gt: 0 } },
+      { $inc: { usedCount: -1 }, $pull: { usedBy: { user: userId, booking: bookingId } } }
+    );
 
     bus.emit('coupon.released', { couponId, userId, bookingId });
     logger.info('Coupon released', { couponId, userId, bookingId });

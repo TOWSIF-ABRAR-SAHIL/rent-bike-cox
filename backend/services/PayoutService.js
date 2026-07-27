@@ -94,6 +94,7 @@ class PayoutService {
   async markPayoutPaid({ payoutId, paymentReference }) {
     const payout = await Payout.findOne({ payoutId });
     if (!payout) throw new Error('Payout not found');
+    if (payout.status !== 'APPROVED') throw new Error(`Cannot mark payout as paid in status: ${payout.status}`);
 
     const session = await mongoose.startSession();
     try {

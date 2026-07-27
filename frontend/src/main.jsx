@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 
 window.addEventListener('unhandledrejection', (event) => {
+  console.error('[Unhandled Promise Rejection]', event.reason);
   event.preventDefault();
 });
 

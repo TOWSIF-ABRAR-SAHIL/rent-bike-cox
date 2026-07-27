@@ -76,7 +76,7 @@ async function calculateBookingPrice(bikePricePerHour, startTime, endTime, prici
   if (seasonalRate) {
     seasonalMultiplier = seasonalRate.multiplier;
     seasonalLabel = seasonalRate.name;
-    hourlyRate = Math.round(hourlyRate * seasonalMultiplier);
+    hourlyRate = roundPaisa(hourlyRate * seasonalMultiplier);
     packageName += ` + ${seasonalRate.name} (${seasonalMultiplier}x)`;
   }
 

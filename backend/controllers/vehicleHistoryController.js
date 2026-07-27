@@ -183,7 +183,7 @@ exports.getVehicleStats = async (req, res) => {
       cancelledBookings,
       completionRate: totalBookings > 0 ? ((completedBookings / totalBookings) * 100).toFixed(1) : 0,
       totalRevenue,
-      avgRevenuePerBooking: totalBookings > 0 ? (totalRevenue / completedBookings || 0).toFixed(0) : 0,
+      avgRevenuePerBooking: completedBookings > 0 ? (totalRevenue / completedBookings).toFixed(0) : 0,
       totalMaintenanceEvents,
       totalMaintenanceCost,
       uptimePercent: parseFloat(uptimePercent),

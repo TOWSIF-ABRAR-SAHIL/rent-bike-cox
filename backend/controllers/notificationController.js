@@ -53,7 +53,8 @@ exports.getUnreadCount = async (req, res) => {
     const unread = await Notification.countDocuments({ user: req.user.id, read: false });
     res.json({ unread });
   } catch (error) {
-    res.json({ unread: 0 });
+    logger.error('getUnreadCount error', { message: error.message });
+    res.status(500).json({ unread: 0 });
   }
 };
 
