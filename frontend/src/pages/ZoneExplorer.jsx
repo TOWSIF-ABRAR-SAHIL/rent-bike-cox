@@ -1,7 +1,8 @@
 import { useState, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, ArrowLeft, Navigation, Bike, Info, Star } from 'lucide-react';
+import { MapPin, ArrowLeft, Navigation, Bike, Info, Star, Route } from 'lucide-react';
 import ZoneMap from '../components/ZoneMap';
+import RoutePlanner from '../components/RoutePlanner';
 
 const ZoneExplorer = () => {
   const [selectedZone, setSelectedZone] = useState(null);
@@ -23,6 +24,11 @@ const ZoneExplorer = () => {
           <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
             Explore rental zones across Cox's Bazar. Click a zone on the map or list to see details.
           </p>
+        </div>
+
+        {/* Route Planner */}
+        <div className="mb-6">
+          <RoutePlanner />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
