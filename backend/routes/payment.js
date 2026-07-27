@@ -3,7 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/authMiddleware');
 const authorize = require('../security/middleware/authorize');
 const { initPayment, paymentSuccess, paymentFail, paymentCancel, paymentIPN } = require('../controllers/paymentController');
-const { getPaymentIntents, getRefunds } = require('../controllers/paymentAdminController');
+const { getPaymentIntents, getRefunds, approveRefund, rejectRefund, processRefund } = require('../controllers/paymentAdminController');
 const { idempotencyMiddleware } = require('../utils/idempotency');
 
 const { paymentInitRules, paginationRules } = require('../security/validators/index');
@@ -27,5 +27,8 @@ router.post('/ipn', paymentIPN);
 // Admin: payment intents + refunds
 router.get('/intents', auth, authorize('Admin'), paginationRules, getPaymentIntents);
 router.get('/refunds', auth, authorize('Admin'), paginationRules, getRefunds);
+router.post('/refunds/:id/approve', auth, authorize('Admin'), approveRefund);
+router.post('/refunds/:id/reject', auth, authorize('Admin'), rejectRefund);
+router.post('/refunds/:id/process', auth, authorize('Admin'), processRefund);
 
 module.exports = router;

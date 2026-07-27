@@ -5,6 +5,7 @@ const { generateInvoiceNumber } = require('../utils/invoiceNumber');
 const { calculateBookingPrice, applyCoupon } = require('../utils/pricing');
 const { createBookingAtomically, extendBookingAtomically, createWalkInBooking, releaseBikeLock } = require('../utils/bookingLock');
 const { calculateRefundWithBreaker, processRefund } = require('../utils/refund');
+const RefundService = require('../services/RefundService');
 const { roundPaisa, multiplyPaisa, subtractPaisa } = require('../utils/safeAmount');
 const { createJournalEntry } = require('../utils/ledger');
 const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buildFingerprint } = require('../utils/fraud');
@@ -255,6 +256,20 @@ exports.cancelBooking = async (req, res) => {
 
     const refund = await calculateRefundWithBreaker(booking);
     const originalStatus = booking.status;
+
+    let refundDoc = null;
+    if (refund.refundableAmount > 0) {
+      try {
+        const result = await RefundService.requestRefund({
+          bookingId: booking._id,
+          reason: refund.penaltyReason,
+          userId: booking.user,
+        });
+        refundDoc = result.refund;
+      } catch (refErr) {
+        logger.warn('Refund document creation failed (non-blocking)', { error: refErr.message });
+      }
+    }
 
     const session = await require('mongoose').startSession();
     try {

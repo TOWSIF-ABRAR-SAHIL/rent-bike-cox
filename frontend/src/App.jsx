@@ -33,6 +33,7 @@ const VehicleDocuments = lazy(() => import('./pages/VehicleDocuments'));
 const NotificationPreferences = lazy(() => import('./pages/NotificationPreferences'));
 const Profile = lazy(() => import('./pages/Profile'));
 const ChangePassword = lazy(() => import('./pages/ChangePassword'));
+const RefundManagement = lazy(() => import('./pages/RefundManagement'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
 
@@ -119,6 +120,13 @@ function App() {
                       <PageErrorBoundary>
                         <ProtectedRoute roles={['Admin']}>
                           <SeasonalPricingManager />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
+                    } />
+                    <Route path="/refunds" element={
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Admin']}>
+                          <RefundManagement />
                         </ProtectedRoute>
                       </PageErrorBoundary>
                     } />

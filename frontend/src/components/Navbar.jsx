@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
@@ -127,6 +127,12 @@ const Navbar = () => {
                     Seasonal
                   </Link>
                 )}
+                {user.role === 'Admin' && (
+                  <Link to="/refunds" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <DollarSign size={16} className="mr-1.5" />
+                    Refunds
+                  </Link>
+                )}
                 {(user.role === 'Admin' || user.role === 'Renter') && (
                   <Link to="/vehicle-docs" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                     <FileText size={16} className="mr-1.5" />
@@ -250,6 +256,11 @@ const Navbar = () => {
                 {user.role === 'Admin' && (
                   <Link to="/seasonal-pricing" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                     <Calendar size={16} className="mr-2" /> Seasonal
+                  </Link>
+                )}
+                {user.role === 'Admin' && (
+                  <Link to="/refunds" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <DollarSign size={16} className="mr-2" /> Refunds
                   </Link>
                 )}
                 {(user.role === 'Admin' || user.role === 'Renter') && (
