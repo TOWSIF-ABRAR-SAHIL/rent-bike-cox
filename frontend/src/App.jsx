@@ -9,6 +9,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import PageErrorBoundary from './components/PageErrorBoundary';
 import PageSpinner from './components/PageSpinner';
+import { CompareProvider } from './context/CompareContext';
+import { WishlistProvider } from './context/WishlistContext';
+import CompareBar from './components/CompareBar';
 
 const Home = lazy(() => import('./pages/Home'));
 const BikeDetails = lazy(() => import('./pages/BikeDetails'));
@@ -37,6 +40,8 @@ const ChangePassword = lazy(() => import('./pages/ChangePassword'));
 const RefundManagement = lazy(() => import('./pages/RefundManagement'));
 const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
+const CompareVehicles = lazy(() => import('./pages/CompareVehicles'));
+const WishlistPage = lazy(() => import('./pages/Wishlist'));
 
 function App() {
   return (
@@ -44,7 +49,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
-            <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
+            <CompareProvider>
+              <WishlistProvider>
+                <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
               <Navbar />
               <main className="pt-16">
                 <Suspense fallback={<PageSpinner />}>
@@ -160,13 +167,24 @@ function App() {
                       </PageErrorBoundary>
                     } />
                     <Route path="/zones" element={<PageErrorBoundary><ZoneExplorer /></PageErrorBoundary>} />
+                    <Route path="/compare" element={<PageErrorBoundary><CompareVehicles /></PageErrorBoundary>} />
+                    <Route path="/wishlist" element={
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <WishlistPage />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
+                    } />
                     <Route path="*" element={<PageErrorBoundary><NotFound /></PageErrorBoundary>} />
                     </Routes>
                   </ErrorBoundary>
                 </Suspense>
               </main>
               <Footer />
+              <CompareBar />
             </div>
+              </WishlistProvider>
+            </CompareProvider>
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>

@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin, Heart, GitCompareArrows } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
+import { useCompare } from '../context/useCompare';
+import { useWishlist } from '../context/useWishlist';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import AvailabilityCalendar from '../components/AvailabilityCalendar';
 import ReviewForm from '../components/ReviewForm';
@@ -27,6 +29,9 @@ const BikeDetails = () => {
   const [reviewPages, setReviewPages] = useState(1);
   const [reviewSort, setReviewSort] = useState('newest');
   const [reviewLoading, setReviewLoading] = useState(false);
+
+  const { toggle: toggleCompare, has: hasCompare } = useCompare();
+  const { toggle: toggleWishlist, has: hasWish } = useWishlist();
 
   const fetchReviews = useCallback(async (page = 1) => {
     try {
@@ -189,6 +194,36 @@ const BikeDetails = () => {
                 />
               </div>
             )}
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => toggleWishlist(bike._id)}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{
+                border: `1px solid ${hasWish(bike._id) ? '#ef4444' : 'var(--border-base)'}`,
+                color: hasWish(bike._id) ? '#ef4444' : 'var(--text-secondary)',
+                background: hasWish(bike._id) ? 'rgba(239,68,68,0.1)' : undefined,
+              }}
+              aria-label={hasWish(bike._id) ? 'Remove from favorites' : 'Add to favorites'}
+            >
+              <Heart size={16} fill={hasWish(bike._id) ? '#ef4444' : 'none'} />
+              {hasWish(bike._id) ? 'Saved' : 'Save'}
+            </button>
+            <button
+              onClick={() => toggleCompare(bike)}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              style={{
+                border: `1px solid ${hasCompare(bike._id) ? 'var(--accent-text)' : 'var(--border-base)'}`,
+                color: hasCompare(bike._id) ? 'var(--accent-text)' : 'var(--text-secondary)',
+                background: hasCompare(bike._id) ? 'var(--accent-bg)' : undefined,
+              }}
+              aria-label={hasCompare(bike._id) ? 'Remove from comparison' : 'Add to comparison'}
+            >
+              <GitCompareArrows size={16} />
+              {hasCompare(bike._id) ? 'Comparing' : 'Compare'}
+            </button>
           </div>
 
           <div className="flex items-baseline gap-2">

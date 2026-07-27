@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, MapPin } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, MapPin, Heart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
@@ -111,6 +111,10 @@ const Navbar = () => {
                 <Link to="/my-bookings" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                   <Clock size={16} className="mr-1.5" />
                   My Bookings
+                </Link>
+                <Link to="/wishlist" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Heart size={16} className="mr-1.5" />
+                  Favorites
                 </Link>
                 <NotificationBell />
                 {(user.role === 'Admin' || user.role === 'Renter') && (
@@ -246,6 +250,9 @@ const Navbar = () => {
                 )}
                 <Link to="/my-bookings" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                   <Clock size={16} className="mr-2" /> My Bookings
+                </Link>
+                <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Heart size={16} className="mr-2" /> Favorites
                 </Link>
                 <div className="flex items-center px-3 py-2.5 min-h-11">
                   <NotificationBell />

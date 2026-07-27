@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Navigation, Star } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Navigation, Star, Heart, GitCompareArrows } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import ZoneMap from '../components/ZoneMap';
+import { useCompare } from '../context/useCompare';
+import { useWishlist } from '../context/useWishlist';
 
 const categoryIcons = { Bike, Car, Jeep: Truck };
 
@@ -33,6 +35,9 @@ const Home = () => {
   const [slowNetwork, setSlowNetwork] = useState(false);
   const [zones, setZones] = useState([]);
   const [activeZone, setActiveZone] = useState('');
+
+  const { toggle: toggleCompare, has: hasCompare } = useCompare();
+  const { toggle: toggleWishlist, has: hasWish } = useWishlist();
 
   useEffect(() => {
     if (!loading) {
@@ -352,6 +357,22 @@ const Home = () => {
                     <span className="px-3 py-1 rounded-lg text-xs font-medium" style={{ background: 'var(--badge-bg)', color: 'var(--pill-text)' }}>
                       {bike.category?.name || 'Vehicle'}
                     </span>
+                  </div>
+                  <div className="absolute top-3 right-3 flex gap-1.5">
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(bike._id); }}
+                      className="p-2 rounded-full glass transition-all hover:scale-110"
+                      aria-label={hasWish(bike._id) ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                      <Heart size={14} fill={hasWish(bike._id) ? '#ef4444' : 'none'} color={hasWish(bike._id) ? '#ef4444' : 'white'} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(bike); }}
+                      className={`p-2 rounded-full glass transition-all hover:scale-110 ${hasCompare(bike._id) ? 'ring-2 ring-amber-400' : ''}`}
+                      aria-label={hasCompare(bike._id) ? 'Remove from comparison' : 'Add to comparison'}
+                    >
+                      <GitCompareArrows size={14} color={hasCompare(bike._id) ? '#f59e0b' : 'white'} />
+                    </button>
                   </div>
                   <div className="absolute bottom-3 right-3">
                     <span className="px-3 py-1 gradient-primary rounded-lg text-xs font-bold text-white shadow-lg">
