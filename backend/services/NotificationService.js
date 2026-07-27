@@ -105,6 +105,12 @@ class NotificationService {
       title: 'Payment Failed',
       message: `Payment for booking ${booking.invoiceNumber || booking._id} failed. Please try again.`,
       data: { bookingId: booking._id, action: '/my-bookings' },
+      emailSubject: 'Payment Failed — Rent Bike Cox\'s Bazar',
+      emailTemplate: templates.paymentFailed,
+      emailData: {
+        userName: user.name,
+        bookingId: booking.invoiceNumber || booking._id.toString(),
+      },
       prefType: 'paymentConfirmation',
     });
   }
@@ -115,6 +121,13 @@ class NotificationService {
       title: 'Refund Processed',
       message: `Refund of ${refundAmount} TK has been processed for booking ${booking.invoiceNumber || booking._id}.`,
       data: { bookingId: booking._id, action: '/my-bookings' },
+      emailSubject: 'Refund Processed — Rent Bike Cox\'s Bazar',
+      emailTemplate: templates.refundProcessed,
+      emailData: {
+        userName: user.name,
+        bookingId: booking.invoiceNumber || booking._id.toString(),
+        refundAmount,
+      },
       prefType: 'bookingCancellation',
     });
   }
@@ -131,6 +144,19 @@ class NotificationService {
         prefType: 'maintenanceReminder',
       });
     }
+  }
+
+  async notifyWelcome(user) {
+    await this.createAndNotify(user._id, {
+      type: 'system',
+      title: 'Welcome!',
+      message: `Welcome to Rent Bike Cox's Bazar, ${user.name}! Browse our vehicles and start your journey.`,
+      data: { action: '/' },
+      emailSubject: 'Welcome to Rent Bike Cox\'s Bazar!',
+      emailTemplate: templates.welcome,
+      emailData: { userName: user.name },
+      prefType: 'bookingConfirmation',
+    });
   }
 
   async notifyMaintenanceDue(bike, renterId) {

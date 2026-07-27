@@ -12,8 +12,7 @@ const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buil
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
-const { sendEmail, templates } = require('../services/emailService');
-const NotificationPreference = require('../models/NotificationPreference');
+
 const notificationService = require('../services/NotificationService');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
@@ -280,27 +279,6 @@ exports.paymentSuccess = async (req, res) => {
       logger.warn('Payment notification failed (non-blocking)', { error: nErr.message });
     }
 
-    try {
-      const userDoc = await require('../models/User').findById(booking.user);
-      if (userDoc?.email) {
-        const prefs = await NotificationPreference.findOne({ user: userDoc._id }).lean();
-        if (prefs?.email?.paymentConfirmation !== false) {
-          await sendEmail({
-            to: userDoc.email,
-            subject: 'Payment Confirmed — Rent Bike Cox\'s Bazar',
-            html: templates.paymentConfirmation({
-              userName: userDoc.name,
-              amount: expectedAdvance,
-              bookingId: booking.invoiceNumber || bookingId,
-              tranId,
-            }),
-          });
-        }
-      }
-    } catch (emailErr) {
-      logger.warn('Email send failed (non-blocking)', { message: emailErr.message });
-    }
-
     return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
   } catch (error) {
     logger.error('success error', { tag: 'Payment', message: error.message, stack: error.stack });
@@ -547,27 +525,6 @@ exports.paymentIPN = async (req, res) => {
       }
     } catch (nErr) {
       logger.warn('IPN notification failed (non-blocking)', { error: nErr.message });
-    }
-
-    try {
-      const userDoc = await require('../models/User').findById(booking.user).lean();
-      if (userDoc?.email) {
-        const prefs = await NotificationPreference.findOne({ user: userDoc._id }).lean();
-        if (prefs?.email?.paymentConfirmation !== false) {
-          await sendEmail({
-            to: userDoc.email,
-            subject: 'Payment Confirmed — Rent Bike Cox\'s Bazar',
-            html: templates.paymentConfirmation({
-              userName: userDoc.name,
-              amount: booking.advancePaid,
-              bookingId: booking.invoiceNumber || booking._id.toString(),
-              tranId: tran_id,
-            }),
-          });
-        }
-      }
-    } catch (emailErr) {
-      logger.warn('IPN email send failed (non-blocking)', { message: emailErr.message });
     }
 
     res.status(200).json({ status: 'OK' });

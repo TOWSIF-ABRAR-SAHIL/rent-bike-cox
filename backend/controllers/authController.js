@@ -11,6 +11,7 @@ const { generateAccessToken, generateRefreshToken, verifyToken, buildFingerprint
 const securityConfig = require('../security/config/securityConfig');
 const { logSecurityEvent } = require('../utils/securityLogger');
 const logger = require('../utils/logger');
+const notificationService = require('../services/NotificationService');
 
 const MAX_ATTEMPTS = securityConfig.lockout.maxAttempts;
 const LOCK_DURATION = securityConfig.lockout.lockDuration;
@@ -87,6 +88,8 @@ exports.register = async (req, res) => {
 
     const { accessToken, refreshToken, familyId } = generateTokenPair(user, req);
     await storeRefreshToken(refreshToken, user._id, familyId, req);
+
+    try { await notificationService.notifyWelcome(user); } catch { /* non-blocking */ }
 
     res.status(201).json({
       accessToken,
@@ -448,6 +451,15 @@ exports.forgotPassword = async (req, res) => {
     });
 
     logger.info('Password reset OTP generated', { userId: user._id, email });
+
+    try {
+      const { sendEmail, templates } = require('../services/emailService');
+      await sendEmail({
+        to: user.email,
+        subject: 'Password Reset Code — Rent Bike Cox\'s Bazar',
+        html: templates.passwordReset({ userName: user.name, otp }),
+      });
+    } catch { /* non-blocking */ }
 
     res.json({ message: 'If an account exists with that email, an OTP has been sent' });
   } catch (error) {

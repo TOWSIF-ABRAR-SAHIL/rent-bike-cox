@@ -12,8 +12,7 @@ const { sanitize } = require('../utils/sanitize');
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
-const { sendEmail, templates } = require('../services/emailService');
-const NotificationPreference = require('../models/NotificationPreference');
+
 const notificationService = require('../services/NotificationService');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
@@ -231,25 +230,6 @@ exports.confirmPayment = async (req, res) => {
       logger.warn('Payment notification failed (non-blocking)', { error: nErr.message });
     }
 
-    try {
-      const userDoc = await require('../models/User').findById(booking.user);
-      if (userDoc?.email) {
-        const prefs = await NotificationPreference.findOne({ user: userDoc._id });
-        if (prefs?.email?.paymentConfirmation !== false) {
-          await sendEmail({
-            to: userDoc.email,
-            subject: 'Payment Confirmed — Rent Bike Cox\'s Bazar',
-            html: templates.paymentConfirmation({
-              userName: userDoc.name,
-              amount: computedAdvance,
-              bookingId: booking.invoiceNumber || bookingId,
-            }),
-          });
-        }
-      }
-    } catch (emailErr) {
-      logger.warn('Confirm email send failed (non-blocking)', { message: emailErr.message });
-    }
   } catch (error) {
     logger.error('confirmPayment error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Payment confirmation failed' });
@@ -341,24 +321,6 @@ exports.cancelBooking = async (req, res) => {
       logger.warn('Cancel notification failed (non-blocking)', { error: nErr.message });
     }
 
-    try {
-      const userDoc = await require('../models/User').findById(booking.user);
-      if (userDoc?.email) {
-        const prefs = await NotificationPreference.findOne({ user: userDoc._id });
-        if (prefs?.email?.bookingCancellation !== false) {
-          await sendEmail({
-            to: userDoc.email,
-            subject: 'Booking Cancelled — Rent Bike Cox\'s Bazar',
-            html: templates.bookingCancellation({
-              userName: userDoc.name,
-              refundAmount: refund.refundableAmount,
-            }),
-          });
-        }
-      }
-    } catch (emailErr) {
-      logger.warn('Cancel email send failed (non-blocking)', { message: emailErr.message });
-    }
   } catch (error) {
     logger.error('cancelBooking error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Booking cancellation failed' });
