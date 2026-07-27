@@ -1,126 +1,123 @@
-# Security — Configurations & Gaps
+# Security — Configurations & Measures
 
 ## Applied Security Measures
 
 ### Authentication
-- JWT tokens with 1-day expiry
+- JWT tokens with 1-day expiry, secret from env
 - Password hashing with bcryptjs (salt rounds: 10)
-- Password `select: false` in User model (not returned in queries)
+- Password `select: false` in User model (never returned in queries by default)
 - Token transmitted via `Authorization: Bearer <token>` header
-- Frontend stores in localStorage (XSS risk — see gaps)
+- Refresh token system (RefreshToken model)
+- Blacklisted tokens for logout (BlacklistedToken model)
+- Login attempt tracking (LoginAttempt model)
+
+### Password Policy
+- Minimum 8 characters
+- Requires uppercase letter, number, and special character
+- Common password dictionary check
+- Password reuse prevention (last 5 passwords)
+- Implementation: `security/utils/passwordPolicy.js`
 
 ### Authorization
-- Role-based access: Admin > Renter > User
-- Ownership checks on booking details, confirm payment, bike operations
+- 3-role system: Admin > Renter > User
+- Role-based middleware: `security/middleware/authorize.js`
+- Ownership checks: `security/middleware/checkOwnership.js`
 - `ProtectedRoute` component with `roles` prop for frontend routing
-- Inline role checks in controllers (no middleware layer)
 
 ### Input Validation
-- Registration: required fields enforced (name, email, password, nid, license)
-- Password minimum 6 characters
-- Name maximum 100 characters
-- `pricePerHour` range: 1–100,000 TK
+- Express-validator on all routes (`security/validators/`)
+- Registration: name, email, password, NID (10-17 chars), license (3-30 chars), BD phone
+- Price range: 1–100,000 TK
 - Regex special chars escaped in search (ReDoS prevention)
+- Body size limit: 1MB
+- File upload: 5MB max, JPG/JPEG/PNG only
+
+### Sanitization
+- Custom `middleware/sanitize.js` (replaced express-mongo-sanitize due to Express 5 incompatibility)
+- DOMPurify + jsdom for XSS prevention (`security/sanitizers/domSanitizer.js`)
+- `sanitizeFields` helper strips dangerous HTML from user input
+- `sanitizeFields` applied on registration, review creation, and settings update
 
 ### Rate Limiting
-- Auth routes: 20 requests per 15 minutes
-- Applied via `express-rate-limit`
+- Auth: 20 requests / 15 minutes
+- Booking: 20 requests / 15 minutes
+- Payment: 10 requests / 15 minutes
+- Financial: 20 requests / 15 minutes
+- Search: 30 requests / 1 minute
+- Dashboard: 60 requests / 1 minute
+- Fleet: 40 requests / 1 minute
 
-### File Upload Security
-- Maximum size: 5MB
-- Allowed types: JPG, JPEG, PNG only
-- Multer memory storage (no disk write)
-- Cloudinary upload (external storage, not served from Express)
-- Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`
-
-### HTTP Security Headers
-```js
-helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })
-```
-Sets: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, etc.
+### HTTP Security Headers (Helmet)
+- `Content-Security-Policy` — strict policy, no `unsafe-inline` scripts
+- `Strict-Transport-Security` — 63072000 seconds + preload
+- `X-Frame-Options` — DENY
+- `X-Content-Type-Options` — nosniff
+- `X-XSS-Protection` — 1; mode=block
+- `Cross-Origin-Opener-Policy` — same-origin
+- `Cross-Origin-Resource-Policy` — cross-origin (for Cloudinary images)
+- `Referrer-Policy` — strict-origin-when-cross-origin
+- `Permissions-Policy` — camera=(), microphone=(), geolocation=()
+- `Cache-Control` — no-store for API responses
 
 ### CORS
-- Exact-match whitelist (no `origin.includes()`)
-- Origins: `FRONTEND_URL`, `rent-bike-cox.vercel.app`, `localhost:5173`, SSLCommerz domains
-- `credentials: true`
+- Exact-match whitelist only (no loose `origin.includes()`)
+- Allowed origins: `FRONTEND_URL`, `https://rent-bike-cox.vercel.app`, SSLCommerz domains
+- `http://localhost:5173` only in development
 - CORS errors return 403
 
-### Body Size Limits
-- `express.json({ limit: '1mb' })`
-- `express.urlencoded({ limit: '1mb' })`
+### Payment Security
+- SSLCommerz IPN verification (validates with gateway before confirming)
+- Idempotency keys prevent duplicate transactions
+- Circuit breaker for payment gateway (prevents cascading failures)
+- Atomic booking lock (MongoDB sessions with CAS fallback for Atlas M0)
+- Advance payment: 50% for ≤24h, 30% for >24h
 
-### Error Handling
-- No stack traces in production responses
-- Generic "Internal server error" message
-- CORS errors return 403 with specific message
-- File size/type errors return 400
+### Audit Logging
+- `AuditLog` model records all significant actions
+- Actor, action, resource, timestamp, IP address
+- Queriable by admin via `/api/audit` endpoints
 
-### Seed Endpoint Protection
-- `GET /api/seed-temp` guarded by `NODE_ENV !== 'production'`
-- Returns 404 in production
+### Fraud Detection
+- `FraudEvent` model tracks suspicious activities
+- `CircuitBreaker` model for payment gateway failure tracking
+- `Fraud.js` service analyzes patterns
 
-### Mass Assignment Prevention
-- Registration ignores `role` field from request body → forced to `'User'`
-- Settings update whitelists only `basePricePerHour` and `packages`
-- Policy update whitelists: `title`, `content`, `type`, `sortOrder`, `isActive`
-- Booking confirmation: server calculates `advanceAmount` (not from client)
+### Data Protection
+- `.env` files gitignored
+- `CREDENTIALS.md` gitignored with security warning
+- No secrets in code or logs
+- Winston logger redacts sensitive fields (passwords, tokens, NIDs)
+- `dataRetention.js` job auto-deletes old data (2-year policy)
 
-## Remaining Security Gaps
+### Account Security
+- Forgot password OTP flow (PasswordReset model, 15-min expiry)
+- Data export (GDPR compliance)
+- Soft account deletion
+- Account deactivation
 
-### HIGH Priority
+### File Upload Security
+- Multer → Cloudinary (if credentials configured) or memory fallback
+- Max 5MB, JPG/JPEG/PNG only
+- Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`
+- File size/type validation before upload
 
-| Gap | Location | Risk | Mitigation |
-|-----|----------|------|------------|
-| Token in localStorage | `frontend/src/api/axios.js` | XSS can steal JWT | Use httpOnly cookies + refresh token flow |
-| No httpOnly refresh flow | — | — | Implement token rotation |
-| No helmet CSP policy | `server.js:18` | No Content-Security-Policy | Add CSP headers |
-| No request ID/logging | — | Hard to trace attacks | Add request ID middleware |
-| No account lockout | `authController.js` | Brute force after rate limit reset | Implement lockout after N failed attempts |
+## Security Headers Verification
 
-### MEDIUM Priority
+All verified on deployed backend:
+- HSTS with preload ✅
+- X-Frame-Options: DENY ✅
+- Permissions-Policy ✅
+- Cross-Origin-Opener-Policy ✅
+- Cross-Origin-Resource-Policy ✅
+- Cache-Control: no-store ✅
+- Referrer-Policy ✅
 
-| Gap | Location | Risk | Mitigation |
-|-----|----------|------|------------|
-| No email verification | User model | Fake emails accepted | Add email verification flow |
-| No password reset | — | Lost accounts unrecoverable | Add forgot-password flow |
-| No CORS preflight logging | — | Can't monitor blocked origins | Log rejected CORS requests |
-| Coupon usage not tracked | Coupon model | maxUses never enforced | Increment usedCount on apply |
-| No booking date overlap check | `bookingController.js` | Same bike double-booked | Check date ranges before creation |
-| No admin role check on coupon routes | `coupon.js` | Any authenticated user can CRUD coupons | Add `role: 'Admin'` check |
+## Known Gaps
 
-### LOW Priority
-
-| Gap | Location | Risk | Mitigation |
-|-----|----------|------|------------|
-| No MongoDB connection encryption | `.env` | Atlas handles this | Ensure `ssl=true` in URI |
-| No request timeout | — | Slow clients tie up server | Add `connect-timeout` |
-| No API versioning | — | Breaking changes possible | Add `/api/v1/` prefix |
-| No HTTPS enforcement | Render/Vercel | MitM | Both platforms auto-HTTPS |
-| No audit log | — | Can't track admin actions | Add audit collection |
-
-## Middleware Stack Order
-
-```js
-1. helmet()              // Security headers
-2. compression()         // Gzip responses
-3. cors()               // Origin check (403 on failure)
-4. express.json(1mb)    // Body parsing
-5. express.urlencoded(1mb)  // Form parsing
-6. rateLimit(auth only) // Brute force protection
-7. Routes              // Business logic
-8. 404 handler         // Unknown endpoints
-9. Error handler       // Sanitized responses
-```
-
-## Environment Variable Security
-
-| Variable | Sensitivity | In .gitignore |
-|----------|------------|---------------|
-| `MONGODB_URI` | HIGH | Yes |
-| `JWT_SECRET` | HIGH | Yes |
-| `CLOUDINARY_*` | HIGH | Yes |
-| `SSL_STORE_ID` | MEDIUM | Yes |
-| `SSL_STORE_PASS` | MEDIUM | Yes |
-| `VITE_API_URL` | LOW | No (Vite prefix) |
-
-All secrets are in `.env` files which are gitignored. `CREDENTIALS.md` created separately with all values (also gitignored).
+| Issue | Risk | Mitigation |
+|-------|------|-----------|
+| Token in localStorage | XSS vulnerability | Helmet CSP + DOMPurify sanitization reduce XSS surface |
+| No httpOnly cookie flow | Token theft via XSS | Would require significant auth refactor |
+| No automated tests | Regression risk | Manual testing + smoke test script |
+| No HTTPS enforcement on Render | MitM risk | Render provides HTTPS by default |
+| No 2FA | Account compromise risk | Acceptable for current scale |

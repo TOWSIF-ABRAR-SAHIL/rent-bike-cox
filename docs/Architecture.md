@@ -19,200 +19,318 @@
 | File uploads | Multer + Cloudinary | 2.1.1 / 1.41.3 |
 | Security | Helmet, CORS, Rate Limit | 8.3.0, 2.8.6, 8.5.2 |
 | Compression | compression | 1.8.1 |
+| Logging | Winston | — |
+| Finance | Decimal.js | — |
+| Sanitization | DOMPurify + jsdom | — |
+| Email | Nodemailer | — |
 
 ## Directory Structure
 
 ```
 rent-bike-cox/
 ├── backend/
-│   ├── server.js              # Express app entry
+│   ├── server.js                    # Express app entry, middleware wiring, route mounts
 │   ├── .env / .env.example
-│   ├── controllers/            # Business logic
-│   ├── models/                 # Mongoose schemas
-│   ├── routes/                 # Express routers
-│   ├── middleware/             # Auth, upload, 404
-│   ├── utils/                 # invoiceNumber
-│   ├── scripts/               # seedAdmin, seedDemo
+│   ├── controllers/                 # 18 controllers
+│   │   ├── authController.js
+│   │   ├── bookingController.js
+│   │   ├── paymentController.js
+│   │   ├── dashboardController.js   # settings, bikes, categories, admin ops
+│   │   ├── couponController.js
+│   │   ├── policyController.js
+│   │   ├── pricingController.js
+│   │   ├── maintenanceController.js
+│   │   ├── availabilityController.js
+│   │   ├── zoneController.js
+│   │   ├── fleetController.js
+│   │   ├── bulkController.js
+│   │   ├── vehicleHistoryController.js
+│   │   ├── searchController.js
+│   │   ├── analyticsController.js
+│   │   ├── notificationController.js
+│   │   ├── reviewController.js
+│   │   ├── seasonalController.js
+│   │   ├── vehicleDocController.js
+│   │   └── notificationPrefController.js
+│   ├── models/                      # 20+ Mongoose models
+│   │   ├── User.js                  # role enum, select:false password, NID/license
+│   │   ├── Bike.js                  # category ref, renter ref, tier pricing
+│   │   ├── Booking.js               # status machine, invoice number, buffers
+│   │   ├── Category.js              # slug, isActive
+│   │   ├── Settings.js              # singleton (basePricePerHour, packages)
+│   │   ├── Counter.js               # auto-increment RBC-YYYY-XXXXXX
+│   │   ├── Policy.js
+│   │   ├── Coupon.js
+│   │   ├── PaymentIntent.js
+│   │   ├── Refund.js
+│   │   ├── AuditLog.js
+│   │   ├── RefreshToken.js
+│   │   ├── BlacklistedToken.js
+│   │   ├── LoginAttempt.js
+│   │   ├── PasswordReset.js
+│   │   ├── Payout.js
+│   │   ├── LedgerEntry.js
+│   │   ├── FraudEvent.js
+│   │   ├── CircuitBreaker.js
+│   │   ├── IdempotencyKey.js
+│   │   ├── MaintenanceLog.js        # Fleet: maintenance tracking
+│   │   ├── MaintenanceNotification.js
+│   │   ├── Zone.js                  # Fleet: service zones
+│   │   ├── Notification.js          # In-app notifications
+│   │   ├── NotificationPreference.js # Per-user email/push/inApp toggles
+│   │   ├── Review.js                # Bike reviews and ratings
+│   │   ├── SeasonalRate.js          # Peak/off-peak/holiday pricing
+│   │   └── VehicleDocument.js       # Registration/insurance/fitness docs
+│   ├── routes/                      # 20+ route files
+│   │   ├── auth.js                  # /api/auth
+│   │   ├── dashboard.js             # /api/dashboard (public + auth)
+│   │   ├── booking.js               # /api/booking
+│   │   ├── payment.js               # /api/payment
+│   │   ├── coupons.js               # /api/coupons
+│   │   ├── policy.js                # /api/policies
+│   │   ├── financial.js             # /api/financial
+│   │   ├── documents.js             # /api/documents
+│   │   ├── pricing.js               # /api/pricing
+│   │   ├── maintenance.js           # /api/maintenance
+│   │   ├── availability.js          # /api/availability
+│   │   ├── zone.js                  # /api/zones
+│   │   ├── fleet.js                 # /api/fleet
+│   │   ├── bulk.js                  # /api/bulk
+│   │   ├── vehicleHistory.js        # /api/vehicle-history
+│   │   ├── search.js                # /api/search
+│   │   ├── analytics.js             # /api/analytics
+│   │   ├── engagement.js            # /api/notifications, /api/reviews
+│   │   ├── seasonal.js              # /api/seasonal-rates, /api/admin/seasonal-rates
+│   │   ├── vehicleDoc.js            # /api/vehicle-docs
+│   │   └── notificationPref.js      # /api/notification-preferences
+│   ├── middleware/
+│   │   ├── authMiddleware.js        # JWT decode → req.user
+│   │   ├── uploadMiddleware.js      # multer → Cloudinary
+│   │   ├── requestLogger.js         # Correlation ID, method, URL, status, duration
+│   │   ├── errorHandler.js          # Centralized error handling
+│   │   ├── notFoundHandler.js       # 404 catch-all for /api/*
+│   │   └── sanitize.js              # Custom express-mongo-sanitize replacement
+│   ├── security/
+│   │   ├── middleware/
+│   │   │   ├── authorize.js         # Role-based authorization
+│   │   │   ├── checkOwnership.js    # Resource ownership verification
+│   │   │   └── securityHeaders.js   # Helmet, COOP, CORP, CSP
+│   │   ├── validators/
+│   │   │   ├── authValidator.js
+│   │   │   ├── bookingValidator.js
+│   │   │   ├── maintenanceValidator.js
+│   │   │   └── zoneValidator.js
+│   │   ├── sanitizers/
+│   │   │   └── domSanitizer.js      # DOMPurify-based XSS prevention
+│   │   └── utils/
+│   │       └── passwordPolicy.js    # Password strength validation
+│   ├── services/
+│   │   ├── Pricing.js               # Tier-based + seasonal pricing
+│   │   ├── Payment.js               # SSLCommerz integration
+│   │   ├── Refund.js
+│   │   ├── Cancellation.js          # Time-based refund policy
+│   │   ├── Coupon.js
+│   │   ├── Fraud.js                 # Fraud detection
+│   │   ├── Notification.js          # In-app notifications
+│   │   ├── Payout.js
+│   │   └── Email.js                 # Nodemailer SMTP
+│   ├── stateMachines/
+│   │   ├── Booking.js               # Pending → Confirmed → Active → Completed
+│   │   ├── PaymentIntent.js
+│   │   └── Refund.js
+│   ├── gateways/
+│   │   ├── SSLCommerzGateway.js
+│   │   ├── BkashGateway.js
+│   │   └── StripeGateway.js
+│   ├── domain/
+│   │   ├── Money.js                 # Decimal.js wrapper
+│   │   └── enums.js
+│   ├── events/
+│   │   └── EventBus.js              # Event-driven architecture
+│   ├── jobs/
+│   │   ├── expiredIntentCleanup.js
+│   │   ├── bookingStateTransition.js
+│   │   ├── dataRetention.js         # 2-year retention
+│   │   ├── maintenanceReminder.js
+│   │   └── checkoutCleanup.js       # 5-min pending checkout expiry
+│   ├── utils/
+│   │   ├── logger.js                # Winston (redaction, file rotation)
+│   │   ├── pricing.js               # calculateBookingPrice (tier + seasonal + buffer)
+│   │   ├── bookingLock.js           # MongoDB session transactions (CAS fallback)
+│   │   ├── cache.js                 # In-memory cache with TTL (MemoryCache)
+│   │   ├── gracefulShutdown.js      # SIGTERM/SIGINT handling
+│   │   ├── safeAmount.js            # Decimal.js wrapper (prevents floating point errors)
+│   │   ├── timezone.js              # Asia/Dhaka timezone helpers
+│   │   ├── circuitBreaker.js        # Payment gateway circuit breaker
+│   │   ├── idempotency.js           # Prevent duplicate operations
+│   │   └── checkoutCleanup.js
+│   ├── services/
+│   │   └── emailService.js          # Nodemailer SMTP service
+│   ├── scripts/
+│   │   ├── seedAdmin.js
+│   │   └── seedDemo.js
+│   ├── Dockerfile                   # Production container (node:20-alpine)
+│   ├── .dockerignore
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx            # Router + lazy pages
-│   │   ├── main.jsx           # ReactDOM entry
-│   │   ├── index.css          # Tailwind + design system
-│   │   ├── api/axios.js       # Axios instance + interceptor
-│   │   ├── context/           # AuthContext + useAuth
-│   │   ├── components/        # Reusable UI + layout
-│   │   ├── pages/             # Route pages
-│   │   └── assets/            # Images, SVGs
+│   │   ├── App.jsx                  # Router + React.lazy code splitting
+│   │   ├── main.jsx                 # ReactDOM entry
+│   │   ├── index.css                # Tailwind 4 + design system (CSS variables, glass, gradients)
+│   │   ├── api/axios.js             # Axios instance + JWT interceptor
+│   │   ├── context/
+│   │   │   ├── AuthContext.jsx       # Auth provider (separate file per ESLint)
+│   │   │   ├── useAuth.js           # useAuth hook
+│   │   │   ├── ThemeContext.jsx      # Light/Dark/System theme
+│   │   │   └── useTheme.js
+│   │   ├── pages/                   # 18 route pages
+│   │   │   ├── Home.jsx
+│   │   │   ├── BikeDetails.jsx
+│   │   │   ├── Checkout.jsx
+│   │   │   ├── Invoice.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Signup.jsx
+│   │   │   ├── ForgotPassword.jsx
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── RenterDashboard.jsx
+│   │   │   ├── FleetDashboard.jsx
+│   │   │   ├── AnalyticsDashboard.jsx
+│   │   │   ├── AdvancedSearch.jsx
+│   │   │   ├── VehicleHistory.jsx
+│   │   │   ├── Notifications.jsx
+│   │   │   ├── NotificationPreferences.jsx
+│   │   │   ├── SeasonalPricingManager.jsx
+│   │   │   ├── VehicleDocuments.jsx
+│   │   │   ├── PolicyList.jsx
+│   │   │   ├── PaymentFailed.jsx
+│   │   │   ├── PaymentCancelled.jsx
+│   │   │   └── NotFound.jsx
+│   │   ├── components/              # 40+ reusable components
+│   │   │   ├── ErrorBoundary.jsx    # User-friendly error UI
+│   │   │   ├── PageSpinner.jsx      # Full-page loading for lazy routes
+│   │   │   ├── LoadingSkeleton.jsx
+│   │   │   ├── ProtectedRoute.jsx   # Role-based route gating
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   ├── ThemeToggle.jsx
+│   │   │   ├── AvailabilityCalendar.jsx
+│   │   │   ├── FleetOverview.jsx, FleetSummary.jsx, FleetFilter.jsx, FleetBikeRow.jsx
+│   │   │   ├── FleetHealthChart.jsx, FleetUtilizationChart.jsx
+│   │   │   ├── MaintenanceSchedule.jsx, MaintenanceLogForm.jsx, MaintenanceHistory.jsx
+│   │   │   ├── VehicleHealthCard.jsx
+│   │   │   ├── HistoryTimeline.jsx, HistoryFilter.jsx, HistoryStats.jsx
+│   │   │   ├── SearchFilters.jsx, SearchResults.jsx, SearchAutocomplete.jsx
+│   │   │   ├── RevenueChart.jsx, BookingTrendChart.jsx, CategoryPerformance.jsx, TopBikes.jsx
+│   │   │   ├── CustomerInsights.jsx
+│   │   │   ├── NotificationBell.jsx
+│   │   │   ├── ReviewForm.jsx, ReviewList.jsx
+│   │   │   ├── SeasonalBadge.jsx
+│   │   │   ├── DocumentUpload.jsx, DocumentViewer.jsx
+│   │   │   ├── BulkOperations.jsx
+│   │   │   └── ZoneCard.jsx
+│   │   └── assets/
+│   ├── index.html                   # SEO meta tags, OG, Twitter cards
+│   ├── public/
+│   │   ├── robots.txt
+│   │   ├── sitemap.xml
+│   │   └── .well-known/security.txt
+│   ├── vercel.json                  # SPA rewrites + asset caching
 │   ├── vite.config.js
 │   ├── eslint.config.js
+│   ├── tailwind.config.js
+│   ├── .env / .env.example / .env.production
 │   └── package.json
-├── docs/                      # This directory
-├── AGENTS.md
-├── RULES.md
-├── CREDENTIALS.md             # Gitignored
-├── REDESIGN_PLAN.md
-├── .githooks/commit-msg
-├── render.yaml                # Backend deploy
-└── vercel.json                # Frontend deploy
+├── docs/
+├── .github/workflows/
+│   ├── ci.yml                       # Lint + build + syntax check
+│   └── deploy.yml                   # Render + Vercel deploy triggers
+├── render.yaml                      # Render blueprint
+├── vercel.json                      # Vercel SPA config
+├── docker-compose.yml               # Local Docker dev (backend + mongo:7)
+├── AGENTS.md                        # Dev context
+├── RULES.md                         # Business rules
+├── CREDENTIALS.md                   # Secrets (gitignored)
+├── CONTRIBUTING.md                  # Commit conventions
+└── README.md
 ```
 
-## Client-Server Flow
+## API Routes
 
-```
-Browser ──► Vite Dev (5173) ──► API calls ──► Express (5000) ──► MongoDB Atlas
-   │                                │
-   │  React Router (SPA)           │  Auth middleware
-   │  Context (useAuth)            │  Rate limiting
-   │  Axios interceptor           │  CORS check
-   │  Lazy pages                   │  Input validation
-   └───────────────────────────────┘  File upload (Cloudinary)
-```
+| Prefix | File | Access |
+|--------|------|--------|
+| `GET /api/health` | server.js (inline) | public |
+| `/api/auth` | routes/auth.js | public (login, register) |
+| `/api/dashboard` | routes/dashboard.js | public (settings, bikes, categories) + renter + admin |
+| `/api/booking` | routes/booking.js | authenticated (role-based per handler) |
+| `/api/payment` | routes/payment.js | init (auth), success/fail/cancel/ipn (SSLCommerz POSTs) |
+| `/api/coupons` | routes/coupons.js | admin CRUD |
+| `/api/policies` | routes/policy.js | public GET, admin CRUD |
+| `/api/financial` | routes/financial.js | admin only |
+| `/api/documents` | routes/documents.js | authenticated |
+| `/api/pricing` | routes/pricing.js | auth (preview) |
+| `/api/maintenance` | routes/maintenance.js | auth (Renter + Admin) |
+| `/api/availability` | routes/availability.js | public |
+| `/api/zones` | routes/zone.js | public GET, admin CRUD |
+| `/api/fleet` | routes/fleet.js | auth (Renter + Admin) |
+| `/api/bulk` | routes/bulk.js | auth (Renter + Admin) |
+| `/api/vehicle-history` | routes/vehicleHistory.js | auth (Renter + Admin) |
+| `/api/search` | routes/search.js | public |
+| `/api/analytics` | routes/analytics.js | admin only |
+| `/api/notifications` | routes/engagement.js | auth |
+| `/api/reviews` | routes/engagement.js | public GET, auth POST/PUT/DELETE |
+| `/api/seasonal-rates` | routes/seasonal.js | public GET (active) |
+| `/api/admin/seasonal-rates` | routes/seasonal.js | admin CRUD |
+| `/api/vehicle-docs` | routes/vehicleDoc.js | auth (Renter + Admin) |
+| `/api/notification-preferences` | routes/notificationPref.js | auth |
 
-## API Endpoints
+## Rate Limiters
 
-### Health & Seed
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/api/health` | Public | Server health check |
-| GET | `/api/seed-temp` | Dev only | Seed demo data (NODE_ENV !== production) |
+| Limiter | Window | Max Requests |
+|---------|--------|-------------|
+| Auth | 15 min | 20 |
+| Booking | 15 min | 20 |
+| Payment | 15 min | 10 |
+| Financial | 15 min | 20 |
+| Search | 1 min | 30 |
+| Dashboard | 1 min | 60 |
+| Fleet | 1 min | 40 |
 
-### Auth (`/api/auth`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/register` | Public | Register with NID + license images |
-| POST | `/login` | Public | Login, returns JWT + user |
+## Key Middleware (in order)
 
-### Dashboard (`/api/dashboard`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/settings` | Public | Global pricing settings |
-| GET | `/bikes/available` | Public | Available bikes |
-| GET | `/bikes/:id` | Public | Single bike details |
-| GET | `/categories` | Public | Active categories |
-| POST | `/bikes` | Renter | Add bike (5 images) |
-| GET | `/my-bikes` | Renter | Renter's own bikes |
-| PUT | `/bikes/:id/availability` | Renter | Toggle availability |
-| GET | `/admin/bikes` | Admin | All bikes |
-| DELETE | `/admin/bikes/:id` | Admin | Delete bike |
-| PUT | `/admin/settings` | Admin | Update pricing |
-| PUT | `/admin/bikes/:id/verify` | Admin | Toggle verification |
-| GET | `/admin/users` | Admin | All users |
-| PUT | `/admin/users/:id/verify` | Admin | Toggle user verification |
-| GET | `/admin/categories` | Admin | All categories |
-| POST | `/admin/categories` | Admin | Create category |
-| PUT | `/admin/categories/:id` | Admin | Update category |
-| DELETE | `/admin/categories/:id` | Admin | Delete category |
+1. `cors()` — exact-match whitelist only
+2. `express.json({ limit: '1mb' })`
+3. `express.urlencoded({ extended: true, limit: '1mb' })`
+4. `mongoSanitize()` — custom implementation (replaced express-mongo-sanitize)
+5. `hpp()` — HTTP parameter pollution
+6. `helmet()` — CSP, HSTS preload, COOP, CORP
+7. `compression()`
+8. `correlationId` — UUID-based request ID + response time
+9. `requestLogger` — structured logging with winston
+10. Rate limiters (per-route)
+11. `notFoundHandler` — 404 catch-all
+12. `errorHandler` — centralized error handling
 
-### Bookings (`/api/booking`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/` | Auth | Create booking |
-| POST | `/confirm` | Auth | Confirm payment (server-computed amount) |
-| GET | `/my-bookings` | User | User's bookings |
-| GET | `/renter-bookings` | Renter | Renter's incoming bookings |
-| GET | `/admin/all` | Admin | All bookings |
-| GET | `/:id` | Auth | Booking details (ownership check) |
-| PUT | `/:id/cancel` | Auth | Cancel booking |
-| PUT | `/:id/complete` | Renter/Admin | Mark booking complete |
+## Payment Flow (SSLCommerz)
 
-### Payment (`/api/payment`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/init` | Auth | Initialize SSLCommerz payment |
-| GET/POST | `/success/:bookingId/:tranId` | Public | Payment success callback |
-| GET/POST | `/fail` | Public | Payment failure redirect |
-| GET/POST | `/cancel` | Public | Payment cancel redirect |
-| POST | `/ipn` | Public | SSLCommerz IPN webhook |
+1. Frontend `POST /api/booking` → booking created as `Pending`
+2. Frontend `POST /api/payment/init` → returns SSLCommerz gateway URL
+3. User pays on SSLCommerz page
+4. SSLCommerz POSTs `/api/payment/success/:bookingId/:tranId` → confirms booking, marks bike unavailable
+5. Redirects to frontend `/invoice/:bookingId`
+6. IPN handler also verifies via SSLCommerz validation API
 
-### Coupons (`/api/coupons`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/` | Admin | List coupons |
-| POST | `/` | Admin | Create coupon |
-| PUT | `/:id` | Admin | Update coupon |
-| DELETE | `/:id` | Admin | Delete coupon |
-
-### Policies (`/api/policies`)
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | `/` | Public | Active policies |
-| GET | `/admin` | Admin | All policies |
-| POST | `/` | Admin | Create policy |
-| PUT | `/:id` | Admin | Update policy |
-| DELETE | `/:id` | Admin | Delete policy |
-
-## Auth Flow
-
-```
-1. User registers → NID + license uploaded to Cloudinary
-2. Admin verifies user (isVerified: true)
-3. User logs in → JWT token (1 day expiry) returned
-4. Frontend stores in localStorage
-5. Axios interceptor injects Authorization: Bearer <token>
-6. Backend middleware decodes JWT → req.user = { id, role }
-7. Controllers check role + ownership inline
-```
-
-## Payment Flow
-
-```
-1. User selects bike → POST /api/booking → booking created (Pending)
-2. Frontend → POST /api/payment/init → SSLCommerz gateway URL returned
-3. User pays on SSLCommerz (bKash/Nagad/card)
-4. SSLCommerz redirects → GET/POST /api/payment/success/:bookingId/:tranId
-5. Server confirms booking, marks bike unavailable
-6. Redirect to frontend /invoice/:bookingId
-7. On failure/cancel → frontend /payment-failed or /payment-cancelled
-
-Advance calculation:
-  - Rental ≤ 24h → 50% advance
-  - Rental > 24h → 30% advance
-```
-
-## Middleware Stack (order matters)
-
-```js
-helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })
-compression()
-cors({ origin: exact-match whitelist })
-express.json({ limit: '1mb' })
-express.urlencoded({ extended: true, limit: '1mb' })
-express-rate-limit({ max: 20, windowMs: 15min })  // /api/auth only
-```
-
-## CORS Whitelist
-
-- `FRONTEND_URL` env var
-- `https://rent-bike-cox.vercel.app`
-- `http://localhost:5173`
-- `https://sandbox.sslcommerz.com`
-- `https://sslcommerz.com`
-
-No loose `origin.includes()`. CORS errors return 403.
+Advance: 50% for ≤24h, 30% for >24h. `BACKEND_URL` and `FRONTEND_URL` control callback redirects.
 
 ## Deployment
 
-| Service | Platform | Config |
-|---------|----------|--------|
-| Backend | Render | `render.yaml` — build: `cd backend && npm install`, start: `cd backend && node server.js` |
-| Frontend | Vercel | `vercel.json` — SPA catch-all rewrite to `/index.html` |
-| Database | MongoDB Atlas | Connection string in `MONGODB_URI` env |
-| Files | Cloudinary | Image uploads in `rent-bike-cox/` folders |
+### Backend (Render)
+- `render.yaml` blueprint: `cd backend && npm install` (build), `node server.js` (start)
+- Env vars: MONGODB_URI, JWT_SECRET, Cloudinary, SSLCommerz, BACKEND_URL, FRONTEND_URL
 
-## Design System
+### Frontend (Vercel)
+- `vercel.json` in `frontend/`: SPA catch-all rewrite + asset caching
+- Env var: `VITE_API_URL=https://rent-bike-backend.onrender.com/api`
 
-- Dark theme: `#0a0a0f` base, `#0d0d14` card, `#1a1a2e` border
-- Glassmorphism: `.glass`, `.glass-light`, `.glass-dark`
-- Gradients: `gradient-primary`, `gradient-accent`, `gradient-warm`, `gradient-cool`
-- Animations: `fadeIn`, `slideUp`, `slideIn`, `float`, `glowPulse`, `shimmer`
-- Print stylesheet for invoices (`.no-print` class)
-
-## Key Constraints
-
-- **React 19** — no `import React` (ESLint unused import)
-- **Express 5** — route errors propagate differently than v4
-- **Tailwind 4** — no `@tailwind` directives, no `tailwind.config.js` (use `@theme` in CSS)
-- Frontend env vars must be prefixed `VITE_`
-- `.env` files gitignored — create from `.env.example`
-- `npm test` in backend is a stub (no test suites)
+### Docker
+- `docker-compose.yml`: backend + mongo:7 with health checks + persistent volume
+- `backend/Dockerfile`: node:20-alpine, non-root user, healthcheck

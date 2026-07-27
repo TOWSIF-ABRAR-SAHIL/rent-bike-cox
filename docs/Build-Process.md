@@ -28,170 +28,164 @@ npm install
 ```
 
 ### Running Locally
+
+**Backend** (port 5000):
 ```bash
-# Terminal 1: Backend (port 5000)
-cd backend && npm run dev
-
-# Terminal 2: Frontend (port 5173)
-cd frontend && npm run dev
+cd backend
+npm run dev    # nodemon (auto-restart on changes)
 ```
 
-### Environment Variables
-
-**Backend `.env`** (required):
-```
-MONGODB_URI=mongodb+srv://...         # or mongodb://localhost:27017/rentbike
-JWT_SECRET=<64-char-hex>
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-SSL_STORE_ID=
-SSL_STORE_PASS=
-SSL_IS_LIVE=false
-BACKEND_URL=http://localhost:5000
-FRONTEND_URL=http://localhost:5173
-```
-
-**Frontend `.env`** (required):
-```
-VITE_API_URL=http://localhost:5000/api
-```
-
-## Scripts
-
-### Backend
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `npm run dev` | Nodemon auto-restart on changes |
-| `start` | `npm start` | Production start (node server.js) |
-| `test` | `npm test` | Stub (echo "no tests") |
-
-### Frontend
-| Script | Command | Description |
-|--------|---------|-------------|
-| `dev` | `npm run dev` | Vite dev server with HMR |
-| `build` | `npm run build` | Production build → `dist/` |
-| `lint` | `npm run lint` | ESLint check |
-| `preview` | `npm run preview` | Preview production build locally |
-
-### Seed Scripts (from `backend/`)
+**Frontend** (port 5173):
 ```bash
-node scripts/seedAdmin.js     # Create admin user
-node seed.js                  # Create admin (simpler)
-node seedDemo.js              # Create renter + user + categories + 10 bikes
+cd frontend
+npm run dev    # Vite dev server with HMR
 ```
 
-**Note:** `seedDemo.js` calls `process.exit()` — must restart server after running.
-
-**Dev-only endpoint:**
-```
-GET http://localhost:5000/api/seed-temp
-```
-Creates: 3 users + 5 categories + 10 bikes. Only works when `NODE_ENV !== 'production'`.
-
-## Commit Convention
-
-Enforced by `.githooks/commit-msg` hook:
-```
-type: description
+**Docker** (backend + MongoDB):
+```bash
+docker-compose up --build
 ```
 
-Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`, `revert`
+### Available Commands
 
-Examples:
+| Command | Location | Description |
+|---------|----------|-------------|
+| `npm run dev` | backend/ | Start backend with nodemon |
+| `npm run dev` | frontend/ | Start Vite dev server |
+| `npm run lint` | frontend/ | ESLint check (no typecheck) |
+| `npm run build` | frontend/ | Production build |
+| `node scripts/seedAdmin.js` | backend/ | Seed admin user |
+| `node seed.js` | backend/ | Seed admin (simple) |
+| `node seedDemo.js` | backend/ | Seed demo data |
+| `docker-compose up --build` | root/ | Docker dev environment |
+
+## Code Quality
+
+### ESLint (Frontend)
+```bash
+cd frontend && npm run lint
 ```
-feat: add delete bike API endpoint
-fix: resolve image fallback for broken URLs
-docs: update AGENTS.md architecture
-```
+- Strict rules enforced
+- Context hooks must be in separate files from providers
+- React 19 purity rules (no Date.now() in render)
+
+### No TypeScript
+- Project uses plain JavaScript
+- Frontend has no typecheck command
+- Only `npm run lint` for code quality
 
 ## Git Workflow
 
 ### Branch Protection
-- Branch protection is ON for `main`
-- Requires PR reviews
-- Stale review dismissal enabled
-- Force push blocked
-- Admin bypass available
+- `main` is protected
+- Force push allowed via GitHub rule exceptions (for repo owner)
+- Always commit with: `git add -A && git commit -m "type: description"`
 
-### PR Workflow (from now on)
-```bash
-git checkout -b feat/my-feature
-git add .
-git commit -m "feat: my feature"
-git push origin feat/my-feature
-gh pr create --title "feat: my feature" --body "Description"
+### Commit Convention
+Format: `type: description`
+
+Allowed types: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `style`
+
+```
+feat: add fleet management dashboard
+fix: correct payment amount calculation
+docs: update README deployment instructions
+refactor: migrate console.log to winston
+chore: update npm dependencies
 ```
 
-### Direct Push (legacy, bypassed)
-Previously used admin bypass to push directly to main. Now using PR workflow.
+## Build Process
 
-## Deployment
-
-### Backend (Render)
-- **Config:** `render.yaml`
-- **Build:** `cd backend && npm install`
-- **Start:** `cd backend && node server.js`
-- **Env vars:** Set in Render dashboard (not in yaml)
-  - `MONGODB_URI` (Atlas connection string)
-  - `JWT_SECRET`
-  - `CLOUDINARY_*`
-  - `SSL_STORE_ID`, `SSL_STORE_PASS`, `SSL_IS_LIVE`
-  - `BACKEND_URL` (Render service URL)
-  - `FRONTEND_URL` (Vercel URL)
-  - `NODE_ENV=production`
-
-### Frontend (Vercel)
-- **Config:** `vercel.json`
-- **SPA catch-all:** `"/(.*)"` → `"/index.html"`
-- **Env vars:** Set in Vercel dashboard
-  - `VITE_API_URL` (Render backend URL + `/api`)
-
-### Database (MongoDB Atlas)
-- Cluster: `rentbike.jcglevo.mongodb.net`
-- Database: `rentbike`
-- User: `rentbike` / `RentBike2026!`
-- Free M0 tier (512MB)
-
-## Testing
-
-### Smoke Test (manual, 24 checks)
-```bash
-# 1. Health
-curl http://localhost:5000/api/health
-
-# 2. Auth
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@rentbikecox.com","password":"admin123"}'
-
-# 3. Dashboard (with token)
-curl http://localhost:5000/api/dashboard/settings \
-  -H "Authorization: Bearer <token>"
-
-# ... (full list in AGENTS.md)
-```
-
-### Lint Check
-```bash
-cd frontend && npm run lint
-```
-
-### Build Check
+### Frontend Production Build
 ```bash
 cd frontend && npm run build
 ```
+Output: `frontend/dist/` (static files served by Vite or Vercel)
 
-## Project Files Reference
+### Backend
+No build step — Node.js runs directly. Dependencies installed via `npm install`.
 
-| File | Purpose | Committed |
-|------|---------|-----------|
-| `CREDENTIALS.md` | All secrets/credentials | No (gitignored) |
-| `REDESIGN_PLAN.md` | UI/UX redesign roadmap | Yes |
-| `RULES.md` | Business rules, pricing | Yes |
-| `AGENTS.md` | Architecture documentation | Yes |
-| `.env` (backend) | Server environment vars | No (gitignored) |
-| `.env` (frontend) | VITE_API_URL | No (gitignored) |
-| `.env.example` | Template for .env | Yes |
-| `render.yaml` | Render deploy config | Yes |
-| `vercel.json` | Vercel deploy config | Yes |
+### Docker Build
+```bash
+docker-compose up --build
+```
+- Backend: `node:20-alpine` image, non-root user, health check
+- MongoDB: `mongo:7` with persistent volume
+
+## Deployment
+
+### Backend — Render
+
+**Via render.yaml (Blueprint):**
+1. Push code to GitHub `main`
+2. Go to Render Dashboard → New → Blueprint
+3. Select repo → Render auto-detects `render.yaml`
+4. Set environment variables in dashboard (never in yaml for secrets)
+
+**Manual Setup:**
+1. New → Web Service → Connect GitHub repo
+2. Settings:
+   - Name: `rent-bike-backend`
+   - Root directory: `backend`
+   - Build command: `npm install`
+   - Start command: `node server.js`
+   - Plan: Free
+3. Environment variables:
+   - `NODE_ENV` = `production`
+   - `MONGODB_URI` = your Atlas connection string
+   - `JWT_SECRET` = your secret
+   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+   - `SSLCOMMERZ_STORE_ID`, `SSLCOMMERZ_STORE_PASS`, `SSLCOMMERZ_IS_LIVE=false`
+   - `BACKEND_URL` = `https://rent-bike-backend.onrender.com`
+   - `FRONTEND_URL` = `https://rent-bike-cox.vercel.app`
+4. Deploy → Wait 2-5 min → Verify `GET /api/health` returns `{"status":"ok"}`
+
+### Frontend — Vercel
+
+1. Go to vercel.com → New Project → Import GitHub repo
+2. Settings:
+   - Framework: Vite
+   - Root directory: `frontend`
+   - Build command: `npm run build`
+   - Output directory: `dist`
+3. Environment variables:
+   - `VITE_API_URL` = `https://rent-bike-backend.onrender.com/api`
+4. Deploy → Wait 1-2 min → Site live at `https://rent-bike-cox.vercel.app`
+
+### Post-Deploy Checklist
+
+- [ ] Test health endpoint: `GET /api/health`
+- [ ] Test admin login: `admin@rentbikecox.com` / `admin123`
+- [ ] Test renter login: `renter@rentbikecox.com` / `renter123`
+- [ ] Test user login: `user@rentbikecox.com` / `user123`
+- [ ] Browse homepage on live URL
+- [ ] Test theme switcher (Light/Dark/System)
+- [ ] Configure SSLCommerz callback URLs:
+  - Success: `https://rent-bike-backend.onrender.com/api/payment/success`
+  - Fail: `https://rent-bike-backend.onrender.com/api/payment/fail`
+  - Cancel: `https://rent-bike-backend.onrender.com/api/payment/cancel`
+  - IPN: `https://rent-bike-backend.onrender.com/api/payment/ipn`
+- [ ] Whitelist Render IPs in MongoDB Atlas (or `0.0.0.0/0` for testing)
+
+## CI/CD
+
+### GitHub Actions
+
+**ci.yml** — Runs on push/PR to `main`:
+- ESLint check (frontend)
+- Vite production build (frontend)
+- Node.js syntax check (backend)
+
+**deploy.yml** — Deploy triggers:
+- Push to `main` triggers Render + Vercel auto-deploy
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Render cold start (30s delay) | Free tier sleeps after 15min inactivity. First request wakes it. |
+| MongoDB connection refused | Check IP whitelist in Atlas. Add `0.0.0.0/0` for testing. |
+| CORS error (403) | Check `FRONTEND_URL` env var matches your Vercel URL. |
+| SPA routes return 404 on Vercel | Ensure `vercel.json` is in `frontend/` directory (not repo root). |
+| SSLCommerz callback fails | Verify `BACKEND_URL` is correct and SSLCommerz URLs match. |
+| `req.query` error in middleware | Express 5 doesn't allow setting `req.query`. Use custom sanitize.js. |
