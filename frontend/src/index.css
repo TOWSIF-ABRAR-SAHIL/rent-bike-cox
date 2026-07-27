@@ -362,3 +362,16 @@ html.light {
   body { background: white !important; color: black !important; color-scheme: light; }
   #printable-invoice { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 20px !important; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton { animation: none !important; }
+  .animate-float { animation: none !important; }
+  .animate-glow-pulse { animation: none !important; }
+  .animate-spin { animation-duration: 2s !important; }
+}

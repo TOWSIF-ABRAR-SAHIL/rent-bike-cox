@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw } from 'lucide-react';
@@ -52,24 +52,25 @@ const Home = () => {
     api.get('/zones/active').then(res => setZones(res.data)).catch(() => setZones([]));
   }, []);
 
-  useEffect(() => {
-    const fetchBikes = async () => {
-      setLoading(true);
-      try {
-        const params = {};
-        if (debouncedSearch) params.search = debouncedSearch;
-        if (activeCategory) params.category = activeCategory;
-        if (activeZone) params.zone = activeZone;
-        const res = await api.get('/dashboard/bikes/available', { params });
-        setBikes(res.data);
-      } catch {
-        setFetchError('Failed to load vehicles. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBikes();
+  const fetchBikes = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const params = {};
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (activeCategory) params.category = activeCategory;
+      if (activeZone) params.zone = activeZone;
+      const res = await api.get('/dashboard/bikes/available', { params });
+      setBikes(res.data);
+    } catch {
+      setFetchError('Failed to load vehicles. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, [debouncedSearch, activeCategory, activeZone]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchBikes(); }, [fetchBikes]);
 
   const handleCategoryClick = (slug) => {
     setActiveCategory(prev => prev === slug ? '' : slug);
@@ -308,7 +309,7 @@ const Home = () => {
                 <RefreshCw size={24} className="mx-auto mb-3 animate-spin" style={{ color: 'var(--text-muted)' }} />
                 <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Taking longer than usual?</p>
                 <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>The server may be slow to respond. You can wait or retry.</p>
-                <button onClick={() => { setSlowNetwork(false); setLoading(true); window.location.reload(); }}
+                <button onClick={() => { setSlowNetwork(false); setLoading(true); fetchBikes(); }}
                   className="btn-primary !px-5 !py-2.5 text-sm" aria-label="Reload page">
                   Retry
                 </button>
@@ -412,4 +413,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default memo(Home);

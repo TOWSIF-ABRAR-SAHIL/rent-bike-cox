@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
 import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
@@ -55,7 +55,9 @@ const AdminDashboard = () => {
   const [zones, setZones] = useState([]);
   const [newZone, setNewZone] = useState({ name: '', description: '', color: '#f59e0b' });
 
-  useEffect(() => {
+  const fetchDashboard = useCallback(() => {
+    setLoading(true);
+    setFetchError('');
     Promise.allSettled([
       api.get('/dashboard/settings'),
       api.get('/dashboard/admin/bikes'),
@@ -81,6 +83,9 @@ const AdminDashboard = () => {
     })
       .finally(() => setLoading(false));
   }, [addToast]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
   const fetchFinance = useCallback(async () => {
     setFinanceLoading(true);
@@ -241,7 +246,7 @@ const AdminDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Retry loading dashboard">Try Again</button>
+        <button onClick={() => fetchDashboard()} className="btn-primary" aria-label="Retry loading dashboard">Try Again</button>
       </div>
     </div>
   );
@@ -1004,4 +1009,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default memo(AdminDashboard);

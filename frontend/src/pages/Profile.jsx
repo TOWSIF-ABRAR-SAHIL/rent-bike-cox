@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../components/useToast';
@@ -23,7 +23,9 @@ const Profile = () => {
     licenseImage: null,
   });
 
-  useEffect(() => {
+  const fetchProfile = useCallback(() => {
+    setLoading(true);
+    setError('');
     api.get('/auth/profile')
       .then(({ data }) => {
         const user = data.user || data;
@@ -40,6 +42,9 @@ const Profile = () => {
       .catch(() => setError('Failed to load profile.'))
       .finally(() => setLoading(false));
   }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -103,7 +108,7 @@ const Profile = () => {
       <div className="text-center glass rounded-2xl p-8">
         <AlertCircle size={32} className="mx-auto mb-3" style={{ color: 'var(--danger-text)' }} />
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{error}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Retry loading profile">Try Again</button>
+        <button onClick={() => fetchProfile()} className="btn-primary" aria-label="Retry loading profile">Try Again</button>
       </div>
     </div>
   );

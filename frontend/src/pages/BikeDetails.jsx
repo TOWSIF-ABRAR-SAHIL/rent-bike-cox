@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin } from 'lucide-react';
 import api from '../api/axios';
@@ -57,7 +57,9 @@ const BikeDetails = () => {
     }
   };
 
-  useEffect(() => {
+  const fetchBike = useCallback(() => {
+    setLoading(true);
+    setFetchError('');
     api.get(`/dashboard/bikes/${id}`).then(res => {
       setBike(res.data);
     }).catch(() => {
@@ -68,6 +70,9 @@ const BikeDetails = () => {
       setAvailabilityStatus(res.data);
     }).catch(() => {});
   }, [id]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchBike(); }, [fetchBike]);
 
   const handleBooking = (hoursOverride) => {
     if (!token) { navigate('/login'); return; }
@@ -91,7 +96,7 @@ const BikeDetails = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
+        <button onClick={() => fetchBike()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -313,4 +318,4 @@ const BikeDetails = () => {
   );
 };
 
-export default BikeDetails;
+export default memo(BikeDetails);

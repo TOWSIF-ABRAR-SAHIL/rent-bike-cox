@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useParams, useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus, RefreshCw } from 'lucide-react';
@@ -83,7 +83,8 @@ const Checkout = () => {
 
   const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
 
-  useEffect(() => {
+  const fetchBike = useCallback(() => {
+    setFetchError('');
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
       setStartTime(getDefaultStartTime());
@@ -91,6 +92,9 @@ const Checkout = () => {
       setFetchError('Failed to load booking details. Please try again.');
     });
   }, [bikeId]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchBike(); }, [fetchBike]);
 
   useEffect(() => {
     if (!startTime || !endTime || !bike) return;
@@ -294,7 +298,7 @@ const Checkout = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
+        <button onClick={() => fetchBike()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -562,4 +566,4 @@ const Checkout = () => {
   );
 };
 
-export default Checkout;
+export default memo(Checkout);

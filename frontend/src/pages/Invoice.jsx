@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { Bike, Printer, XCircle, AlertTriangle } from 'lucide-react';
@@ -16,24 +16,22 @@ const Invoice = () => {
   const [fetchError, setFetchError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchInvoice = async () => {
-      try {
-        const res = await api.get(`/booking/${bookingId}`);
-        if (!cancelled) setBooking(res.data);
-      } catch {
-        if (!cancelled) {
-          setFetchError('Failed to load invoice. Please try again.');
-          addToast('Failed to load invoice', 'error');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchInvoice();
-    return () => { cancelled = true; };
+  const fetchInvoice = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+    try {
+      const res = await api.get(`/booking/${bookingId}`);
+      setBooking(res.data);
+    } catch {
+      setFetchError('Failed to load invoice. Please try again.');
+      addToast('Failed to load invoice', 'error');
+    } finally {
+      setLoading(false);
+    }
   }, [bookingId, addToast]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchInvoice(); }, [fetchInvoice]);
 
   const handleCancel = async () => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
@@ -56,7 +54,7 @@ const Invoice = () => {
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
+        <button onClick={() => fetchInvoice()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );

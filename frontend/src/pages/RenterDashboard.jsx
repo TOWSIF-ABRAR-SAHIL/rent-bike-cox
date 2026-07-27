@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
 import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
@@ -110,7 +110,9 @@ const RenterDashboard = () => {
   const [fetchError, setFetchError] = useState('');
   const [zones, setZones] = useState([]);
 
-  useEffect(() => {
+  const fetchDashboard = useCallback(() => {
+    setLoading(true);
+    setFetchError('');
     Promise.allSettled([
       api.get('/dashboard/my-bikes'),
       api.get('/dashboard/categories'),
@@ -129,6 +131,9 @@ const RenterDashboard = () => {
     }).catch(() => { addToast('Failed to fetch data', 'error'); setFetchError('Failed to load dashboard data.'); })
       .finally(() => setLoading(false));
   }, [addToast]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
@@ -166,7 +171,7 @@ const RenterDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
+        <button onClick={() => fetchDashboard()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
@@ -329,4 +334,4 @@ const RenterDashboard = () => {
   );
 };
 
-export default RenterDashboard;
+export default memo(RenterDashboard);

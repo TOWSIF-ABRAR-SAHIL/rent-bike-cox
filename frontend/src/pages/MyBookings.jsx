@@ -24,12 +24,17 @@ const MyBookings = () => {
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
+  const fetchBookings = useCallback(() => {
+    setLoading(true);
+    setFetchError('');
     api.get('/booking/my-bookings')
       .then(res => setBookings(res.data))
       .catch(() => { addToast('Failed to load bookings', 'error'); setFetchError('Failed to load bookings.'); })
       .finally(() => setLoading(false));
   }, [addToast]);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
   const handleExtend = useCallback(async (bookingId) => {
     if (!newEndTime) { addToast('Please select a new end time', 'error'); return; }
@@ -95,7 +100,7 @@ const MyBookings = () => {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="text-center glass rounded-2xl p-8 max-w-md mx-auto">
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => window.location.reload()} className="btn-primary" aria-label="Reload page">Try Again</button>
+        <button onClick={() => fetchBookings()} className="btn-primary" aria-label="Reload page">Try Again</button>
       </div>
     </div>
   );
