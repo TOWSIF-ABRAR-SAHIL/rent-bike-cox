@@ -11,8 +11,17 @@ const zoneSchema = new mongoose.Schema({
     east: { type: Number },
     west: { type: Number },
   },
+  center: {
+    lat: { type: Number },
+    lng: { type: Number },
+  },
+  polygon: [[Number]], // array of [lat, lng] pairs for map boundary
   color: { type: String, default: '#f59e0b' },
   bikeCount: { type: Number, default: 0 },
+  // Tourist info
+  highlights: [String], // e.g. ['Beach', 'Sea Food', 'Sunset Point']
+  distanceFromCenter: String, // e.g. "12 km"
+  typicalRentPrice: String, // e.g. "200-300 TK/hr"
 }, { timestamps: true });
 
 zoneSchema.index({ isActive: 1 });

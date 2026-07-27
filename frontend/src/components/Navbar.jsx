@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, MapPin } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
@@ -95,6 +95,10 @@ const Navbar = () => {
             <Link to="/search" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
               <Search size={16} className="mr-1.5" />
               Search
+            </Link>
+            <Link to="/zones" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+              <MapPin size={16} className="mr-1.5" />
+              Zones
             </Link>
             {user ? (
               <>
@@ -225,6 +229,9 @@ const Navbar = () => {
             </Link>
             <Link to="/search" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
               <Search size={16} className="mr-2" /> Search
+            </Link>
+            <Link to="/zones" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+              <MapPin size={16} className="mr-2" /> Zones
             </Link>
             {user ? (
               <>

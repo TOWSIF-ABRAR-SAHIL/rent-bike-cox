@@ -1,3 +1,4 @@
+@import 'leaflet/dist/leaflet.css';
 @import "tailwindcss";
 
 @theme {
@@ -355,6 +356,41 @@ html.light {
   background: linear-gradient(90deg, var(--skeleton-from) 25%, var(--skeleton-via) 50%, var(--skeleton-from) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Leaflet z-index fixes for glassmorphism UI */
+.leaflet-container { z-index: 10 !important; }
+.leaflet-top { z-index: 11 !important; }
+.leaflet-bottom { z-index: 11 !important; }
+.leaflet-popup-content-wrapper { z-index: 12 !important; }
+
+/* Leaflet dark mode support */
+.dark .leaflet-tile { filter: brightness(0.7) contrast(1.2) saturate(0.8); }
+.dark .leaflet-control-zoom a {
+  background: rgba(15, 15, 25, 0.9) !important;
+  color: #e5e5e5 !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+.dark .leaflet-control-zoom { border-color: rgba(255,255,255,0.1) !important; }
+
+/* Zone marker popup */
+.zone-popup {
+  background: var(--bg-surface, #0d0d14);
+  border: 1px solid var(--border-base, #222);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--text-primary, #e5e5e5);
+  min-width: 180px;
+}
+.zone-popup h3 { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.zone-popup p { font-size: 12px; opacity: 0.7; }
+.zone-popup .highlights { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.zone-popup .highlights span {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
 }
 
 @media print {

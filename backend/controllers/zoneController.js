@@ -89,6 +89,37 @@ exports.deleteZone = async (req, res) => {
   }
 };
 
+exports.getGeoJson = async (req, res) => {
+  try {
+    const zones = await Zone.find({ isActive: true }).sort({ name: 1 });
+    const geojson = {
+      type: 'FeatureCollection',
+      features: zones.map(zone => ({
+        type: 'Feature',
+        properties: {
+          id: zone._id,
+          name: zone.name,
+          slug: zone.slug,
+          color: zone.color,
+          bikeCount: zone.bikeCount,
+          highlights: zone.highlights || [],
+          distanceFromCenter: zone.distanceFromCenter,
+          typicalRentPrice: zone.typicalRentPrice,
+        },
+        geometry: zone.polygon?.length >= 3
+          ? { type: 'Polygon', coordinates: [zone.polygon.map(p => [p[1], p[0]])] } // [lng, lat] for GeoJSON
+          : zone.center
+            ? { type: 'Point', coordinates: [zone.center.lng, zone.center.lat] }
+            : null,
+      })).filter(f => f.geometry),
+    };
+    res.json(geojson);
+  } catch (error) {
+    logger.error('getGeoJson error', { message: error.message });
+    res.status(500).json({ message: 'Failed to fetch geojson' });
+  }
+};
+
 exports.getZoneStats = async (req, res) => {
   try {
     const zone = await Zone.findById(req.params.id);

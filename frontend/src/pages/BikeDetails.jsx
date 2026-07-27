@@ -8,6 +8,7 @@ import AvailabilityCalendar from '../components/AvailabilityCalendar';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import SeasonalBadge from '../components/SeasonalBadge';
+import ZoneMap from '../components/ZoneMap';
 
 const BikeDetails = () => {
   const { id } = useParams();
@@ -177,6 +178,15 @@ const BikeDetails = () => {
               <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
                 <MapPin size={12} />
                 <span>{bike.zone.name}</span>
+              </div>
+            )}
+            {bike.zone?.center && (
+              <div className="mt-3 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-base)' }}>
+                <ZoneMap
+                  center={[bike.zone.center.lat, bike.zone.center.lng]}
+                  zoom={14}
+                  height="200px"
+                />
               </div>
             )}
           </div>

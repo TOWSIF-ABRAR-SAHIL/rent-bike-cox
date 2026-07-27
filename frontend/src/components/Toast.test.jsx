@@ -1,35 +1,90 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { ToastProvider, ToastContext } from './Toast';
 
-const Toast = ({ message, type, onClose }) => {
+function ToastConsumer({ onReady }) {
   return (
-    <div role="alert" className={`toast toast-${type}`}>
-      <span>{message}</span>
-      <button onClick={onClose} aria-label="Dismiss notification">×</button>
-    </div>
+    <ToastContext.Consumer>
+      {value => {
+        onReady(value);
+        return <div>child content</div>;
+      }}
+    </ToastContext.Consumer>
   );
-};
+}
 
-describe('Toast component', () => {
-  it('renders message', () => {
-    render(<Toast message="Booking confirmed" type="success" onClose={() => {}} />);
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('ToastProvider', () => {
+  it('renders children', () => {
+    let ctxValue;
+    render(
+      <ToastProvider>
+        <ToastConsumer onReady={v => (ctxValue = v)} />
+      </ToastProvider>
+    );
+    expect(screen.getByText('child content')).toBeInTheDocument();
+    expect(ctxValue).toHaveProperty('addToast');
+  });
+
+  it('shows a toast with the message on addToast', () => {
+    let addToast;
+    render(
+      <ToastProvider>
+        <ToastConsumer onReady={v => (addToast = v.addToast)} />
+      </ToastProvider>
+    );
+
+    act(() => {
+      addToast('Booking confirmed', 'success');
+    });
+
     expect(screen.getByText('Booking confirmed')).toBeInTheDocument();
   });
 
-  it('renders dismiss button with aria-label', () => {
-    render(<Toast message="Error occurred" type="error" onClose={() => {}} />);
-    expect(screen.getByLabelText('Dismiss notification')).toBeInTheDocument();
-  });
+  it('dismiss button removes the toast', () => {
+    let addToast;
+    render(
+      <ToastProvider>
+        <ToastConsumer onReady={v => (addToast = v.addToast)} />
+      </ToastProvider>
+    );
 
-  it('calls onClose when dismiss clicked', () => {
-    const onClose = vi.fn();
-    render(<Toast message="Done" type="success" onClose={onClose} />);
+    act(() => {
+      addToast('Booking confirmed', 'success');
+    });
+
+    expect(screen.getByText('Booking confirmed')).toBeInTheDocument();
+
     fireEvent.click(screen.getByLabelText('Dismiss notification'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+
+    expect(screen.queryByText('Booking confirmed')).not.toBeInTheDocument();
   });
 
-  it('renders with role="alert"', () => {
-    render(<Toast message="Warning" type="warning" onClose={() => {}} />);
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+  it('toasts auto-dismiss after duration', () => {
+    let addToast;
+    render(
+      <ToastProvider>
+        <ToastConsumer onReady={v => (addToast = v.addToast)} />
+      </ToastProvider>
+    );
+
+    act(() => {
+      addToast('Auto dismiss', 'info', 2000);
+    });
+
+    expect(screen.getByText('Auto dismiss')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.queryByText('Auto dismiss')).not.toBeInTheDocument();
   });
 });

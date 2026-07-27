@@ -1,66 +1,79 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-function createMockApi() {
-  const fn = vi.fn();
-  const retryFn = async (config, retries = 2) => {
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        return await fn(config);
-      } catch (err) {
-        const isNetworkError = !err.response;
-        const isServerError = err.response?.status >= 500;
-        const isLastAttempt = attempt === retries;
-        if ((isNetworkError || isServerError) && !isLastAttempt) {
-          await new Promise((r) => setTimeout(r, 10));
-          continue;
-        }
-        throw err;
-      }
-    }
-  };
-  return { fn, retryFn };
-}
+const apiInstance = vi.fn();
+apiInstance.interceptors = {
+  request: { use: vi.fn() },
+  response: { use: vi.fn() },
+};
+
+vi.mock('axios', () => {
+  const mockAxios = vi.fn(() => ({ data: {} }));
+  mockAxios.create = vi.fn(() => apiInstance);
+  mockAxios.post = vi.fn();
+  mockAxios.defaults = { headers: { common: {} } };
+  return { default: mockAxios };
+});
+
+let apiWithRetry;
+
+beforeEach(async () => {
+  apiInstance.mockReset();
+  vi.useFakeTimers();
+  vi.resetModules();
+  const mod = await import('../api/axios');
+  apiWithRetry = mod.apiWithRetry;
+});
 
 describe('apiWithRetry', () => {
   it('returns response on success', async () => {
-    const { fn, retryFn } = createMockApi();
     const mockResponse = { data: { ok: true } };
-    fn.mockResolvedValueOnce(mockResponse);
-    const result = await retryFn({ url: '/test' });
+    apiInstance.mockResolvedValueOnce(mockResponse);
+    const result = await apiWithRetry({ url: '/test' });
     expect(result).toEqual(mockResponse);
+    expect(apiInstance).toHaveBeenCalledTimes(1);
   });
 
-  it('retries on network error', async () => {
-    const { fn, retryFn } = createMockApi();
+  it('retries on network error (no response)', async () => {
     const mockResponse = { data: { ok: true } };
-    fn.mockRejectedValueOnce(new Error('Network Error'));
-    fn.mockResolvedValueOnce(mockResponse);
-    const result = await retryFn({ url: '/test' }, 2);
+    apiInstance.mockRejectedValueOnce(new Error('Network Error'));
+    apiInstance.mockResolvedValueOnce(mockResponse);
+
+    const promise = apiWithRetry({ url: '/test' }, 2, 10);
+    await vi.advanceTimersByTimeAsync(10);
+    const result = await promise;
+
     expect(result).toEqual(mockResponse);
-    expect(fn).toHaveBeenCalledTimes(2);
+    expect(apiInstance).toHaveBeenCalledTimes(2);
   });
 
   it('retries on 500 error', async () => {
-    const { fn, retryFn } = createMockApi();
     const mockResponse = { data: { ok: true } };
-    fn.mockRejectedValueOnce({ response: { status: 500 }, message: 'Server Error' });
-    fn.mockResolvedValueOnce(mockResponse);
-    const result = await retryFn({ url: '/test' }, 2);
+    apiInstance.mockRejectedValueOnce({ response: { status: 500 } });
+    apiInstance.mockResolvedValueOnce(mockResponse);
+
+    const promise = apiWithRetry({ url: '/test' }, 2, 10);
+    await vi.advanceTimersByTimeAsync(10);
+    const result = await promise;
+
     expect(result).toEqual(mockResponse);
-    expect(fn).toHaveBeenCalledTimes(2);
+    expect(apiInstance).toHaveBeenCalledTimes(2);
   });
 
-  it('does not retry on 400 error', async () => {
-    const { fn, retryFn } = createMockApi();
-    fn.mockRejectedValueOnce({ response: { status: 400 }, message: 'Bad Request' });
-    await expect(retryFn({ url: '/test' }, 2)).rejects.toMatchObject({ response: { status: 400 } });
-    expect(fn).toHaveBeenCalledTimes(1);
+  it('does NOT retry on 400 error', async () => {
+    const error = { response: { status: 400 } };
+    apiInstance.mockRejectedValueOnce(error);
+
+    await expect(apiWithRetry({ url: '/test' }, 2, 10)).rejects.toMatchObject({ response: { status: 400 } });
+    expect(apiInstance).toHaveBeenCalledTimes(1);
   });
 
   it('throws after all retries exhausted', async () => {
-    const { fn, retryFn } = createMockApi();
-    fn.mockRejectedValue(new Error('Network Error'));
-    await expect(retryFn({ url: '/test' }, 1)).rejects.toThrow('Network Error');
-    expect(fn).toHaveBeenCalledTimes(2);
+    apiInstance.mockRejectedValue(new Error('Network Error'));
+
+    const promise = apiWithRetry({ url: '/test' }, 1, 10);
+    const assertion = expect(promise).rejects.toThrow('Network Error');
+    await vi.advanceTimersByTimeAsync(30);
+    await assertion;
+    expect(apiInstance).toHaveBeenCalledTimes(2);
   });
 });

@@ -4,11 +4,12 @@ const auth = require('../middleware/authMiddleware');
 const authorize = require('../security/middleware/authorize');
 const {
   createZone, getZones, getActiveZones, getZoneById,
-  updateZone, deleteZone, getZoneStats,
+  updateZone, deleteZone, getZoneStats, getGeoJson,
 } = require('../controllers/zoneController');
 
 router.get('/', getZones);
 router.get('/active', getActiveZones);
+router.get('/geojson', getGeoJson);
 router.get('/:id', getZoneById);
 router.get('/:id/stats', auth, authorize('Admin'), getZoneStats);
 router.post('/', auth, authorize('Admin'), createZone);
