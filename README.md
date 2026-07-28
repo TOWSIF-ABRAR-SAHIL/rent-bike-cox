@@ -31,14 +31,21 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - **Vehicle categories** — Bike, Car, Jeep with tier-based pricing
 - **Booking flow** — checkout, SSLCommerz payment, invoice, cancellation
 - **Fleet management** — zones, availability calendar, maintenance logs, bulk operations
-- **Analytics** — revenue charts, booking trends, category performance, top bikes
-- **Notifications** — in-app notifications with per-user preferences
+- **Analytics** — revenue charts, booking trends, category performance, top bikes, zone analytics, rental duration, financial summary, hourly distribution
+- **Notifications** — in-app + email + push notifications with per-user preferences
 - **Reviews** — rider reviews and ratings on vehicles
 - **Seasonal pricing** — admin-configurable peak/off-peak/holiday rates
 - **Vehicle documents** — upload, verify, expiry tracking
+- **Maps & zones** — Leaflet/OpenStreetMap with 8 Cox's Bazar zones, zone explorer, route planner
+- **Vehicle comparison** — compare up to 3 vehicles side-by-side
+- **Wishlist** — save favorite vehicles (localStorage)
 - **Theme switcher** — Light, Dark, System mode
+- **Mobile navigation** — bottom nav bar with WhatsApp contact
+- **Hero carousel** — auto-rotating vehicle images
+- **Photo lightbox** — fullscreen gallery with zoom and keyboard navigation
 - **SEO** — meta tags, robots.txt, sitemap.xml, JSON-LD schema
 - **Security** — Helmet CSP, rate limiting, audit logging, fraud detection, circuit breaker
+- **Testing** — 123 tests (97 backend + 26 frontend) with Vitest
 
 ## Demo Accounts
 
@@ -123,8 +130,8 @@ rent-bike-cox/
 │   └── server.js         # Express app entry
 ├── frontend/
 │   └── src/
-│       ├── pages/        # 18 route pages
-│       ├── components/   # 40+ reusable components
+│       ├── pages/        # 23 route pages
+│       ├── components/   # 50+ reusable components
 │       ├── context/      # AuthContext, ThemeContext
 │       └── api/          # Axios instance
 ├── docs/                 # Architecture, Security, Phases, etc

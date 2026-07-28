@@ -139,6 +139,63 @@ Single source of truth for all work. Each task is a checkbox. All completed phas
 
 ---
 
+## Phase 10 — QA Audit & Quality Push ✅
+
+- [x] **10.1** 140 QA audit bugs fixed
+- [x] **10.2** Vitest test suites (97 backend + 26 frontend = 123 total)
+- [x] **10.3** Sentry error tracking (lazy-loaded)
+- [x] **10.4** API retry with exponential backoff
+- [x] **10.5** PageErrorBoundary per-route
+- [x] **10.6** CI/CD pipelines fixed
+
+---
+
+## Phase 11 — Post-Deployment Enhancements ✅
+
+### Phase 11: Expanded Test Coverage
+- [x] Backend: 87 tests across 7 files (authMiddleware, authorize, tokenManager, passwordPolicy, invoiceNumber, refund, callbackGuard, seasonalPricing)
+- [x] Frontend: 26 tests (axios, Toast, ProtectedRoute, ErrorBoundary, PageErrorBoundary)
+
+### Phase 13: Maps & Location Features
+- [x] Leaflet + OpenStreetMap (react-leaflet)
+- [x] ZoneMap component, ZoneExplorer page
+- [x] 8 Cox's Bazar zones seeded
+- [x] Vehicle zone map on BikeDetails
+
+### Phase 14: Route Planner + Home Zones
+- [x] RoutePlanner component (Haversine distance, Google Maps link)
+- [x] "Explore Zones" section on Home page
+
+### Phase 15: Vehicle Comparison + Wishlist
+- [x] CompareContext (max 3), CompareBar, CompareVehicles page
+- [x] WishlistContext (localStorage), Wishlist page
+
+### Phase 16: Hero Carousel + Ratings + Recommendations
+- [x] Auto-rotating hero carousel (5s)
+- [x] Star ratings on Home bike cards
+- [x] "You Might Also Like" on BikeDetails
+
+### Phase 17: Enhanced Search + Bottom Nav + WhatsApp
+- [x] Price range quick buttons, filter pills
+- [x] BottomNav.jsx (mobile)
+- [x] WhatsAppButton.jsx
+
+### Phase 18: Lightbox + Rebook + Testimonials
+- [x] Lightbox.jsx (fullscreen gallery, keyboard nav, zoom)
+- [x] "Rebook This Vehicle" on completed bookings
+- [x] Testimonials section on Home
+
+### Phase 19: Admin Analytics Upgrade
+- [x] Fixed `$totalAmount` → `$totalPrice` bug (analytics was returning 0)
+- [x] Fixed `days` query param bug (time period selector was broken)
+- [x] New: Zone analytics, rental duration, financial summary endpoints
+- [x] New: ZoneAnalytics, RentalDurationChart, FinancialSummary, HourlyDistribution components
+- [x] Improved: RevenueChart, BookingTrendChart, CategoryPerformance, TopBikes, CustomerInsights
+- [x] AnalyticsDashboard rewrite (shared API, 9 components, refresh)
+- [x] Admin Dashboard "View Full Analytics" link
+
+---
+
 ## Remaining / Future Work
 
 | Feature | Priority | Notes |
@@ -148,5 +205,5 @@ Single source of truth for all work. Each task is a checkbox. All completed phas
 | httpOnly cookie auth flow | Medium | Would replace localStorage |
 | Multi-image upload reorder | Low | Static gallery order |
 | Vehicle specifications form | Low | Text description only |
-| Automated test suites | Medium | `npm test` is a stub currently |
+| Bengali (bn) i18n | Low | All UI in English |
 | 2FA authentication | Low | Acceptable for current scale |

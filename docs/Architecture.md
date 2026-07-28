@@ -183,7 +183,7 @@ rent-bike-cox/
 │   │   │   ├── useAuth.js           # useAuth hook
 │   │   │   ├── ThemeContext.jsx      # Light/Dark/System theme
 │   │   │   └── useTheme.js
-│   │   ├── pages/                   # 18 route pages
+│   │   ├── pages/                   # 23 route pages
 │   │   │   ├── Home.jsx
 │   │   │   ├── BikeDetails.jsx
 │   │   │   ├── Checkout.jsx
@@ -202,10 +202,17 @@ rent-bike-cox/
 │   │   │   ├── SeasonalPricingManager.jsx
 │   │   │   ├── VehicleDocuments.jsx
 │   │   │   ├── PolicyList.jsx
+│   │   │   ├── ZoneExplorer.jsx
+│   │   │   ├── CompareVehicles.jsx
+│   │   │   ├── Wishlist.jsx
+│   │   │   ├── RefundManagement.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   ├── ChangePassword.jsx
+│   │   │   ├── MyBookings.jsx
 │   │   │   ├── PaymentFailed.jsx
 │   │   │   ├── PaymentCancelled.jsx
 │   │   │   └── NotFound.jsx
-│   │   ├── components/              # 40+ reusable components
+│   │   ├── components/              # 50+ reusable components
 │   │   │   ├── ErrorBoundary.jsx    # User-friendly error UI
 │   │   │   ├── PageSpinner.jsx      # Full-page loading for lazy routes
 │   │   │   ├── LoadingSkeleton.jsx
@@ -221,13 +228,20 @@ rent-bike-cox/
 │   │   │   ├── HistoryTimeline.jsx, HistoryFilter.jsx, HistoryStats.jsx
 │   │   │   ├── SearchFilters.jsx, SearchResults.jsx, SearchAutocomplete.jsx
 │   │   │   ├── RevenueChart.jsx, BookingTrendChart.jsx, CategoryPerformance.jsx, TopBikes.jsx
-│   │   │   ├── CustomerInsights.jsx
+│   │   │   ├── CustomerInsights.jsx, ZoneAnalytics.jsx, RentalDurationChart.jsx
+│   │   │   ├── FinancialSummary.jsx, HourlyDistribution.jsx
 │   │   │   ├── NotificationBell.jsx
 │   │   │   ├── ReviewForm.jsx, ReviewList.jsx
 │   │   │   ├── SeasonalBadge.jsx
 │   │   │   ├── DocumentUpload.jsx, DocumentViewer.jsx
 │   │   │   ├── BulkOperations.jsx
-│   │   │   └── ZoneCard.jsx
+│   │   │   ├── ZoneCard.jsx, ZoneMap.jsx
+│   │   │   ├── RoutePlanner.jsx
+│   │   │   ├── CompareBar.jsx
+│   │   │   ├── BottomNav.jsx
+│   │   │   ├── WhatsAppButton.jsx
+│   │   │   ├── Lightbox.jsx
+│   │   │   └── ui/ (EmptyState, Skeleton)
 │   │   └── assets/
 │   ├── index.html                   # SEO meta tags, OG, Twitter cards
 │   ├── public/
@@ -275,7 +289,7 @@ rent-bike-cox/
 | `/api/bulk` | routes/bulk.js | auth (Renter + Admin) |
 | `/api/vehicle-history` | routes/vehicleHistory.js | auth (Renter + Admin) |
 | `/api/search` | routes/search.js | public |
-| `/api/analytics` | routes/analytics.js | admin only |
+| `/api/analytics` | routes/analytics.js | admin only (9 endpoints: revenue, bookings, categories, top-bikes, customers, zones, duration, financial, export) |
 | `/api/notifications` | routes/engagement.js | auth |
 | `/api/reviews` | routes/engagement.js | public GET, auth POST/PUT/DELETE |
 | `/api/seasonal-rates` | routes/seasonal.js | public GET (active) |

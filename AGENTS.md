@@ -28,7 +28,7 @@ cd frontend && npm run build       # prod build
 docker-compose up --build          # Docker (backend + mongo)
 ```
 
-No test suites exist. `npm test` in backend is a stub.
+Test suites: Vitest. Backend 97 tests, frontend 26 tests (123 total). Run with `npx vitest run` in either package.
 
 ## Architecture
 
@@ -61,7 +61,7 @@ No test suites exist. `npm test` in backend is a stub.
 | `/api/bulk` | `routes/bulk.js` | auth (Renter + Admin) |
 | `/api/vehicle-history` | `routes/vehicleHistory.js` | auth (Renter + Admin) |
 | `/api/search` | `routes/search.js` | public |
-| `/api/analytics` | `routes/analytics.js` | admin only |
+| `/api/analytics` | `routes/analytics.js` | admin only (revenue, bookings, categories, top-bikes, customers, zones, duration, financial, export) |
 | `/api/notifications` | `routes/engagement.js` | auth |
 | `/api/reviews` | `routes/engagement.js` | public GET, auth POST/PUT/DELETE |
 | `/api/seasonal-rates` | `routes/seasonal.js` | public GET (active) |
@@ -201,24 +201,28 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - Z-index hierarchy: content z-10 → navbar z-50 → dropdown z-[100] → modal z-[200] → toast z-[300]
 
 ### Pages (all React.lazy loaded)
-- `/` — Home (hero, category filter, bike grid, stats)
-- `/bike/:id` — BikeDetails (gallery, specs)
+- `/` — Home (hero carousel, vehicle ratings, Explore Zones, testimonials)
+- `/bike/:id` — BikeDetails (gallery, lightbox, zone map, save/compare, recommendations)
 - `/checkout/:bikeId` — Checkout (booking + payment)
 - `/invoice/:bookingId` — Invoice (printable)
 - `/login` — Login
 - `/signup` — Signup
 - `/forgot-password` — Forgot password (OTP flow)
 - `/renter-dashboard` — Renter (roles: Renter, Admin)
-- `/admin-dashboard` — Admin only
+- `/admin-dashboard` — Admin only (9 tabs: Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Zones)
 - `/fleet` — Fleet dashboard (roles: Renter, Admin)
-- `/analytics` — Analytics dashboard (Admin only)
-- `/search` — Advanced search with filters
+- `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, zones, duration, financial, hourly, customers)
+- `/search` — Advanced search with filters (price range, category, sort)
 - `/vehicle-history/:bikeId` — Vehicle history timeline
 - `/notifications` — Notifications
-- `/notification-settings` — Notification preferences
+- `/notification-settings` — Notification preferences (email, push, in-app)
 - `/seasonal-pricing` — Seasonal pricing manager (Admin only)
 - `/vehicle-docs` — Vehicle documents
 - `/policies` — Public policy list
+- `/zones` — Zone explorer with Leaflet map
+- `/compare` — Vehicle comparison (max 3, side-by-side)
+- `/wishlist` — Saved vehicles (localStorage)
+- `/refunds` — Refund management (Admin only)
 - `/payment-failed`, `/payment-cancelled` — Error states
 - `*` — 404
 

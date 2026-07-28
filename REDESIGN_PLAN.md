@@ -117,10 +117,10 @@
 
 ---
 
-## Components (40+)
+## Components (50+)
 
 ### Layout & Navigation
-Navbar, Footer, ThemeToggle, ProtectedRoute, ErrorBoundary, PageSpinner, LoadingSkeleton
+Navbar, Footer, ThemeToggle, ProtectedRoute, ErrorBoundary, PageSpinner, LoadingSkeleton, BottomNav, WhatsAppButton
 
 ### Fleet Management
 FleetOverview, FleetSummary, FleetFilter, FleetBikeRow, FleetHealthChart, FleetUtilizationChart
@@ -131,11 +131,11 @@ MaintenanceSchedule, MaintenanceLogForm, MaintenanceHistory, VehicleHealthCard
 ### Search & History
 SearchFilters, SearchResults, SearchAutocomplete, HistoryTimeline, HistoryFilter, HistoryStats
 
-### Analytics
-RevenueChart, BookingTrendChart, CategoryPerformance, TopBikes, CustomerInsights
+### Analytics (14 components)
+RevenueChart, BookingTrendChart, CategoryPerformance, TopBikes, CustomerInsights, ZoneAnalytics, RentalDurationChart, FinancialSummary, HourlyDistribution, ExportData
 
 ### Engagement
-NotificationBell, ReviewForm, ReviewList, SeasonalBadge
+NotificationBell, ReviewForm, ReviewList, SeasonalBadge, Testimonials
 
 ### Documents
 DocumentUpload, DocumentViewer, BulkOperations, ZoneCard
@@ -143,18 +143,33 @@ DocumentUpload, DocumentViewer, BulkOperations, ZoneCard
 ### Availability
 AvailabilityCalendar
 
+### Maps & Location
+ZoneMap (Leaflet), RoutePlanner
+
+### Comparison & Wishlist
+CompareBar, CompareVehicles
+
+### Gallery
+Lightbox (fullscreen photo viewer)
+
+### Walk-in Bookings
+WalkinBooking
+
+### Refund Management
+RefundManagement
+
 ---
 
 ## Features Added Since Original Plan
 
 1. **Tier-based pricing** (replaced flat rate)
 2. **Fleet management** (zones, maintenance, availability, bulk ops)
-3. **Analytics dashboard** (5 charts)
-4. **In-app notifications** with per-user preferences
+3. **Analytics dashboard** (14 components — revenue, trends, categories, top bikes, zones, duration, financial, hourly, customers)
+4. **In-app notifications** with per-user preferences + push notifications
 5. **Reviews and ratings**
 6. **Seasonal pricing**
 7. **Vehicle document management**
-8. **Email service** (Nodemailer)
+8. **Email service** (Nodemailer — 7 branded templates)
 9. **Audit logging**
 10. **Fraud detection**
 11. **Circuit breaker** for payment gateway
@@ -162,3 +177,18 @@ AvailabilityCalendar
 13. **Docker support**
 14. **CI/CD pipelines**
 15. **Full production deployment**
+16. **Maps & location** (Leaflet + OpenStreetMap, 8 Cox's Bazar zones)
+17. **Route planner** (zone-to-zone with Google Maps link)
+18. **Vehicle comparison** (max 3, side-by-side specs)
+19. **Wishlist** (localStorage-persisted)
+20. **Hero carousel** (auto-rotating vehicle images)
+21. **Vehicle ratings** on home cards
+22. **Recommendations** ("You Might Also Like")
+23. **Enhanced search** (price range, filter pills, sort options)
+24. **Mobile bottom navigation** (5-tab)
+25. **WhatsApp floating button**
+26. **Photo lightbox** (fullscreen gallery, keyboard nav, zoom)
+27. **Quick rebook** (completed bookings)
+28. **Swagger API docs** (/api/docs)
+29. **Vitest test suites** (123 tests)
+30. **Sentry error tracking** (lazy-loaded)

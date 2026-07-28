@@ -150,6 +150,66 @@
 - [x] All 18 API endpoint groups verified
 - [x] All frontend pages returning 200
 
+### Phase 11: Expanded Test Coverage
+- [x] Backend: 87 tests across 7 files (authMiddleware, authorize, tokenManager, passwordPolicy, invoiceNumber, refund, callbackGuard, seasonalPricing, safeAmount, pricing, sanitize)
+- [x] Frontend: 26 tests across 6 files (sanity, axios, ErrorBoundary, PageErrorBoundary, Toast, ProtectedRoute)
+- [x] Total: 113 tests (now 123 with analytics tests)
+
+### Phase 12: TypeScript Migration
+- Skipped by user choice
+
+### Phase 13: Maps & Location Features
+- [x] Leaflet + OpenStreetMap integration (react-leaflet)
+- [x] ZoneMap component (dark/light tiles, polygon/marker zones, popups)
+- [x] ZoneExplorer page (`/zones` with sidebar + map)
+- [x] 8 real Cox's Bazar zones seeded (City Center, Kolatoli, Inani Beach, Himchari, Teknaf, St. Martin's Island, Ramu, Ukhia)
+- [x] Vehicle zone map on BikeDetails page
+- [x] Backend GET /zones/geojson endpoint
+- [x] Zone model extended (center, polygon, highlights, distanceFromCenter, typicalRentPrice)
+
+### Phase 14: Route Planner + Home Zone Showcase
+- [x] RoutePlanner component (Haversine distance, Google Maps link)
+- [x] "Explore Zones" section on Home page (ZoneMap + zone cards grid)
+
+### Phase 15: Vehicle Comparison + Wishlist
+- [x] CompareContext (max 3 vehicles)
+- [x] CompareBar floating component
+- [x] CompareVehicles page (side-by-side specs, pricing tiers, picker modal)
+- [x] WishlistContext (localStorage-persisted)
+- [x] Wishlist page
+- [x] Heart + compare icons on BikeDetails and Home cards
+- [x] Favorites link in Navbar
+
+### Phase 16: Hero Carousel + Ratings + Recommendations
+- [x] Auto-rotating hero carousel (5s, dot indicators, prev/next arrows)
+- [x] Star ratings on Home bike cards
+- [x] "You Might Also Like" recommendations on BikeDetails (3 same-category vehicles)
+
+### Phase 17: Enhanced Search + Bottom Nav + WhatsApp
+- [x] Active filter pills with remove
+- [x] Price range dual inputs + quick buttons (Under 200, 200-300, 300-500, 500+)
+- [x] Additional sort options (rating, popular)
+- [x] BottomNav.jsx (mobile bottom navigation with wishlist badge)
+- [x] WhatsAppButton.jsx (floating contact button, expandable popover)
+
+### Phase 18: Lightbox + Rebook + Testimonials
+- [x] Lightbox.jsx (fullscreen gallery, keyboard nav, zoom toggle, thumbnail strip)
+- [x] "Rebook This Vehicle" link on Completed bookings in MyBookings
+- [x] Testimonials section on Home page (3-column grid, customer quotes, star ratings)
+
+### Phase 19: Admin Dashboard Analytics Upgrade
+- [x] Critical bug fix: `$totalAmount` → `$totalPrice` in analytics/fleet/vehicleHistory controllers (analytics revenue was always 0)
+- [x] Critical bug fix: `days` query param read from `req.query` not `req.user` (time period selector was broken)
+- [x] New endpoint: `GET /analytics/zones` — revenue + bookings by zone
+- [x] New endpoint: `GET /analytics/duration` — rental duration distribution (buckets, avg, median)
+- [x] New endpoint: `GET /analytics/financial` — total revenue, advance, refunds, net, collection/refund rates
+- [x] New components: ZoneAnalytics, RentalDurationChart, FinancialSummary, HourlyDistribution
+- [x] Improved components: RevenueChart (total label, avg line), BookingTrendChart (completion rate), CategoryPerformance (share %, avg/booking), TopBikes (ranking, clickable), CustomerInsights (6 cards, avg bookings/customer)
+- [x] AnalyticsDashboard rewrite: shared API instance, Promise.allSettled, refresh button, 14-day option, 5-row layout with 9 components
+- [x] Admin Dashboard: "View Full Analytics" link in Finance tab
+- [x] Backend tests: analytics.test.mjs (10 export tests)
+- [x] Total: 123 tests (97 backend + 26 frontend)
+
 ## Remaining / Future
 
 | Feature | Priority | Notes |
@@ -158,5 +218,6 @@
 | SMS notifications | Low | No SMS service configured |
 | Multi-image upload reorder | Low | Static gallery order |
 | Vehicle specifications form | Low | Only text description currently |
-| Test suites | Medium | No automated tests (`npm test` is a stub) |
 | httpOnly cookie auth flow | Medium | Currently localStorage (XSS risk) |
+| Bengali (bn) i18n | Low | All UI in English currently |
+| Vehicle photo management | Low | Using Cloudinary placeholders |
