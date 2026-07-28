@@ -112,7 +112,7 @@ const Navbar = () => {
             <span className="sm:hidden">RBC</span>
           </Link>
 
-          <div className="hidden md:flex items-center text-sm">
+          <div className="hidden xl:flex items-center text-sm">
             <div className="flex items-center px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
               <Phone size={12} className="mr-1" style={{ color: 'var(--accent-text)' }} />
               <span className="text-[11px]">01891154443</span>
@@ -124,7 +124,7 @@ const Navbar = () => {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             <button onClick={cycle} className="flex items-center justify-center w-9 h-9 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} title={`Theme: ${theme}`} aria-label="Toggle theme">
               <ThemeIcon size={16} />
             </button>
@@ -134,6 +134,10 @@ const Navbar = () => {
             <Link to="/zones" className="flex items-center text-xs px-3 py-2 rounded-lg transition-all whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
               <MapPin size={14} className="mr-1" />
               Zones
+            </Link>
+            <Link to="/policies" className="items-center text-xs px-3 py-2 rounded-lg transition-all whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+              <ShieldCheck size={14} className="mr-1" />
+              Policies
             </Link>
 
             {user ? (
@@ -225,14 +229,14 @@ const Navbar = () => {
             )}
           </div>
 
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 min-h-11 min-w-11 rounded-lg transition-all flex items-center justify-center" style={{ color: 'var(--text-primary)' }} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 min-h-11 min-w-11 rounded-lg transition-all flex items-center justify-center" style={{ color: 'var(--text-primary)' }} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
       {mobileOpen && (
-        <div ref={mobileMenuRef} className="md:hidden glass-dark border-t animate-slide-up" style={{ borderColor: 'var(--border-base)' }}>
+        <div ref={mobileMenuRef} className="lg:hidden glass-dark border-t animate-slide-up" style={{ borderColor: 'var(--border-base)' }}>
           <div className="px-4 py-4 space-y-1">
             <div className="flex items-center text-sm px-3 py-2.5 min-h-11" style={{ color: 'var(--text-muted)' }}>
               <Phone size={14} className="mr-2" style={{ color: 'var(--accent-text)' }} />

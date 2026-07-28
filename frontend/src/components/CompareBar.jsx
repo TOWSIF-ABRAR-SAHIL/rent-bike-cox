@@ -9,7 +9,7 @@ const CompareBar = () => {
   if (items.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[100] animate-slide-up" style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-base)', boxShadow: '0 -4px 20px rgba(0,0,0,0.3)' }}>
+    <div className="fixed bottom-0 left-0 right-0 z-[100] animate-slide-up md:bottom-0 bottom-14" style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-base)', boxShadow: '0 -4px 20px rgba(0,0,0,0.3)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 flex-1 overflow-x-auto">

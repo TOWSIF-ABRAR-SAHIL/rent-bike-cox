@@ -129,7 +129,7 @@ const CacheManager = () => {
                   <tr key={i} className="border-b transition-colors" style={{ borderColor: 'var(--border-base)' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
-                    <td className="p-2 font-mono truncate max-w-[250px]" style={{ color: 'var(--text-primary)' }} title={entry.key}>{entry.key}</td>
+                    <td className="p-2 font-mono truncate max-w-[150px] sm:max-w-[250px]" style={{ color: 'var(--text-primary)' }} title={entry.key}>{entry.key}</td>
                     <td className="p-2">
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium"
                         style={{ background: 'var(--info-bg)', color: 'var(--info-text)' }}>

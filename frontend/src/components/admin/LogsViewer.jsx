@@ -148,7 +148,7 @@ const LogsViewer = () => {
                           {content.level || '—'}
                         </span>
                       </td>
-                      <td className="p-2 truncate max-w-[300px]" style={{ color: 'var(--text-primary)' }}>{content.message || (typeof content === 'string' ? content : '')}</td>
+                      <td className="p-2 truncate max-w-[200px] sm:max-w-[300px]" style={{ color: 'var(--text-primary)' }}>{content.message || (typeof content === 'string' ? content : '')}</td>
                       <td className="p-2">
                         {isExpanded ? <ChevronUp size={12} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />}
                       </td>

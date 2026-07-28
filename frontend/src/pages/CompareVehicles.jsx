@@ -60,7 +60,7 @@ const CompareVehicles = () => {
 
         {/* Comparison Grid */}
         <div className="overflow-x-auto">
-          <div className="min-w-[600px]">
+          <div className="min-w-0 lg:min-w-[600px]">
             {/* Vehicle Headers */}
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
               {items.map(bike => (

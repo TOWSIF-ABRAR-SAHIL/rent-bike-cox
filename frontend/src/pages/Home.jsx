@@ -225,7 +225,7 @@ const Home = () => {
 
           {/* Featured Vehicle Label */}
           {bikes.length > 0 && bikes[heroSlide] && (
-            <div className="absolute bottom-8 right-8 hidden lg:block z-20">
+            <div className="absolute bottom-8 right-8 hidden sm:block z-20">
               <div className="glass rounded-xl px-4 py-2 flex items-center gap-3">
                 <img src={bikes[heroSlide].images?.[0] || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
                 <div>
