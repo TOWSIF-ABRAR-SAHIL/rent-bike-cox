@@ -12,6 +12,8 @@ import PageSpinner from './components/PageSpinner';
 import { CompareProvider } from './context/CompareContext';
 import { WishlistProvider } from './context/WishlistContext';
 import CompareBar from './components/CompareBar';
+import BottomNav from './components/BottomNav';
+import WhatsAppButton from './components/WhatsAppButton';
 
 const Home = lazy(() => import('./pages/Home'));
 const BikeDetails = lazy(() => import('./pages/BikeDetails'));
@@ -181,6 +183,8 @@ function App() {
                 </Suspense>
               </main>
               <Footer />
+              <BottomNav />
+              <WhatsAppButton />
               <CompareBar />
             </div>
               </WishlistProvider>
