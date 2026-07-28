@@ -91,32 +91,40 @@ exports.deleteZone = async (req, res) => {
 
 exports.getGeoJson = async (req, res) => {
   try {
-    const zones = await Zone.find({ isActive: true }).sort({ name: 1 });
-    const geojson = {
-      type: 'FeatureCollection',
-      features: zones.map(zone => ({
-        type: 'Feature',
-        properties: {
-          id: zone._id,
-          name: zone.name,
-          slug: zone.slug,
-          color: zone.color,
-          bikeCount: zone.bikeCount,
-          highlights: zone.highlights || [],
-          distanceFromCenter: zone.distanceFromCenter,
-          typicalRentPrice: zone.typicalRentPrice,
-        },
-        geometry: zone.polygon?.length >= 3
-          ? { type: 'Polygon', coordinates: [zone.polygon.map(p => [p[1], p[0]])] } // [lng, lat] for GeoJSON
-          : zone.center
-            ? { type: 'Point', coordinates: [zone.center.lng, zone.center.lat] }
-            : null,
-      })).filter(f => f.geometry),
-    };
-    res.json(geojson);
+    const zones = await Zone.find({ isActive: true }).sort({ name: 1 }).lean();
+    const features = [];
+    for (const zone of zones) {
+      try {
+        let geometry = null;
+        if (zone.polygon && zone.polygon.length >= 3) {
+          geometry = { type: 'Polygon', coordinates: [zone.polygon.map(p => [p[1], p[0]])] };
+        } else if (zone.center && zone.center.lat != null && zone.center.lng != null) {
+          geometry = { type: 'Point', coordinates: [zone.center.lng, zone.center.lat] };
+        }
+        if (geometry) {
+          features.push({
+            type: 'Feature',
+            properties: {
+              id: zone._id,
+              name: zone.name,
+              slug: zone.slug,
+              color: zone.color,
+              bikeCount: zone.bikeCount,
+              highlights: zone.highlights || [],
+              distanceFromCenter: zone.distanceFromCenter,
+              typicalRentPrice: zone.typicalRentPrice,
+            },
+            geometry,
+          });
+        }
+      } catch (zoneErr) {
+        logger.error('getGeoJson zone error', { zoneId: zone._id, error: zoneErr.message });
+      }
+    }
+    res.json({ type: 'FeatureCollection', features });
   } catch (error) {
-    logger.error('getGeoJson error', { message: error.message });
-    res.status(500).json({ message: 'Failed to fetch geojson' });
+    logger.error('getGeoJson error', { message: error.message, stack: error.stack });
+    res.status(500).json({ message: 'Failed to generate GeoJSON' });
   }
 };
 

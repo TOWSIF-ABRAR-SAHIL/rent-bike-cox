@@ -12,12 +12,34 @@ const ZoneExplorer = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const transformToFeatures = (zones) =>
+    (Array.isArray(zones) ? zones : []).map(z => ({
+      type: 'Feature',
+      id: z._id,
+      properties: {
+        id: z._id, name: z.name, slug: z.slug,
+        color: z.color, bikeCount: z.bikeCount,
+        highlights: z.highlights || [],
+        distanceFromCenter: z.distanceFromCenter,
+        typicalRentPrice: z.typicalRentPrice,
+      },
+      geometry: z.center && z.center.lat != null && z.center.lng != null
+        ? { type: 'Point', coordinates: [z.center.lng, z.center.lat] }
+        : null,
+      center: z.center,
+    })).filter(f => f.geometry);
+
   const fetchZones = () => {
     setLoading(true);
     setError('');
     api.get('/zones/geojson')
       .then(res => setZones(res.features || []))
-      .catch(() => setError('Failed to load zones'))
+      .catch(() => {
+        api.get('/zones')
+          .then(res => setZones(transformToFeatures(res)))
+          .catch(() => setError('Failed to load zones'))
+          .finally(() => setLoading(false));
+      })
       .finally(() => setLoading(false));
   };
 

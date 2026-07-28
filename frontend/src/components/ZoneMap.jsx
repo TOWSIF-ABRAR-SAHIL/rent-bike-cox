@@ -62,20 +62,41 @@ const ZoneMap = ({
 
   const zones = propZones || fetchedZones;
 
+  const transformToFeatures = (zones) =>
+    (Array.isArray(zones) ? zones : []).map(z => ({
+      type: 'Feature',
+      id: z._id,
+      properties: {
+        id: z._id, name: z.name, slug: z.slug,
+        color: z.color, bikeCount: z.bikeCount,
+        highlights: z.highlights || [],
+        distanceFromCenter: z.distanceFromCenter,
+        typicalRentPrice: z.typicalRentPrice,
+      },
+      geometry: z.center && z.center.lat != null && z.center.lng != null
+        ? { type: 'Point', coordinates: [z.center.lng, z.center.lat] }
+        : null,
+      center: z.center,
+    })).filter(f => f.geometry);
+
   useEffect(() => {
     if (propZones) { setTimeout(() => setLoading(false), 0); return; }
     api.get('/zones/geojson')
       .then(res => setFetchedZones(res.features || []))
-      .catch(() => setFetchedZones([]))
+      .catch(() => {
+        api.get('/zones')
+          .then(res => setFetchedZones(transformToFeatures(res)))
+          .catch(() => setFetchedZones([]));
+      })
       .finally(() => setLoading(false));
   }, [propZones]);
 
   const tileUrl = theme === 'dark'
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
   const tileAttribution = theme === 'dark'
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+    ? '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
   return (
