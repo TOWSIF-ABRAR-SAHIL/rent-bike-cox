@@ -1,10 +1,11 @@
 export const SkeletonCard = ({ className = '' }) => (
   <div className={`glass rounded-2xl overflow-hidden ${className}`}>
-    <div className="skeleton h-52 w-full" />
-    <div className="p-5 space-y-3">
+    <div className="skeleton h-56 w-full" />
+    <div className="p-5 flex flex-col flex-1 space-y-3">
       <div className="skeleton h-5 rounded-lg w-2/3" />
       <div className="skeleton h-4 rounded-lg w-1/2" />
-      <div className="skeleton h-4 rounded-lg w-1/3" />
+      <div className="skeleton h-3 rounded-lg w-1/3" />
+      <div className="skeleton h-11 rounded-xl w-full mt-auto" />
     </div>
   </div>
 );

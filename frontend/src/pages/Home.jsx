@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows, Calendar } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
@@ -20,9 +20,9 @@ const features = [
 ];
 
 const steps = [
-  { num: '01', title: 'Browse', desc: 'Find the perfect bike, car or jeep' },
-  { num: '02', title: 'Book', desc: 'Select dates, apply coupon, pay advance' },
-  { num: '03', title: 'Ride', desc: "Pick up and explore Cox's Bazar" },
+  { num: '01', title: 'Browse', desc: 'Find the perfect bike, car or jeep', icon: Search },
+  { num: '02', title: 'Book', desc: 'Select dates, apply coupon, pay advance', icon: Calendar },
+  { num: '03', title: 'Ride', desc: "Pick up and explore Cox's Bazar", icon: Bike },
 ];
 
 const Home = () => {
@@ -178,11 +178,11 @@ const Home = () => {
               {get('home.hero.subtitle', "Rent bikes, cars & beach jeeps at the world's longest beach. Best prices, verified vehicles, secure online payment.")}
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
-              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm text-white/90">
+              <div className="flex items-center px-4 py-2.5 rounded-xl text-sm text-white font-medium" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Clock size={16} className="mr-2 text-amber-400" />
                 Starting from 200 TK/hr
               </div>
-              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm text-white/90">
+              <div className="flex items-center px-4 py-2.5 rounded-xl text-sm text-white font-medium" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <MapPin size={16} className="mr-2 text-green-400" />
                 {bikes.length} vehicles available
               </div>
@@ -211,7 +211,7 @@ const Home = () => {
               <div className="flex gap-2">
                 {bikes.slice(0, 5).map((_, i) => (
                   <button key={i} onClick={() => setHeroSlide(i)}
-                    className={`w-2 h-2 rounded-full transition-all ${heroSlide === i ? 'bg-amber-400 w-6' : 'bg-white/40 hover:bg-white/60'}`}
+                    className={`rounded-full transition-all ${heroSlide === i ? 'bg-amber-400 w-8 h-3' : 'bg-white/40 hover:bg-white/60 w-3 h-3'}`}
                     aria-label={`Go to slide ${i + 1}`} />
                 ))}
               </div>
@@ -240,21 +240,21 @@ const Home = () => {
 
       {/* Stats Bar */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
-        <div className="glass rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm">
+        <div className="glass rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm" style={{ border: '1px solid var(--border-strong)' }}>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{bikes.length}</span>
-            <span style={{ color: 'var(--text-secondary)' }}>Vehicles</span>
+            <span className="text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{bikes.length}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Vehicles</span>
           </div>
           <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
           {categoryCounts.map(cat => (
             <div key={cat._id} className="flex items-center gap-2">
-              <span className="text-lg font-bold" style={{ color: 'var(--stat-number)' }}>{cat.count}</span>
-              <span style={{ color: 'var(--text-secondary)' }}>{cat.name}{cat.count !== 1 ? 's' : ''}</span>
+              <span className="text-xl font-black" style={{ color: 'var(--stat-number)' }}>{cat.count}</span>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{cat.name}{cat.count !== 1 ? 's' : ''}</span>
             </div>
           ))}
           <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
-          <div className="flex items-center gap-1.5">
-            <span className="font-bold" style={{ color: 'var(--success-text)' }}>From 200 TK/hr</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg gradient-primary text-white text-sm font-bold shadow-lg">
+            From 200 TK/hr
           </div>
         </div>
       </section>
@@ -265,31 +265,30 @@ const Home = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {categoryCounts.map(cat => {
               const Icon = categoryIcons[cat.name] || Bike;
+              const isZero = cat.count === 0;
               return (
                 <button
                   key={cat._id}
-                  onClick={() => { handleCategoryClick(cat.slug); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
-                  className={`glass rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 text-left ${
-                    activeCategory === cat.slug
+                  onClick={() => { if (isZero) return; handleCategoryClick(cat.slug); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  className={`rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 text-left ${
+                    isZero ? 'opacity-50 cursor-default' : activeCategory === cat.slug
                       ? 'border-amber-500/50 bg-amber-500/10 shadow-lg shadow-amber-500/10'
                       : ''
-                  }`}
-                  style={activeCategory !== cat.slug ? { '--hover-bg': 'var(--hover-bg)' } : undefined}
-                  onMouseEnter={e => { if (activeCategory !== cat.slug) e.currentTarget.style.background = 'var(--hover-bg)'; }}
-                  onMouseLeave={e => { if (activeCategory !== cat.slug) e.currentTarget.style.background = ''; }}
-                 aria-label="Filter by category">
+                  } ${!isZero ? 'glass' : ''}`}
+                  style={!isZero && activeCategory !== cat.slug ? { background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' } : isZero ? { background: 'var(--input-bg)', border: '1px solid var(--border-base)' } : undefined}
+                 aria-label={isZero ? `${cat.name} — coming soon` : "Filter by category"}>
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     activeCategory === cat.slug ? 'gradient-primary' : ''
                   }`}
-                    style={activeCategory !== cat.slug ? { background: 'var(--hover-bg)' } : undefined}
+                    style={activeCategory !== cat.slug ? { background: isZero ? 'transparent' : 'var(--hover-bg)' } : undefined}
                   >
-                    <Icon size={22} className={activeCategory === cat.slug ? 'text-white' : ''} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />
+                    <Icon size={22} className={activeCategory === cat.slug ? 'text-white' : ''} style={activeCategory !== cat.slug ? { color: isZero ? 'var(--text-muted)' : 'var(--text-muted)' } : undefined} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm" style={{ color: 'var(--card-title)' }}>{cat.name}s</h3>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{cat.count} available</p>
+                    <h3 className="font-semibold text-sm" style={{ color: isZero ? 'var(--text-muted)' : 'var(--card-title)' }}>{cat.name}s</h3>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{isZero ? 'Coming soon' : `${cat.count} available`}</p>
                   </div>
-                  <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-amber-400' : ''}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />
+                  {!isZero && <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-amber-400' : ''}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />}
                 </button>
               );
             })}
@@ -298,6 +297,7 @@ const Home = () => {
       )}
 
       {/* Vehicle Grid */}
+      <div style={{ background: 'var(--bg-section-alt)' }}>
       <section id="vehicles" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Search */}
         <div className="relative mb-6 max-w-lg">
@@ -411,7 +411,9 @@ const Home = () => {
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {bikes.map((bike, index) => (
+            {bikes.map((bike, index) => {
+              const rating = bikeRatings[bike._id];
+              return (
               <Link
                 key={bike._id}
                 to={`/bike/${bike._id}`}
@@ -424,7 +426,7 @@ const Home = () => {
                     alt={bike.model}
                     width="400"
                     height="300"
-                    className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                     onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }}
                   />
@@ -437,14 +439,14 @@ const Home = () => {
                   <div className="absolute top-3 right-3 flex gap-1.5">
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(bike._id); }}
-                      className="p-2 rounded-full glass transition-all hover:scale-110"
+                      className="p-2 rounded-full bg-black/40 backdrop-blur-sm transition-all hover:scale-110"
                       aria-label={hasWish(bike._id) ? 'Remove from favorites' : 'Add to favorites'}
                     >
                       <Heart size={14} fill={hasWish(bike._id) ? '#ef4444' : 'none'} color={hasWish(bike._id) ? '#ef4444' : 'white'} />
                     </button>
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(bike); }}
-                      className={`p-2 rounded-full glass transition-all hover:scale-110 ${hasCompare(bike._id) ? 'ring-2 ring-amber-400' : ''}`}
+                      className={`p-2 rounded-full bg-black/40 backdrop-blur-sm transition-all hover:scale-110 ${hasCompare(bike._id) ? 'ring-2 ring-amber-400' : ''}`}
                       aria-label={hasCompare(bike._id) ? 'Remove from comparison' : 'Add to comparison'}
                     >
                       <GitCompareArrows size={14} color={hasCompare(bike._id) ? '#f59e0b' : 'white'} />
@@ -456,22 +458,20 @@ const Home = () => {
                     </span>
                   </div>
                 </div>
-                <div className="p-5">
-                  <h2 className="text-lg font-bold mb-1 truncate transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
-                  <p className="text-sm" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
-                  {bikeRatings[bike._id] && (
-                    <div className="flex items-center gap-1.5 mt-1.5 mb-3">
-                      <div className="flex items-center">
-                        {[1,2,3,4,5].map(star => (
-                          <Star key={star} size={12} fill={star <= Math.round(bikeRatings[bike._id].average) ? '#f59e0b' : 'none'} color={star <= Math.round(bikeRatings[bike._id].average) ? '#f59e0b' : 'var(--text-muted)'} />
-                        ))}
-                      </div>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {bikeRatings[bike._id].average?.toFixed(1)} ({bikeRatings[bike._id].count})
-                      </span>
+                <div className="p-5 flex flex-col flex-1">
+                  <h2 className="text-lg font-bold truncate transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
+                  <p className="text-sm mt-0.5" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
+                  <div className="flex items-center gap-1.5 mt-2 mb-3">
+                    <div className="flex items-center">
+                      {[1,2,3,4,5].map(star => (
+                        <Star key={star} size={12} fill={rating && star <= Math.round(rating.average) ? '#f59e0b' : 'none'} color={rating && star <= Math.round(rating.average) ? '#f59e0b' : 'var(--text-muted)'} />
+                      ))}
                     </div>
-                  )}
-                  <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-semibold transition-all group-hover:border-amber-500/50 group-hover:text-amber-400"
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {rating ? `${rating.average.toFixed(1)} (${rating.count})` : 'No reviews'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-semibold transition-all mt-auto group-hover:border-amber-500/50 group-hover:text-amber-400"
                     style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}
                   >
                     View Details
@@ -479,10 +479,19 @@ const Home = () => {
                   </div>
                 </div>
               </Link>
+            );})}
+            {bikes.length < 3 && Array.from({ length: 3 - bikes.length }).map((_, i) => (
+              <div key={`placeholder-${i}`} className="glass rounded-2xl overflow-hidden opacity-60 flex flex-col items-center justify-center p-8 text-center min-h-[380px]" style={{ border: '2px dashed var(--border-base)' }}>
+                <Bike size={40} style={{ color: 'var(--text-muted)' }} />
+                <p className="text-sm font-medium mt-4" style={{ color: 'var(--text-secondary)' }}>More vehicles coming soon</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Check back later for new listings</p>
+              </div>
             ))}
           </div>
         )}
       </section>
+
+      </div>
 
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -490,43 +499,52 @@ const Home = () => {
           <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Why Choose Us</h2>
           <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">The best vehicle rental experience in Cox's Bazar</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f, i) => (
-            <div key={i} className="glass rounded-2xl p-4 sm:p-6 text-center card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
-              <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
-                <f.icon size={24} className="text-white" />
+            <div key={i} className="glass rounded-2xl p-6 text-center card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/20 transition-transform duration-300 hover:scale-110">
+                <f.icon size={32} className="text-white" />
               </div>
-              <h3 className="font-semibold mb-2 text-sm" style={{ color: 'var(--section-title)' }}>{f.title}</h3>
-              <p className="text-xs leading-relaxed" style={{ color: 'var(--section-sub)' }}>{f.desc}</p>
+              <h3 className="font-semibold mb-2 text-base" style={{ color: 'var(--section-title)' }}>{f.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--section-sub)' }}>{f.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t" style={{ borderColor: 'var(--divider)' }}>
+      <div style={{ background: 'var(--bg-section-alt)' }}>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>How It Works</h2>
           <p style={{ color: 'var(--section-sub)' }}>Three simple steps to your ride</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-3xl mx-auto">
-          {steps.map((s, i) => (
-            <div key={i} className="text-center">
-              <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-3">{s.num}</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto relative">
+          <div className="hidden sm:block absolute top-12 left-[calc(16.66%+40px)] right-[calc(16.66%+40px)] h-px" style={{ borderTop: '2px dashed rgba(245,158,11,0.3)' }} />
+          {steps.map((s, i) => {
+            const Icon = s.icon;
+            return (
+            <div key={i} className="text-center card-hover rounded-2xl p-6 relative">
+              <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
+                <Icon size={28} className="text-white" />
+              </div>
+              <div className="text-5xl sm:text-6xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-2">{s.num}</div>
               <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--section-title)' }}>{s.title}</h3>
               <p className="text-sm" style={{ color: 'var(--section-sub)' }}>{s.desc}</p>
             </div>
-          ))}
+          );})}
         </div>
       </section>
 
+      </div>
+
       {/* Testimonials */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t" style={{ borderColor: 'var(--divider)' }}>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>What Riders Say</h2>
           <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">Real experiences from our customers in Cox's Bazar</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
           {[
             {
               name: 'Rahim Uddin',
@@ -550,15 +568,16 @@ const Home = () => {
               vehicle: 'Mahindra Thar',
             },
           ].map((t, i) => (
-            <div key={i} className="glass rounded-2xl p-6 card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s`, border: '1px solid var(--border-base)' }}>
+            <div key={i} className="glass rounded-2xl p-6 card-hover animate-slide-up flex flex-col" style={{ animationDelay: `${i * 0.1}s`, border: '1px solid var(--border-base)' }}>
+              <div className="text-3xl leading-none mb-2" style={{ color: 'var(--accent-text)' }}>"</div>
               <div className="flex items-center gap-1 mb-3">
                 {[1,2,3,4,5].map(s => (
-                  <span key={s} style={{ color: s <= t.rating ? '#f59e0b' : 'var(--text-muted)', fontSize: '14px' }}>★</span>
+                  <Star key={s} size={14} fill={s <= t.rating ? '#f59e0b' : 'none'} color={s <= t.rating ? '#f59e0b' : 'var(--text-muted)'} />
                 ))}
               </div>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>"{t.text}"</p>
-              <div className="flex items-center gap-3 pt-3" style={{ borderTop: '1px solid var(--border-base)' }}>
-                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold">
+              <p className="text-sm leading-relaxed mb-4 line-clamp-4" style={{ color: 'var(--text-secondary)' }}>"{t.text}"</p>
+              <div className="flex items-center gap-3 pt-3 mt-auto" style={{ borderTop: '1px solid var(--border-base)' }}>
+                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/20">
                   {t.name.charAt(0)}
                 </div>
                 <div>
@@ -572,7 +591,8 @@ const Home = () => {
       </section>
 
       {/* Explore Zones */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t" style={{ borderColor: 'var(--divider)' }}>
+      <div style={{ background: 'var(--bg-section-alt)' }}>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--section-title)' }}>
@@ -611,14 +631,16 @@ const Home = () => {
                   <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{zone.description}</p>
                 )}
                 <div className="flex items-center gap-3 mt-1.5">
-                  {zone.bikeCount > 0 && (
+                  {zone.bikeCount > 0 ? (
                     <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
                       <Bike size={10} /> {zone.bikeCount} vehicles
                     </span>
+                  ) : (
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>No vehicles yet</span>
                   )}
                 </div>
               </div>
-              <ArrowRight size={16} className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--accent-text)' }} />
+              <ArrowRight size={16} className="flex-shrink-0 transition-opacity" style={{ color: 'var(--accent-text)' }} />
             </Link>
           ))}
         </div>
@@ -629,6 +651,7 @@ const Home = () => {
           </Link>
         </div>
       </section>
+      </div>
     </div>
   );
 };

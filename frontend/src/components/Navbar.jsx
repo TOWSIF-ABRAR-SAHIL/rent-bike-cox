@@ -12,13 +12,15 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme, cycle } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const userDropdownRef = useRef(null);
+  const moreDropdownRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
 
-  const closeMenus = () => { setMobileOpen(false); setDropdownOpen(false); };
+  const closeMenus = () => { setMobileOpen(false); setUserDropdownOpen(false); setMoreDropdownOpen(false); };
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -26,14 +28,24 @@ const Navbar = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!userDropdownOpen) return;
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) setUserDropdownOpen(false);
     };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
     return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
-  }, [dropdownOpen]);
+  }, [userDropdownOpen]);
+
+  useEffect(() => {
+    if (!moreDropdownOpen) return;
+    const handler = (e) => {
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(e.target)) setMoreDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => { document.removeEventListener('mousedown', handler); document.removeEventListener('touchstart', handler); };
+  }, [moreDropdownOpen]);
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -47,116 +59,116 @@ const Navbar = () => {
   }, [mobileOpen]);
 
   useEffect(() => {
-    if (!dropdownOpen && !mobileOpen) return;
+    if (!userDropdownOpen && !moreDropdownOpen && !mobileOpen) return;
     const handler = (e) => { if (e.key === 'Escape') closeMenus(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [dropdownOpen, mobileOpen]);
+  }, [userDropdownOpen, moreDropdownOpen, mobileOpen]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
     setMobileOpen(false);
-    setDropdownOpen(false);
+    setUserDropdownOpen(false);
+    setMoreDropdownOpen(false);
   };
+
+  const moreItems = [
+    ...(user?.role === 'Admin' || user?.role === 'Renter' ? [
+      { to: user?.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    ] : []),
+    { to: '/policies', icon: ShieldCheck, label: 'Policies' },
+    ...(user?.role === 'Admin' || user?.role === 'Renter' ? [
+      { to: '/fleet', icon: BarChart3, label: 'Fleet' },
+    ] : []),
+    ...(user?.role === 'Admin' ? [
+      { to: '/analytics', icon: PieChart, label: 'Analytics' },
+      { to: '/seasonal-pricing', icon: Calendar, label: 'Seasonal' },
+      { to: '/refunds', icon: DollarSign, label: 'Refunds' },
+    ] : []),
+    ...(user?.role === 'Admin' || user?.role === 'Renter' ? [
+      { to: '/vehicle-docs', icon: FileText, label: 'Docs' },
+    ] : []),
+  ];
+
+  const userMenuItems = [
+    ...(user?.role === 'Admin' || user?.role === 'Renter' ? [{
+      to: user?.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard',
+      icon: LayoutDashboard, label: 'Dashboard',
+    }] : []),
+    { to: '/my-bookings', icon: Clock, label: 'My Bookings' },
+    { to: '/wishlist', icon: Heart, label: 'Favorites' },
+  ];
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center text-lg font-bold group" style={{ color: 'var(--text-primary)' }}>
+          <Link to="/" className="flex items-center text-lg font-bold group whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>
             <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center mr-2 group-hover:scale-105 transition-transform">
               <Bike size={20} className="text-white" />
             </div>
-            <span className="hidden sm:inline bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
-            <span className="sm:hidden bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">RBC</span>
+            <span className="hidden sm:inline">Rent Bike<br className="sm:hidden" /><span className="sm:hidden"> </span>Cox's Bazar</span>
+            <span className="sm:hidden">RBC</span>
           </Link>
 
-          <div className="hidden md:flex items-center space-x-1 text-sm">
-            <div className="flex items-center px-3 py-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <Phone size={14} className="mr-1.5" style={{ color: 'var(--accent-text)' }} />
-              <span className="text-xs">01891154443</span>
+          <div className="hidden md:flex items-center text-sm">
+            <div className="flex items-center px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
+              <Phone size={12} className="mr-1" style={{ color: 'var(--accent-text)' }} />
+              <span className="text-[11px]">01891154443</span>
             </div>
-            <div className="w-px h-4" style={{ background: 'var(--border-base)' }}></div>
-            <div className="flex items-center px-3 py-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <Phone size={14} className="mr-1.5" style={{ color: 'var(--accent-text)' }} />
-              <span className="text-xs">01764466757</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>|</span>
+            <div className="flex items-center px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
+              <Phone size={12} className="mr-1" style={{ color: 'var(--accent-text)' }} />
+              <span className="text-[11px]">01764466757</span>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center space-x-2">
-            <button onClick={cycle} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} title={`Theme: ${theme}`} aria-label="Toggle theme">
+          <div className="hidden md:flex items-center gap-1">
+            <button onClick={cycle} className="flex items-center justify-center w-9 h-9 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} title={`Theme: ${theme}`} aria-label="Toggle theme">
               <ThemeIcon size={16} />
             </button>
-            <div className="w-px h-4" style={{ background: 'var(--border-base)' }}></div>
-            <Link to="/policies" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-              <ShieldCheck size={16} className="mr-1.5" />
-              Policies
+            <Link to="/search" className="flex items-center justify-center w-9 h-9 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} title="Search" aria-label="Search vehicles">
+              <Search size={16} />
             </Link>
-            <Link to="/search" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-              <Search size={16} className="mr-1.5" />
-              Search
-            </Link>
-            <Link to="/zones" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-              <MapPin size={16} className="mr-1.5" />
+            <Link to="/zones" className="flex items-center text-xs px-3 py-2 rounded-lg transition-all whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
+              <MapPin size={14} className="mr-1" />
               Zones
             </Link>
+
             {user ? (
               <>
-                {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to={user.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard'} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <LayoutDashboard size={16} className="mr-1.5" />
-                    Dashboard
-                  </Link>
-                )}
-                <Link to="/my-bookings" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                  <Clock size={16} className="mr-1.5" />
-                  My Bookings
-                </Link>
-                <Link to="/wishlist" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                  <Heart size={16} className="mr-1.5" />
-                  Favorites
-                </Link>
                 <NotificationBell />
-                {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to="/fleet" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <BarChart3 size={16} className="mr-1.5" />
-                    Fleet
-                  </Link>
-                )}
-                {user.role === 'Admin' && (
-                  <Link to="/analytics" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <PieChart size={16} className="mr-1.5" />
-                    Analytics
-                  </Link>
-                )}
-                {user.role === 'Admin' && (
-                  <Link to="/seasonal-pricing" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <Calendar size={16} className="mr-1.5" />
-                    Seasonal
-                  </Link>
-                )}
-                {user.role === 'Admin' && (
-                  <Link to="/refunds" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <DollarSign size={16} className="mr-1.5" />
-                    Refunds
-                  </Link>
-                )}
-                {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to="/vehicle-docs" className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <FileText size={16} className="mr-1.5" />
-                    Docs
-                  </Link>
-                )}
-                <div className="relative" ref={dropdownRef}>
-                  <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="User menu" aria-expanded={dropdownOpen} aria-haspopup="true">
-                    <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-2">
-                      <User size={14} className="text-white" />
-                    </div>
-                    <span className="max-w-[100px] truncate">{user.name}</span>
-                    <ChevronDown size={14} className={`ml-1 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                <div className="relative" ref={moreDropdownRef}>
+                  <button onClick={() => setMoreDropdownOpen(!moreDropdownOpen)} className="flex items-center text-xs px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="More menu" aria-expanded={moreDropdownOpen} aria-haspopup="true">
+                    More<ChevronDown size={12} className={`ml-0.5 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
-                  {dropdownOpen && (
+                  {moreDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl shadow-2xl animate-slide-up z-[100] overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
+                      <div className="py-1">
+                        {moreItems.map(item => (
+                          <Link key={item.to} to={item.to} onClick={() => setMoreDropdownOpen(false)}
+                            className="flex items-center text-sm px-4 py-3 transition-all"
+                            style={{ color: 'var(--text-secondary)' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                            onMouseLeave={e => e.currentTarget.style.background = ''}>
+                            <item.icon size={14} className="mr-2 flex-shrink-0" /> {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative" ref={userDropdownRef}>
+                  <button onClick={() => setUserDropdownOpen(!userDropdownOpen)} className="flex items-center text-xs px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="User menu" aria-expanded={userDropdownOpen} aria-haspopup="true">
+                    <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-1.5">
+                      <User size={13} className="text-white" />
+                    </div>
+                    <span className="max-w-[80px] truncate">{user.name}</span>
+                    <ChevronDown size={12} className={`ml-0.5 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {userDropdownOpen && (
                     <div className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-2xl animate-slide-up z-[100] overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
                       <div className="px-4 py-3 flex flex-col gap-0.5" style={{ borderBottom: '1px solid var(--border-base)' }}>
                         <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
@@ -164,40 +176,40 @@ const Navbar = () => {
                         <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-md w-fit" style={{ color: 'var(--accent-text)', background: 'var(--accent-bg)' }}>{user.role}</span>
                       </div>
                       <div className="py-1">
-                        <Link
-                          to="/profile"
-                          onClick={() => setDropdownOpen(false)}
+                        {userMenuItems.map(item => (
+                          <Link key={item.to} to={item.to} onClick={() => setUserDropdownOpen(false)}
+                            className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
+                            style={{ color: 'var(--text-secondary)' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
+                            onMouseLeave={e => e.currentTarget.style.background = ''}>
+                            <item.icon size={14} className="mr-2" /> {item.label}
+                          </Link>
+                        ))}
+                        <div className="my-1" style={{ borderTop: '1px solid var(--border-base)' }} />
+                        <Link to="/profile" onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
                           style={{ color: 'var(--text-secondary)' }}
-                          aria-label="Edit profile"
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => e.currentTarget.style.background = ''}
-                        >
+                          onMouseLeave={e => e.currentTarget.style.background = ''}>
                           <User size={14} className="mr-2" /> Profile
                         </Link>
-                        <Link
-                          to="/change-password"
-                          onClick={() => setDropdownOpen(false)}
+                        <Link to="/change-password" onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
                           style={{ color: 'var(--text-secondary)' }}
-                          aria-label="Change password"
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => e.currentTarget.style.background = ''}
-                        >
+                          onMouseLeave={e => e.currentTarget.style.background = ''}>
                           <KeyRound size={14} className="mr-2" /> Change Password
                         </Link>
-                        <Link
-                          to="/notification-settings"
-                          onClick={() => setDropdownOpen(false)}
+                        <Link to="/notification-settings" onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
                           style={{ color: 'var(--text-secondary)' }}
-                          aria-label="Notification settings"
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => e.currentTarget.style.background = ''}
-                        >
+                          onMouseLeave={e => e.currentTarget.style.background = ''}>
                           <Bell size={14} className="mr-2" /> Notification Settings
                         </Link>
-                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }} aria-label="Log out" onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }} onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
+                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
                           <LogOut size={14} className="mr-2" /> Logout
                         </button>
                       </div>
@@ -207,8 +219,8 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/login" className="text-sm px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>Login</Link>
-                <Link to="/signup" className="btn-primary text-sm !px-4 !py-2">Sign Up</Link>
+                <Link to="/login" className="text-xs px-3 py-2 rounded-lg transition-all whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Login</Link>
+                <Link to="/signup" className="btn-primary text-xs !px-3 !py-2 whitespace-nowrap">Sign Up</Link>
               </>
             )}
           </div>
@@ -229,9 +241,6 @@ const Navbar = () => {
             <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }} aria-label="Toggle theme">
               <ThemeIcon size={16} className="mr-2" /> Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}
             </button>
-            <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-              <ShieldCheck size={16} className="mr-2" /> Policies
-            </Link>
             <Link to="/search" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
               <Search size={16} className="mr-2" /> Search
             </Link>
@@ -244,46 +253,21 @@ const Navbar = () => {
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
                   <p className="text-xs" style={{ color: 'var(--accent-text)' }}>{user.role}</p>
                 </div>
-                {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to={user.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard'} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <LayoutDashboard size={16} className="mr-2" /> Dashboard
+                {moreItems.map(item => (
+                  <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                    <item.icon size={16} className="mr-2" /> {item.label}
                   </Link>
-                )}
+                ))}
                 <Link to="/my-bookings" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                   <Clock size={16} className="mr-2" /> My Bookings
                 </Link>
                 <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                   <Heart size={16} className="mr-2" /> Favorites
                 </Link>
-                <div className="flex items-center px-3 py-2.5 min-h-11">
-                <NotificationBell />
-                {user.role === 'Admin' && <AdminNotificationBell />}
+                <div className="flex items-center gap-3 px-3 py-2.5 min-h-11">
+                  <NotificationBell />
+                  {user.role === 'Admin' && <AdminNotificationBell />}
                 </div>
-                {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to="/fleet" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <BarChart3 size={16} className="mr-2" /> Fleet
-                  </Link>
-                )}
-                {user.role === 'Admin' && (
-                  <Link to="/analytics" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <PieChart size={16} className="mr-2" /> Analytics
-                  </Link>
-                )}
-                {user.role === 'Admin' && (
-                  <Link to="/seasonal-pricing" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <Calendar size={16} className="mr-2" /> Seasonal
-                  </Link>
-                )}
-                {user.role === 'Admin' && (
-                  <Link to="/refunds" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <DollarSign size={16} className="mr-2" /> Refunds
-                  </Link>
-                )}
-                {(user.role === 'Admin' || user.role === 'Renter') && (
-                  <Link to="/vehicle-docs" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-                    <FileText size={16} className="mr-2" /> Docs
-                  </Link>
-                )}
                 <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
                   <User size={16} className="mr-2" /> Profile
                 </Link>
@@ -295,10 +279,15 @@ const Navbar = () => {
                 </button>
               </>
             ) : (
-              <div className="flex space-x-2 pt-2">
-                <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Login</Link>
-                <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Sign Up</Link>
-              </div>
+              <>
+                <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <ShieldCheck size={16} className="mr-2" /> Policies
+                </Link>
+                <div className="flex space-x-2 pt-2">
+                  <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Login</Link>
+                  <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Sign Up</Link>
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -24,6 +24,7 @@ html.dark {
   --bg-surface: #111118;
   --bg-card: #0d0d14;
   --bg-elevated: #16162a;
+  --bg-section-alt: #0d0d14;
   --border-base: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.14);
   --text-primary: #f0f0f5;
@@ -81,6 +82,7 @@ html.light {
   --bg-surface: #f3f0f8;
   --bg-card: #f3f0f8;
   --bg-elevated: #dcd6e6;
+  --bg-section-alt: #ddd8e8;
   --border-base: rgba(0, 0, 0, 0.07);
   --border-strong: rgba(0, 0, 0, 0.1);
   --text-primary: #1f2937;
