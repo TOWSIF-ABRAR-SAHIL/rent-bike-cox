@@ -101,11 +101,10 @@ const STATUS_TO_STATE = {
   'Expired': 'EXPIRED',
 };
 
-bookingSchema.pre('save', function(next) {
+bookingSchema.pre('save', function () {
   if (this.isModified('status') && !this.isModified('state')) {
     this.state = STATUS_TO_STATE[this.status] || this.state;
   }
-  next();
 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

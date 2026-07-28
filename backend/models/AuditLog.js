@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const auditLogSchema = new mongoose.Schema({
-  action: { type: String, required: true, index: true },
-  actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  action: { type: String, required: true },
+  actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   actorRole: String,
   resourceType: String,
-  resourceId: { type: mongoose.Schema.Types.ObjectId, index: true },
+  resourceId: { type: mongoose.Schema.Types.ObjectId },
   before: { type: mongoose.Schema.Types.Mixed },
   after: { type: mongoose.Schema.Types.Mixed },
   ip: String,

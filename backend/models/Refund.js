@@ -2,14 +2,14 @@ const mongoose = require('mongoose');
 const { RefundStatus } = require('../domain/enums');
 
 const refundSchema = new mongoose.Schema({
-  refundId: { type: String, required: true, unique: true, index: true },
-  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true, index: true },
+  refundId: { type: String, required: true, unique: true },
+  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true },
   intentId: { type: String, index: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   amountPaisa: { type: Number, required: true },
   currency: { type: String, default: 'BDT' },
   reason: { type: String, required: true },
-  status: { type: String, enum: Object.values(RefundStatus), default: RefundStatus.REQUESTED, index: true },
+  status: { type: String, enum: Object.values(RefundStatus), default: RefundStatus.REQUESTED },
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   processedAt: Date,
   completedAt: Date,
@@ -31,29 +31,27 @@ const VALID_TRANSITIONS = {
   [RefundStatus.REJECTED]: [],
 };
 
-refundSchema.pre('save', function(next) {
+refundSchema.pre('save', function () {
   if (this.isModified('status') && !this.isNew) {
     const prev = this._prevStatus || this.status;
     const allowed = VALID_TRANSITIONS[prev] || [];
     if (!allowed.includes(this.status)) {
-      return next(new Error(`Invalid refund transition: ${prev} → ${this.status}`));
+      throw new Error(`Invalid refund transition: ${prev} → ${this.status}`);
     }
   }
-  next();
 });
 
-refundSchema.pre('findOneAndUpdate', async function(next) {
+refundSchema.pre('findOneAndUpdate', async function () {
   const update = this.getUpdate();
   if (update && update.$set && update.$set.status) {
     const doc = await this.model.findOne(this.getQuery()).lean();
     if (doc) {
       const allowed = VALID_TRANSITIONS[doc.status] || [];
       if (!allowed.includes(update.$set.status)) {
-        return next(new Error(`Invalid refund transition: ${doc.status} → ${update.$set.status}`));
+        throw new Error(`Invalid refund transition: ${doc.status} → ${update.$set.status}`);
       }
     }
   }
-  next();
 });
 
 module.exports = mongoose.model('Refund', refundSchema);

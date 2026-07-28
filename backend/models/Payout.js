@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 const { PayoutStatus } = require('../domain/enums');
 
 const payoutSchema = new mongoose.Schema({
-  payoutId: { type: String, required: true, unique: true, index: true },
-  renterId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  payoutId: { type: String, required: true, unique: true },
+  renterId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   totalAmountPaisa: { type: Number, required: true },
   platformFeePaisa: { type: Number, required: true },
   netAmountPaisa: { type: Number, required: true },
   currency: { type: String, default: 'BDT' },
-  status: { type: String, enum: Object.values(PayoutStatus), default: PayoutStatus.PENDING, index: true },
+  status: { type: String, enum: Object.values(PayoutStatus), default: PayoutStatus.PENDING },
   periodStart: { type: Date, required: true },
   periodEnd: { type: Date, required: true },
   bookingCount: { type: Number, default: 0 },

@@ -18,8 +18,7 @@ const siteContentSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    index: true
+    trim: true
   },
   value: {
     type: mongoose.Schema.Types.Mixed,
@@ -33,8 +32,7 @@ const siteContentSchema = new mongoose.Schema({
   page: {
     type: String,
     required: true,
-    trim: true,
-    index: true
+    trim: true
   },
   section: {
     type: String,

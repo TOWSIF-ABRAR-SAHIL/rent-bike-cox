@@ -19,7 +19,7 @@ const historyEntrySchema = new mongoose.Schema({
 }, { _id: false });
 
 const notificationTemplateSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true, trim: true, index: true },
+  key: { type: String, required: true, unique: true, trim: true },
   name: { type: String, default: '' },
   channels: {
     email: { type: channelSchema, default: () => ({}) },
@@ -34,7 +34,6 @@ const notificationTemplateSchema = new mongoose.Schema({
   history: { type: [historyEntrySchema], default: [] }
 }, { timestamps: true });
 
-notificationTemplateSchema.index({ key: 1 });
 notificationTemplateSchema.index({ category: 1, isActive: 1 });
 
 module.exports = mongoose.model('NotificationTemplate', notificationTemplateSchema);

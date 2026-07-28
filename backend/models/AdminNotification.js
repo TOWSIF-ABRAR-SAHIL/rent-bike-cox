@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const adminNotificationSchema = new mongoose.Schema({
-  type: { type: String, enum: ['booking', 'payment', 'user', 'error', 'fraud', 'contact', 'system'], required: true, index: true },
-  severity: { type: String, enum: ['info', 'warning', 'error', 'critical'], default: 'info', index: true },
+  type: { type: String, enum: ['booking', 'payment', 'user', 'error', 'fraud', 'contact', 'system'], required: true },
+  severity: { type: String, enum: ['info', 'warning', 'error', 'critical'], default: 'info' },
   title: { type: String, required: true },
   message: { type: String, required: true },
   data: { type: mongoose.Schema.Types.Mixed },

@@ -57,7 +57,7 @@ const { startBookingStateTransition } = require('./jobs/bookingStateTransition')
 const { startDataRetention } = require('./jobs/dataRetention');
 const { startMaintenanceReminder } = require('./jobs/maintenanceReminder');
 const { startAutoHeal } = require('./jobs/autoHeal');
-const { startCleanupScheduler } = require('./jobs/cleanupScheduler');
+const { startCleanupScheduler: startDataCleanupScheduler } = require('./jobs/cleanupScheduler');
 const { startScheduledMaintenance } = require('./jobs/scheduledMaintenance');
 const { startEmailCampaignSender } = require('./jobs/emailCampaignSender');
 const mongoSanitize = require('./middleware/sanitize');
@@ -451,6 +451,7 @@ const server = app.listen(PORT, () => {
   startDataRetention();
   startMaintenanceReminder();
   startAutoHeal();
+  startDataCleanupScheduler();
   startScheduledMaintenance();
   startEmailCampaignSender();
 });

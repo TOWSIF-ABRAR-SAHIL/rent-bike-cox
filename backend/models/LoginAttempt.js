@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const loginAttemptSchema = new mongoose.Schema({
-  email: { type: String, required: true, index: true },
+  email: { type: String, required: true },
   ip: { type: String, required: true },
   userAgent: String,
   success: { type: Boolean, required: true },

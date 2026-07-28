@@ -56,6 +56,7 @@ const seedSettings = async () => {
     logger.warn('Settings seed skipped', { error: error.message });
   }
 };
+exports.seedSettings = seedSettings;
 
 let categoriesSeeded = false;
 const seedCategories = async () => {

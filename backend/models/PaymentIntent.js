@@ -11,19 +11,19 @@ const attemptSchema = new mongoose.Schema({
 }, { _id: false });
 
 const paymentIntentSchema = new mongoose.Schema({
-  intentId: { type: String, required: true, unique: true, index: true },
-  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true, index: true },
+  intentId: { type: String, required: true, unique: true },
+  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   amountPaisa: { type: Number, required: true },
   currency: { type: String, default: 'BDT' },
   purpose: { type: String, enum: Object.values(PaymentPurpose), required: true },
-  status: { type: String, enum: Object.values(TransactionStatus), default: TransactionStatus.INITIATED, index: true },
+  status: { type: String, enum: Object.values(TransactionStatus), default: TransactionStatus.INITIATED },
   gateway: { type: String, default: 'sslcommerz' },
   gatewayTranId: { type: String, sparse: true },
   gatewayTransactionId: { type: String, sparse: true },
   attempts: [attemptSchema],
   metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
-  expiresAt: { type: Date, index: true },
+  expiresAt: { type: Date },
 }, { timestamps: true });
 
 paymentIntentSchema.index({ status: 1, createdAt: 1 });

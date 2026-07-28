@@ -133,23 +133,22 @@ function isValidHex(c) {
   return /^#[0-9A-Fa-f]{6}$/.test(c);
 }
 
-settingsSchema.pre('save', function (next) {
+settingsSchema.pre('save', function () {
   if (this.basePricePerHour !== undefined && (this.basePricePerHour < 100 || this.basePricePerHour > 100000)) {
-    return next(new Error('basePricePerHour must be between 100 and 100000'));
+    throw new Error('basePricePerHour must be between 100 and 100000');
   }
   if (this.adminCommissionPercent !== undefined && (this.adminCommissionPercent < 0 || this.adminCommissionPercent > 50)) {
-    return next(new Error('adminCommissionPercent must be between 0 and 50'));
+    throw new Error('adminCommissionPercent must be between 0 and 50');
   }
   const b = this.branding;
   if (b) {
-    if (b.primaryColor && !isValidHex(b.primaryColor)) return next(new Error('primaryColor must be a valid hex color'));
-    if (b.secondaryColor && !isValidHex(b.secondaryColor)) return next(new Error('secondaryColor must be a valid hex color'));
-    if (b.accentColor && !isValidHex(b.accentColor)) return next(new Error('accentColor must be a valid hex color'));
-    if (b.successColor && !isValidHex(b.successColor)) return next(new Error('successColor must be a valid hex color'));
-    if (b.warningColor && !isValidHex(b.warningColor)) return next(new Error('warningColor must be a valid hex color'));
-    if (b.dangerColor && !isValidHex(b.dangerColor)) return next(new Error('dangerColor must be a valid hex color'));
+    if (b.primaryColor && !isValidHex(b.primaryColor)) throw new Error('primaryColor must be a valid hex color');
+    if (b.secondaryColor && !isValidHex(b.secondaryColor)) throw new Error('secondaryColor must be a valid hex color');
+    if (b.accentColor && !isValidHex(b.accentColor)) throw new Error('accentColor must be a valid hex color');
+    if (b.successColor && !isValidHex(b.successColor)) throw new Error('successColor must be a valid hex color');
+    if (b.warningColor && !isValidHex(b.warningColor)) throw new Error('warningColor must be a valid hex color');
+    if (b.dangerColor && !isValidHex(b.dangerColor)) throw new Error('dangerColor must be a valid hex color');
   }
-  next();
 });
 
 module.exports = mongoose.model('Settings', settingsSchema);

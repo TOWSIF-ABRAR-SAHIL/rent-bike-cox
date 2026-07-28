@@ -25,8 +25,8 @@ const UserSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
 });
 
-UserSchema.pre('save', async function (next) {
-  if (!ENCRYPTION_AVAILABLE) return next();
+UserSchema.pre('save', async function () {
+  if (!ENCRYPTION_AVAILABLE) return;
 
   if (this.isNew || this.isModified('nid')) {
     if (this.nid && !this.nid.startsWith('{')) {
@@ -34,7 +34,7 @@ UserSchema.pre('save', async function (next) {
       const nidHash = crypto.createHash('sha256').update(this.nid).digest('hex');
       const existing = await mongoose.model('User').findOne({ nidHash }).lean();
       if (existing && existing._id.toString() !== this._id.toString()) {
-        return next(new Error('A user with this NID already exists'));
+        throw new Error('A user with this NID already exists');
       }
       this.nidHash = nidHash;
       this.nid = encrypt(this.nid);
@@ -46,7 +46,6 @@ UserSchema.pre('save', async function (next) {
   if (this.isModified('phoneNumber') && this.phoneNumber && !this.phoneNumber.startsWith('{')) {
     this.phoneNumber = encrypt(this.phoneNumber);
   }
-  next();
 });
 
 function decryptField(val) {
