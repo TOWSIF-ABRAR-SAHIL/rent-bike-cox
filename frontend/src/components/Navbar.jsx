@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, MapPin, Heart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import AdminNotificationBell from './admin/AdminNotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
 
@@ -255,7 +256,8 @@ const Navbar = () => {
                   <Heart size={16} className="mr-2" /> Favorites
                 </Link>
                 <div className="flex items-center px-3 py-2.5 min-h-11">
-                  <NotificationBell />
+                <NotificationBell />
+                {user.role === 'Admin' && <AdminNotificationBell />}
                 </div>
                 {(user.role === 'Admin' || user.role === 'Renter') && (
                   <Link to="/fleet" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>

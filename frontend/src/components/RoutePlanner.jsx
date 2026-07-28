@@ -17,7 +17,7 @@ const estimateTime = (distanceKm) => {
   return Math.round((distanceKm / avgSpeed) * 60);
 };
 
-const RoutePlanner = ({ onRouteSelect = null, className = '' }) => {
+const RoutePlanner = ({ className = '' }) => {
   const [zones, setZones] = useState([]);
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');

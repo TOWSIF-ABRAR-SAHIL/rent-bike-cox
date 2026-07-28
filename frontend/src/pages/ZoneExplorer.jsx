@@ -1,6 +1,6 @@
 import { useState, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, ArrowLeft, Navigation, Bike, Info, Star, Route } from 'lucide-react';
+import { MapPin, ArrowLeft, Navigation, Bike, Star } from 'lucide-react';
 import ZoneMap from '../components/ZoneMap';
 import RoutePlanner from '../components/RoutePlanner';
 

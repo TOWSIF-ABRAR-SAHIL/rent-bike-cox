@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin, BarChart3 } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -11,6 +11,15 @@ import VehicleHealthCard from '../components/VehicleHealthCard';
 import MaintenanceLogForm from '../components/MaintenanceLogForm';
 import MaintenanceHistory from '../components/MaintenanceHistory';
 import ZoneCard from '../components/ZoneCard';
+import ContentEditor from '../components/admin/ContentEditor';
+import BrandingTab from '../components/admin/BrandingTab';
+import AnnouncementManager from '../components/admin/AnnouncementManager';
+import TemplateManager from '../components/admin/TemplateManager';
+import FAQManager from '../components/admin/FAQManager';
+import MessageInbox from '../components/admin/MessageInbox';
+import CampaignManager from '../components/admin/CampaignManager';
+import SystemHealthTab from '../components/admin/SystemHealthTab';
+import ReportsTab from '../components/admin/ReportsTab';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
@@ -276,6 +285,15 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'finance'} onClick={() => { setActiveTab('finance'); if (!finance) fetchFinance(); }} icon={Shield}>Finance</TabButton>
         <TabButton active={activeTab === 'maintenance'} onClick={() => setActiveTab('maintenance')} icon={Wrench}>Maintenance</TabButton>
         <TabButton active={activeTab === 'zones'} onClick={() => setActiveTab('zones')} icon={MapPin}>Zones</TabButton>
+        <TabButton active={activeTab === 'content'} onClick={() => setActiveTab('content')} icon={FileText}>Content</TabButton>
+        <TabButton active={activeTab === 'branding'} onClick={() => setActiveTab('branding')} icon={Palette}>Branding</TabButton>
+        <TabButton active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} icon={Megaphone}>Announcements</TabButton>
+        <TabButton active={activeTab === 'templates'} onClick={() => setActiveTab('templates')} icon={MessageSquare}>Templates</TabButton>
+        <TabButton active={activeTab === 'faq'} onClick={() => setActiveTab('faq')} icon={HelpCircle}>FAQ</TabButton>
+        <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} icon={Inbox}>Messages</TabButton>
+        <TabButton active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={Send}>Campaigns</TabButton>
+        <TabButton active={activeTab === 'health'} onClick={() => setActiveTab('health')} icon={Activity}>System</TabButton>
+        <TabButton active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} icon={Download}>Reports</TabButton>
       </div>
 
       {activeTab === 'settings' && (
@@ -1010,6 +1028,16 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'content' && <ContentEditor />}
+      {activeTab === 'branding' && <BrandingTab />}
+      {activeTab === 'announcements' && <AnnouncementManager />}
+      {activeTab === 'templates' && <TemplateManager />}
+      {activeTab === 'faq' && <FAQManager />}
+      {activeTab === 'messages' && <MessageInbox />}
+      {activeTab === 'campaigns' && <CampaignManager />}
+      {activeTab === 'health' && <SystemHealthTab />}
+      {activeTab === 'reports' && <ReportsTab />}
     </div>
   );
 };

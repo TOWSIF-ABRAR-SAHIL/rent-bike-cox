@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { X, SlidersHorizontal, Star, TrendingUp, Clock, ArrowUpDown, DollarSign } from 'lucide-react';
+import { X, SlidersHorizontal, ArrowUpDown, DollarSign } from 'lucide-react';
 
 const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange, onClear }) => {
   const activeFilters = [];

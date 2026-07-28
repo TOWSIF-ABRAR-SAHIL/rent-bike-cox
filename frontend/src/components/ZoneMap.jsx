@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useTheme } from '../context/useTheme';
-import { MapPin, Bike } from 'lucide-react';
 
 // Fix Leaflet default icon issue with bundlers
 delete L.Icon.Default.prototype._getIconUrl;
