@@ -38,6 +38,10 @@ const notificationPrefRoutes = require('./routes/notificationPref');
 const pushRoutes = require('./routes/push');
 const contentRoutes = require('./routes/content');
 const adminContentRoutes = require('./routes/adminContent');
+const notificationTemplateRoutes = require('./routes/notificationTemplates');
+const announcementRoutes = require('./routes/announcements');
+const faqRoutes = require('./routes/faqs');
+const contactRoutes = require('./routes/contact');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
@@ -376,6 +380,10 @@ app.use('/api', notificationPrefRoutes);
 app.use('/api/push', pushRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/admin/content', adminContentRoutes);
+app.use('/api/admin/notification-templates', notificationTemplateRoutes);
+app.use('/api', announcementRoutes);
+app.use('/api', faqRoutes);
+app.use('/api', contactRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', notFoundHandler);
