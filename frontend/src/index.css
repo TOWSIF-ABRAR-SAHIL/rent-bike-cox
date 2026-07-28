@@ -365,7 +365,6 @@ html.light {
 .leaflet-popup-content-wrapper { z-index: 12 !important; }
 
 /* Leaflet dark mode support */
-.dark .leaflet-tile { filter: brightness(0.7) contrast(1.2) saturate(0.8); }
 .dark .leaflet-control-zoom a {
   background: rgba(15, 15, 25, 0.9) !important;
   color: #e5e5e5 !important;

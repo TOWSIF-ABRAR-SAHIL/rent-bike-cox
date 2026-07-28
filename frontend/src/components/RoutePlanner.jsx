@@ -1,6 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import { Navigation, MapPin, Clock, ArrowRight, ExternalLink, RotateCcw } from 'lucide-react';
 import api from '../api/axios';
+import CustomSelect from './ui/CustomSelect';
 
 const haversine = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
@@ -74,24 +75,14 @@ const RoutePlanner = ({ className = '' }) => {
 
       <div className="space-y-3">
         {/* Origin */}
-        <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>From</label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full" style={{ background: 'var(--success-text)' }} />
-            <select
-              value={origin}
-              onChange={(e) => setOrigin(e.target.value)}
-              className="w-full pl-8 pr-4 py-2.5 rounded-xl text-sm appearance-none cursor-pointer min-h-11"
-              style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}
-              aria-label="Select origin zone"
-            >
-              <option value="">Select pickup zone</option>
-              {zones.map(z => (
-                <option key={z._id} value={z._id}>{z.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <CustomSelect
+          label="From"
+          value={origin}
+          onChange={setOrigin}
+          options={zones.map(z => ({ value: z._id, label: z.name }))}
+          placeholder="Select pickup zone"
+          indicatorColor="green"
+        />
 
         {/* Swap + Reset buttons */}
         <div className="flex items-center justify-center gap-2">
@@ -116,27 +107,24 @@ const RoutePlanner = ({ className = '' }) => {
         </div>
 
         {/* Destination */}
-        <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-muted)' }}>To</label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full" style={{ background: 'var(--danger-text)' }} />
-            <select
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              className="w-full pl-8 pr-4 py-2.5 rounded-xl text-sm appearance-none cursor-pointer min-h-11"
-              style={{ background: 'var(--input-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}
-              aria-label="Select destination zone"
-            >
-              <option value="">Select drop-off zone</option>
-              {zones.map(z => (
-                <option key={z._id} value={z._id}>{z.name}</option>
-              ))}
-            </select>
+        <CustomSelect
+          label="To"
+          value={destination}
+          onChange={setDestination}
+          options={zones.map(z => ({ value: z._id, label: z.name }))}
+          placeholder="Select drop-off zone"
+          indicatorColor="red"
+        />
+
+        {/* Same zone validation */}
+        {origin && destination && origin === destination && (
+          <div className="mt-4 p-3 rounded-xl text-xs text-center animate-fade-in" style={{ background: 'var(--warning-bg)', color: 'var(--warning-text)' }}>
+            Please select different zones for pickup and drop-off
           </div>
-        </div>
+        )}
 
         {/* Route Result */}
-        {distance !== null && (
+        {distance !== null && origin !== destination && (
           <div className="mt-4 p-4 rounded-xl animate-slide-up" style={{ background: 'var(--accent-bg)' }}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">

@@ -1,11 +1,28 @@
-import { useState, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, ArrowLeft, Navigation, Bike, Star } from 'lucide-react';
+import { MapPin, ArrowLeft, Navigation, Bike, Star, RefreshCw } from 'lucide-react';
+import api from '../api/axios';
+import { SkeletonTable } from '../components/ui/Skeleton';
 import ZoneMap from '../components/ZoneMap';
 import RoutePlanner from '../components/RoutePlanner';
 
 const ZoneExplorer = () => {
   const [selectedZone, setSelectedZone] = useState(null);
+  const [zones, setZones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchZones = () => {
+    setLoading(true);
+    setError('');
+    api.get('/zones/geojson')
+      .then(res => setZones(res.features || []))
+      .catch(() => setError('Failed to load zones'))
+      .finally(() => setLoading(false));
+  };
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchZones(); }, []);
 
   const zoneProps = selectedZone?.properties;
 
@@ -37,12 +54,13 @@ const ZoneExplorer = () => {
             <ZoneMap
               height="500px"
               showZoneList={false}
+              zones={zones}
               onZoneClick={(zone) => setSelectedZone(zone)}
               selectedZone={selectedZone}
             />
           </div>
 
-          {/* Zone List + Details */}
+          {/* Sidebar: Zone Details or Zone List */}
           <div className="space-y-4">
             {selectedZone && zoneProps ? (
               <div className="glass rounded-2xl p-5 border animate-slide-up" style={{ borderColor: zoneProps.color + '40' }}>
@@ -102,21 +120,58 @@ const ZoneExplorer = () => {
                   </button>
                 </div>
               </div>
-            ) : (
+            ) : loading ? (
+              <div className="glass rounded-2xl p-5" style={{ border: '1px solid var(--border-base)' }}>
+                <SkeletonTable rows={4} cols={1} />
+              </div>
+            ) : error ? (
+              <div className="glass rounded-2xl p-5 text-center" style={{ border: '1px solid var(--border-base)' }}>
+                <p className="text-sm mb-3" style={{ color: 'var(--danger-text)' }}>{error}</p>
+                <button onClick={fetchZones} className="btn-primary text-sm flex items-center gap-1 mx-auto"><RefreshCw size={14} /> Retry</button>
+              </div>
+            ) : zones.length === 0 ? (
               <div className="glass rounded-2xl p-5 text-center" style={{ border: '1px solid var(--border-base)' }}>
                 <MapPin size={32} className="mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Click a zone on the map to see details
-                </p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No zones available</p>
+              </div>
+            ) : (
+              <div className="glass rounded-2xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
+                <h3 className="text-sm font-bold mb-3" style={{ color: 'var(--text-primary)' }}>All Zones ({zones.length})</h3>
+                <div className="space-y-2 max-h-[440px] overflow-y-auto">
+                  {zones.map(zone => {
+                    const isSelected = selectedZone?.id === zone.id;
+                    return (
+                      <button
+                        key={zone.id}
+                        onClick={() => setSelectedZone(zone)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                          isSelected ? 'ring-2' : 'hover:opacity-80'
+                        }`}
+                        style={{
+                          background: isSelected ? 'var(--accent-bg)' : 'var(--input-bg)',
+                          border: isSelected ? `1px solid ${zone.properties.color}40` : '1px solid transparent',
+                        }}
+                      >
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: zone.properties.color }} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                            {zone.properties.name}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            {zone.properties.bikeCount} vehicles
+                          </p>
+                        </div>
+                        {zone.properties.distanceFromCenter && (
+                          <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--text-muted)' }}>
+                            {zone.properties.distanceFromCenter}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
-
-            <ZoneMap
-              height="300px"
-              showZoneList={true}
-              onZoneClick={(zone) => setSelectedZone(zone)}
-              selectedZone={selectedZone}
-            />
           </div>
         </div>
       </div>

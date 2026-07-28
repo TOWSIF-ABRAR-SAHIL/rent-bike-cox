@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
@@ -33,6 +33,19 @@ function MapRecenter({ center, zoom }) {
   return null;
 }
 
+// Component to invalidate size on theme change
+function MapResize({ theme }) {
+  const map = useMap();
+  const prevTheme = useRef(theme);
+  useEffect(() => {
+    if (prevTheme.current !== theme) {
+      prevTheme.current = theme;
+      setTimeout(() => map.invalidateSize(), 150);
+    }
+  }, [theme, map]);
+  return null;
+}
+
 const ZoneMap = ({
   center = COXS_BAZAR_CENTER,
   zoom = 12,
@@ -40,18 +53,22 @@ const ZoneMap = ({
   showZoneList = false,
   onZoneClick = null,
   selectedZone = null,
+  zones: propZones = null,
   className = '',
 }) => {
   const { theme } = useTheme();
-  const [zones, setZones] = useState([]);
+  const [fetchedZones, setFetchedZones] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const zones = propZones || fetchedZones;
+
   useEffect(() => {
+    if (propZones) { setTimeout(() => setLoading(false), 0); return; }
     api.get('/zones/geojson')
-      .then(res => setZones(res.features || []))
-      .catch(() => setZones([]))
+      .then(res => setFetchedZones(res.features || []))
+      .catch(() => setFetchedZones([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [propZones]);
 
   const tileUrl = theme === 'dark'
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
@@ -71,8 +88,9 @@ const ZoneMap = ({
           scrollWheelZoom={true}
           zoomControl={true}
         >
-          <TileLayer url={tileUrl} attribution={tileAttribution} />
+          <TileLayer key={theme} url={tileUrl} attribution={tileAttribution} />
           <MapRecenter center={selectedZone?.center ? [selectedZone.center.lat, selectedZone.center.lng] : null} zoom={14} />
+          <MapResize theme={theme} />
 
           {zones.map((zone) => {
             const isSelected = selectedZone?.id === zone.id;
@@ -88,6 +106,9 @@ const ZoneMap = ({
                       fillColor: zone.properties.color,
                       fillOpacity: isSelected ? 0.35 : 0.15,
                       weight: isSelected ? 3 : 2,
+                    }}
+                    eventHandlers={{
+                      click: () => onZoneClick?.(zone),
                     }}
                   >
                     <Popup>
@@ -121,6 +142,9 @@ const ZoneMap = ({
                   <Marker
                     position={[zone.geometry.coordinates[1], zone.geometry.coordinates[0]]}
                     icon={icon}
+                    eventHandlers={{
+                      click: () => onZoneClick?.(zone),
+                    }}
                   >
                     <Popup>
                       <div className="zone-popup">
