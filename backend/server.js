@@ -51,6 +51,9 @@ const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
 const { startDataRetention } = require('./jobs/dataRetention');
 const { startMaintenanceReminder } = require('./jobs/maintenanceReminder');
+const { startAutoHeal } = require('./jobs/autoHeal');
+const { startCleanupScheduler } = require('./jobs/cleanupScheduler');
+const { startScheduledMaintenance } = require('./jobs/scheduledMaintenance');
 const mongoSanitize = require('./middleware/sanitize');
 const hpp = require('hpp');
 const securityHeaders = require('./security/middleware/securityHeaders');
@@ -426,6 +429,9 @@ const server = app.listen(PORT, () => {
   startBookingStateTransition();
   startDataRetention();
   startMaintenanceReminder();
+  startAutoHeal();
+  startCleanupScheduler();
+  startScheduledMaintenance();
 });
 
 gracefulShutdown(server, mongoose);
