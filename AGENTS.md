@@ -28,7 +28,7 @@ cd frontend && npm run build       # prod build
 docker-compose up --build          # Docker (backend + mongo)
 ```
 
-Test suites: Vitest. Backend 97 tests, frontend 26 tests (123 total). Run with `npx vitest run` in either package.
+Test suites: Vitest. Backend 125 tests, frontend 26 tests (151 total). Run with `npx vitest run` in either package.
 
 ## Architecture
 
@@ -68,6 +68,21 @@ Test suites: Vitest. Backend 97 tests, frontend 26 tests (123 total). Run with `
 | `/api/admin/seasonal-rates` | `routes/seasonal.js` | admin CRUD |
 | `/api/vehicle-docs` | `routes/vehicleDoc.js` | auth (Renter + Admin) |
 | `/api/notification-preferences` | `routes/notificationPref.js` | auth |
+| `GET /api/content` | `routes/content.js` | public (site content) |
+| `GET /api/content/:key` | `routes/content.js` | public (single key) |
+| `/api/admin/content` | `routes/adminContent.js` | admin (content CRUD + rollback) |
+| `/api/admin/notification-templates` | `routes/notificationTemplates.js` | admin (template CRUD) |
+| `/api/announcements/active` | `routes/announcements.js` | public |
+| `/api/admin/announcements` | `routes/announcements.js` | admin (CRUD + tracking) |
+| `/api/faqs` | `routes/faqs.js` | public |
+| `/api/admin/faqs` | `routes/faqs.js` | admin (CRUD + reorder) |
+| `/api/contact` | `routes/contact.js` | public (submit message) |
+| `/api/admin/messages` | `routes/contact.js` | admin (inbox + reply) |
+| `/api/admin/notifications` | `routes/adminNotifications.js` | admin (alerts) |
+| `/api/admin/campaigns` | `routes/campaigns.js` | admin (CRUD + send) |
+| `/api/admin/system-health` | `routes/systemHealth.js` | admin |
+| `/api/admin/reports` | `routes/reports.js` | admin (generate reports) |
+| `/api/dashboard/branding` | `routes/dashboard.js` | public (GET), admin (PUT) |
 | `/api/{*splat}` | catch-all | 404 |
 
 ### Models (20+)
@@ -101,6 +116,44 @@ Test suites: Vitest. Backend 97 tests, frontend 26 tests (123 total). Run with `
 | Review | bike reviews and ratings |
 | SeasonalRate | peak/off-peak/holiday pricing |
 | VehicleDocument | registration/insurance/fitness docs |
+| SiteContent | key/value content management, page grouping, history |
+| PushSubscription | web push notification subscriptions |
+| NotificationTemplate | email/push template with variables |
+| Announcement | banner/popup/notice with scheduling and audience |
+| FAQ | categorized questions with helpful tracking |
+| ContactMessage | contact form inbox with status workflow |
+| EmailCampaign | email campaigns with audience targeting |
+| AdminNotification | admin alerts with severity and read tracking |
+
+### Frontend Components
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| ContentEditor | `components/admin/` | Edit site content by page group |
+| BrandingTab | `components/admin/` | Business info, colors, social, SEO |
+| AnnouncementManager | `components/admin/` | Banner/popup management |
+| TemplateManager | `components/admin/` | Email/notification templates |
+| FAQManager | `components/admin/` | FAQ CRUD with categories |
+| MessageInbox | `components/admin/` | Contact form inbox |
+| CampaignManager | `components/admin/` | Email campaign management |
+| SystemHealthTab | `components/admin/` | Server/DB health dashboard |
+| ReportsTab | `components/admin/` | CSV/JSON report generation |
+| AdminNotificationBell | `components/admin/` | Navbar notification dropdown |
+| RenterEarnings | `components/` | Renter earnings dashboard |
+| ZoneMap | `components/` | Leaflet map with zones |
+| RoutePlanner | `components/` | Distance/time calculator |
+| CompareBar | `components/` | Vehicle comparison floating bar |
+| BottomNav | `components/` | Mobile bottom navigation |
+| WhatsAppButton | `components/` | Floating WhatsApp contact |
+| Lightbox | `components/` | Image gallery lightbox |
+
+### Hooks
+| Hook | Purpose |
+|------|---------|
+| useSiteContent | Cached fetch from /api/content with get(key, fallback) |
+| useAuth | Auth context hook (separate file from provider) |
+| useTheme | Theme context hook (separate file from provider) |
+| useCompare | Vehicle comparison context hook |
+| useWishlist | Wishlist context hook |
 
 ### Roles
 Three roles on `User` model: `Admin`, `Renter`, `User`. Authorization via middleware: `security/middleware/authorize.js` and `security/middleware/checkOwnership.js`. `ProtectedRoute` component on frontend takes a `roles` prop for route gating.
@@ -179,8 +232,11 @@ Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whi
 | bookingStateTransition | — | Move bookings through state machine |
 | dataRetention | 24h | Delete old data (2-year policy) |
 | maintenanceReminder | 12h | Alert for upcoming maintenance |
+| autoHeal | 30min | DB ping, stuck bookings, memory monitoring |
+| cleanupScheduler | 1h | Old notifications, archived messages cleanup |
+| scheduledMaintenance | 6h | Expired announcements/coupons deactivation |
 
-All jobs have MongoDB connection guards (`mongoose.connection.readyState !== 1`).
+All jobs respect `DISABLE_JOBS=true` env var and have MongoDB connection guards (`mongoose.connection.readyState !== 1`).
 
 ## Frontend specifics
 
@@ -209,7 +265,8 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - `/signup` — Signup
 - `/forgot-password` — Forgot password (OTP flow)
 - `/renter-dashboard` — Renter (roles: Renter, Admin)
-- `/admin-dashboard` — Admin only (9 tabs: Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Zones)
+- `/admin-dashboard` — Admin only (19 tabs: Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Zones, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Reports)
+- `/admin/notifications` — Admin notifications full page (Admin only)
 - `/fleet` — Fleet dashboard (roles: Renter, Admin)
 - `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, zones, duration, financial, hourly, customers)
 - `/search` — Advanced search with filters (price range, category, sort)
@@ -219,6 +276,8 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - `/seasonal-pricing` — Seasonal pricing manager (Admin only)
 - `/vehicle-docs` — Vehicle documents
 - `/policies` — Public policy list
+- `/faq` — Public FAQ page (category grouped, search, helpful tracking)
+- `/contact` — Contact form (POST /api/contact, WhatsApp CTA)
 - `/zones` — Zone explorer with Leaflet map
 - `/compare` — Vehicle comparison (max 3, side-by-side)
 - `/wishlist` — Saved vehicles (localStorage)
