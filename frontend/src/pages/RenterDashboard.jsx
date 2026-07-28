@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
-import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin } from 'lucide-react';
+import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin, DollarSign } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -9,6 +9,7 @@ import MaintenanceSchedule from '../components/MaintenanceSchedule';
 import VehicleHealthCard from '../components/VehicleHealthCard';
 import MaintenanceLogForm from '../components/MaintenanceLogForm';
 import MaintenanceHistory from '../components/MaintenanceHistory';
+import RenterEarnings from '../components/RenterEarnings';
 
 function generateDefaultTiers(pricePerHour) {
   if (!pricePerHour || pricePerHour <= 0) return [];
@@ -195,6 +196,9 @@ const RenterDashboard = () => {
         <button onClick={() => setActiveTab('maintenance')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'maintenance' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'maintenance' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to maintenance tab" aria-pressed={activeTab === 'maintenance'}>
           <Wrench className="mr-2" size={16} /> Maintenance
         </button>
+        <button onClick={() => setActiveTab('earnings')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'earnings' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'earnings' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to earnings tab" aria-pressed={activeTab === 'earnings'}>
+          <DollarSign className="mr-2" size={16} /> Earnings
+        </button>
       </div>
 
       {activeTab === 'vehicles' && (
@@ -330,6 +334,8 @@ const RenterDashboard = () => {
           )}
         </div>
       )}
+
+      {activeTab === 'earnings' && <RenterEarnings />}
     </div>
   );
 };

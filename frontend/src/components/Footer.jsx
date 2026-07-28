@@ -1,23 +1,27 @@
 import { Link } from 'react-router-dom';
 import { Bike, Phone, MapPin } from 'lucide-react';
 import { memo } from 'react';
+import useSiteContent from '../hooks/useSiteContent';
 
-const Footer = () => (
-  <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
-    <div className="h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-        <div>
-          <div className="flex items-center mb-4">
-            <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center mr-2">
-              <Bike size={20} className="text-white" />
+const Footer = () => {
+  const { get } = useSiteContent();
+
+  return (
+    <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
+      <div className="h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div>
+            <div className="flex items-center mb-4">
+              <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center mr-2">
+                <Bike size={20} className="text-white" />
+              </div>
+              <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent font-bold text-lg">{get('global.siteName', "Rent Bike Cox's Bazar")}</span>
             </div>
-            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent font-bold text-lg">Rent Bike Cox's Bazar</span>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--footer-text)' }}>
+              {get('footer.description', "Your trusted vehicle rental platform in Cox's Bazar. Bikes, cars & beach jeeps at the best prices with secure online payment.")}
+            </p>
           </div>
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--footer-text)' }}>
-            Your trusted vehicle rental platform in Cox's Bazar. Bikes, cars & beach jeeps at the best prices with secure online payment.
-          </p>
-        </div>
 
         <div>
           <h3 className="font-semibold text-sm mb-4 uppercase tracking-wide" style={{ color: 'var(--footer-text)' }}>Quick Links</h3>
@@ -52,11 +56,12 @@ const Footer = () => (
       </div>
 
       <div className="border-t mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--footer-border)' }}>
-        <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>&copy; 2026 Rent Bike Cox's Bazar. All rights reserved.</p>
+        <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>&copy; 2026 {get('global.siteName', "Rent Bike Cox's Bazar")}. All rights reserved.</p>
         <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>Built with React, Express & MongoDB</p>
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default memo(Footer);

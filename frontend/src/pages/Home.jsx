@@ -8,6 +8,7 @@ import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import ZoneMap from '../components/ZoneMap';
 import { useCompare } from '../context/useCompare';
 import { useWishlist } from '../context/useWishlist';
+import useSiteContent from '../hooks/useSiteContent';
 
 const categoryIcons = { Bike, Car, Jeep: Truck };
 
@@ -21,10 +22,11 @@ const features = [
 const steps = [
   { num: '01', title: 'Browse', desc: 'Find the perfect bike, car or jeep' },
   { num: '02', title: 'Book', desc: 'Select dates, apply coupon, pay advance' },
-  { num: '03', title: 'Ride', desc: 'Pick up and explore Cox\'s Bazar' },
+  { num: '03', title: 'Ride', desc: "Pick up and explore Cox's Bazar" },
 ];
 
 const Home = () => {
+  const { get } = useSiteContent();
   const [bikes, setBikes] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,11 +171,11 @@ const Home = () => {
               <MapPin size={12} className="mr-1.5" /> Cox's Bazar, Bangladesh
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6 text-white">
-              Explore Cox's Bazar on{' '}
-              <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Two Wheels</span>
+              {get('home.hero.title', "Explore Cox's Bazar on")}{' '}
+              <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{get('home.hero.highlight', 'Two Wheels')}</span>
             </h1>
             <p className="text-lg mb-8 max-w-lg leading-relaxed text-white/80">
-              Rent bikes, cars & beach jeeps at the world's longest beach. Best prices, verified vehicles, secure online payment.
+              {get('home.hero.subtitle', "Rent bikes, cars & beach jeeps at the world's longest beach. Best prices, verified vehicles, secure online payment.")}
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
               <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm text-white/90">
