@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../components/useToast';
-import { User, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertCircle, Loader2, Calendar, Heart, Users } from 'lucide-react';
 
 const Profile = () => {
   const { refreshProfile } = useAuth();
@@ -13,14 +13,21 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [nidPreview, setNidPreview] = useState('');
   const [licensePreview, setLicensePreview] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState('');
   const nidInputRef = useRef(null);
   const licenseInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
   const [form, setForm] = useState({
     name: '',
     phoneNumber: '',
     address: '',
+    bio: '',
+    emergencyName: '',
+    emergencyPhone: '',
+    emergencyRelation: '',
     nidImage: null,
     licenseImage: null,
+    avatar: null,
   });
 
   const fetchProfile = useCallback(() => {
@@ -35,9 +42,14 @@ const Profile = () => {
           name: user.name || '',
           phoneNumber: user.phoneNumber || '',
           address: user.address || '',
+          bio: user.bio || '',
+          emergencyName: user.emergencyContact?.name || '',
+          emergencyPhone: user.emergencyContact?.phone || '',
+          emergencyRelation: user.emergencyContact?.relation || '',
         }));
         setNidPreview(user.nidImage || '');
         setLicensePreview(user.licenseImage || '');
+        setAvatarPreview(user.avatar || '');
       })
       .catch(() => setError('Failed to load profile.'))
       .finally(() => setLoading(false));
@@ -66,7 +78,8 @@ const Profile = () => {
     const reader = new FileReader();
     reader.onload = (ev) => {
       if (field === 'nidImage') setNidPreview(ev.target.result);
-      else setLicensePreview(ev.target.result);
+      else if (field === 'licenseImage') setLicensePreview(ev.target.result);
+      else if (field === 'avatar') setAvatarPreview(ev.target.result);
     };
     reader.readAsDataURL(file);
   };
@@ -80,8 +93,15 @@ const Profile = () => {
       formData.append('name', form.name);
       formData.append('phoneNumber', form.phoneNumber);
       formData.append('address', form.address);
+      formData.append('bio', form.bio);
+      formData.append('emergencyContact', JSON.stringify({
+        name: form.emergencyName,
+        phone: form.emergencyPhone,
+        relation: form.emergencyRelation,
+      }));
       if (form.nidImage) formData.append('nidImage', form.nidImage);
       if (form.licenseImage) formData.append('licenseImage', form.licenseImage);
+      if (form.avatar) formData.append('avatar', form.avatar);
 
       await api.put('/auth/profile', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -133,66 +153,81 @@ const Profile = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="glass rounded-2xl p-6 space-y-4">
           <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <Camera size={18} /> Profile Photo
+          </h2>
+          <div className="flex items-center gap-4">
+            {avatarPreview && (
+              <img src={avatarPreview} alt="Avatar" className="w-20 h-20 rounded-full object-cover border flex-shrink-0"
+                style={{ borderColor: 'var(--border-color)' }} onError={(e) => { e.target.style.display = 'none'; }} />
+            )}
+            {!avatarPreview && (
+              <div className="w-20 h-20 rounded-full flex items-center justify-center border flex-shrink-0"
+                style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+                <User size={32} style={{ color: 'var(--text-muted)' }} />
+              </div>
+            )}
+            <div className="flex-1">
+              <input type="file" ref={avatarInputRef} accept="image/jpeg,image/png"
+                onChange={(e) => handleFileChange(e, 'avatar')}
+                className="w-full text-sm px-4 py-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold cursor-pointer"
+                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                aria-label="Upload avatar" />
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-2xl p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
             <User size={18} /> Personal Information
           </h2>
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Full Name</label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Your full name"
-              className="w-full px-4 py-3 rounded-xl"
+            <input type="text" name="name" value={form.name} onChange={handleChange}
+              placeholder="Your full name" className="w-full px-4 py-3 rounded-xl"
               style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-              required
-              aria-label="Full name"
-            />
+              required aria-label="Full name" />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Email</label>
-            <input
-              type="email"
-              value={profile?.email || ''}
-              readOnly
+            <input type="email" value={profile?.email || ''} readOnly
               className="w-full px-4 py-3 rounded-xl opacity-60 cursor-not-allowed"
               style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-              aria-label="Email (read-only)"
-            />
+              aria-label="Email (read-only)" />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               <span className="flex items-center gap-1"><Phone size={14} /> Phone Number</span>
             </label>
-            <input
-              type="text"
-              name="phoneNumber"
-              value={form.phoneNumber}
-              onChange={handleChange}
-              placeholder="e.g. +880 1XXXXXXXXX"
-              className="w-full px-4 py-3 rounded-xl"
+            <input type="text" name="phoneNumber" value={form.phoneNumber} onChange={handleChange}
+              placeholder="e.g. +880 1XXXXXXXXX" className="w-full px-4 py-3 rounded-xl"
               style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-              aria-label="Phone number"
-            />
+              aria-label="Phone number" />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
               <span className="flex items-center gap-1"><MapPin size={14} /> Address</span>
             </label>
-            <textarea
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Your address"
-              rows={3}
+            <textarea name="address" value={form.address} onChange={handleChange}
+              placeholder="Your address" rows={2}
               className="w-full px-4 py-3 rounded-xl resize-none"
               style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-              aria-label="Address"
-            />
+              aria-label="Address" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              <span className="flex items-center gap-1"><Heart size={14} /> Bio</span>
+            </label>
+            <textarea name="bio" value={form.bio} onChange={handleChange}
+              placeholder="Tell us a little about yourself" rows={2} maxLength={500}
+              className="w-full px-4 py-3 rounded-xl resize-none"
+              style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+              aria-label="Bio" />
+            <p className="text-xs mt-1 text-right" style={{ color: 'var(--text-muted)' }}>{form.bio.length}/500</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -216,6 +251,42 @@ const Profile = () => {
                 </span>
               </div>
             )}
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Member Since</label>
+              <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium"
+                style={{ background: 'var(--info-bg)', color: 'var(--info-text)', border: '1px solid var(--info-border)' }}>
+                <Calendar size={14} /> {profile?.date ? new Date(profile.date).toLocaleDateString('en-BD', { year: 'numeric', month: 'short' }) : 'N/A'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="glass rounded-2xl p-6 space-y-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <Users size={18} /> Emergency Contact
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Name</label>
+              <input type="text" name="emergencyName" value={form.emergencyName} onChange={handleChange}
+                placeholder="Contact name" className="w-full px-4 py-3 rounded-xl text-sm"
+                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                aria-label="Emergency contact name" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Phone</label>
+              <input type="text" name="emergencyPhone" value={form.emergencyPhone} onChange={handleChange}
+                placeholder="Contact phone" className="w-full px-4 py-3 rounded-xl text-sm"
+                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                aria-label="Emergency contact phone" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Relation</label>
+              <input type="text" name="emergencyRelation" value={form.emergencyRelation} onChange={handleChange}
+                placeholder="e.g. Spouse, Parent" className="w-full px-4 py-3 rounded-xl text-sm"
+                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                aria-label="Emergency contact relation" />
+            </div>
           </div>
         </div>
 
@@ -223,7 +294,6 @@ const Profile = () => {
           <h2 className="text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
             <Camera size={18} /> Documents
           </h2>
-
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>NID Image</label>
             <div className="flex items-center gap-4">
@@ -232,19 +302,14 @@ const Profile = () => {
                   style={{ borderColor: 'var(--border-color)' }} onError={(e) => { e.target.style.display = 'none'; }} />
               )}
               <div className="flex-1">
-                <input
-                  type="file"
-                  ref={nidInputRef}
-                  accept="image/jpeg,image/png,image/jpg"
+                <input type="file" ref={nidInputRef} accept="image/jpeg,image/png,image/jpg"
                   onChange={(e) => handleFileChange(e, 'nidImage')}
                   className="w-full text-sm px-4 py-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold cursor-pointer"
                   style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-                  aria-label="Upload NID image"
-                />
+                  aria-label="Upload NID image" />
               </div>
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>License Image</label>
             <div className="flex items-center gap-4">
@@ -253,26 +318,19 @@ const Profile = () => {
                   style={{ borderColor: 'var(--border-color)' }} onError={(e) => { e.target.style.display = 'none'; }} />
               )}
               <div className="flex-1">
-                <input
-                  type="file"
-                  ref={licenseInputRef}
-                  accept="image/jpeg,image/png,image/jpg"
+                <input type="file" ref={licenseInputRef} accept="image/jpeg,image/png,image/jpg"
                   onChange={(e) => handleFileChange(e, 'licenseImage')}
                   className="w-full text-sm px-4 py-3 rounded-xl file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold cursor-pointer"
                   style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-                  aria-label="Upload license image"
-                />
+                  aria-label="Upload license image" />
               </div>
             </div>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
+        <button type="submit" disabled={saving}
           className="btn-primary w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
-          aria-label="Save profile changes"
-        >
+          aria-label="Save profile changes">
           {saving ? <><Loader2 size={18} className="animate-spin" /> Saving...</> : <><Save size={18} /> Save Changes</>}
         </button>
       </form>

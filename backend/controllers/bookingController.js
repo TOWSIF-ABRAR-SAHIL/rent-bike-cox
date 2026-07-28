@@ -384,15 +384,40 @@ exports.getBookingDetails = async (req, res) => {
 
 exports.getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ user: req.user.id })
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+    const statusFilter = req.query.status || '';
+    const searchQuery = req.query.search || '';
+    const sortBy = req.query.sort || 'newest';
+
+    const filter = { user: req.user.id };
+    if (statusFilter) filter.status = statusFilter;
+
+    let bikeIds = [];
+    if (searchQuery) {
+      const bikes = await Bike.find({ model: { $regex: searchQuery, $options: 'i' } }).select('_id').lean();
+      bikeIds = bikes.map(b => b._id);
+      filter.bike = { $in: bikeIds };
+    }
+
+    let sortOption = { createdAt: -1 };
+    if (sortBy === 'oldest') sortOption = { createdAt: 1 };
+    else if (sortBy === 'highest') sortOption = { totalPrice: -1 };
+    else if (sortBy === 'lowest') sortOption = { totalPrice: 1 };
+
+    const total = await Booking.countDocuments(filter);
+    const bookings = await Booking.find(filter)
       .populate({
         path: 'bike',
         select: 'model brand pricePerHour images category',
         populate: { path: 'category', select: 'name slug' },
       })
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean();
-    res.json(bookings);
+
+    res.json({ bookings, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     logger.error('getMyBookings error', { tag: 'Booking', message: error.message });
     res.status(500).json({ message: 'Failed to fetch bookings' });

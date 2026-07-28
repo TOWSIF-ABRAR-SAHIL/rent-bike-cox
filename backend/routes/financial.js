@@ -10,6 +10,7 @@ const {
   getFraudReport,
   getFraudEvents,
   getFinancialOverview,
+  getRenterEarnings,
 } = require('../controllers/financialController');
 
 router.get('/admin/overview', auth, authorize('Admin'), getFinancialOverview);
@@ -19,5 +20,6 @@ router.get('/admin/ledger/:bookingId', auth, authorize('Admin'), getBookingLedge
 router.get('/admin/daily-summary', auth, authorize('Admin'), getDailyFinancialSummary);
 router.get('/admin/fraud-report', auth, authorize('Admin'), getFraudReport);
 router.get('/admin/fraud-events', auth, authorize('Admin'), getFraudEvents);
+router.get('/renter/earnings', auth, getRenterEarnings);
 
 module.exports = router;

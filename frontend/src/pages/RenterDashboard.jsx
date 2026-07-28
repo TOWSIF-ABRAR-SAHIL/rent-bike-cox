@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
-import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin, DollarSign } from 'lucide-react';
+import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin, DollarSign, BarChart3, CalendarCheck, AlertTriangle } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -199,6 +199,38 @@ const RenterDashboard = () => {
         <button onClick={() => setActiveTab('earnings')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'earnings' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'earnings' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to earnings tab" aria-pressed={activeTab === 'earnings'}>
           <DollarSign className="mr-2" size={16} /> Earnings
         </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 size={14} style={{ color: 'var(--accent-text)' }} />
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Vehicles</p>
+          </div>
+          <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{bikes.length}</p>
+        </div>
+        <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <CalendarCheck size={14} style={{ color: 'var(--success-text)' }} />
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Available</p>
+          </div>
+          <p className="text-xl font-bold" style={{ color: 'var(--success-text)' }}>{bikes.filter(b => b.availability).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle size={14} style={{ color: 'var(--warning-text)' }} />
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Under Maintenance</p>
+          </div>
+          <p className="text-xl font-bold" style={{ color: 'var(--warning-text)' }}>{bikes.filter(b => b.isUnderMaintenance).length}</p>
+        </div>
+        <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin size={14} style={{ color: 'var(--info-text)' }} />
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Zones Active</p>
+          </div>
+          <p className="text-xl font-bold" style={{ color: 'var(--info-text)' }}>{new Set(bikes.filter(b => b.zone).map(b => b.zone?.name)).size}</p>
+        </div>
       </div>
 
       {activeTab === 'vehicles' && (

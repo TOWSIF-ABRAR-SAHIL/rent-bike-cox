@@ -10,13 +10,27 @@ const emailCampaignSchema = new mongoose.Schema({
     customUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     conditions: { type: mongoose.Schema.Types.Mixed }
   },
-  status: { type: String, enum: ['draft', 'scheduled', 'sending', 'sent', 'failed'], default: 'draft' },
-  scheduledAt: { type: Date },
-  sentAt: { type: Date },
+  status: { type: String, enum: ['draft', 'scheduled', 'sending', 'paused', 'sent', 'failed', 'cancelled'], default: 'draft' },
+  scheduling: {
+    sendAt: { type: Date },
+    timezone: { type: String, default: 'Asia/Dhaka' }
+  },
+  progress: {
+    total: { type: Number, default: 0 },
+    sent: { type: Number, default: 0 },
+    failed: { type: Number, default: 0 },
+    bounced: { type: Number, default: 0 },
+    opened: { type: Number, default: 0 },
+    clicked: { type: Number, default: 0 }
+  },
+  batchSize: { type: Number, default: 50 },
+  batchDelay: { type: Number, default: 5000 },
   sentCount: { type: Number, default: 0 },
   failedCount: { type: Number, default: 0 },
   openCount: { type: Number, default: 0 },
   clickCount: { type: Number, default: 0 },
+  sentAt: { type: Date },
+  completedAt: { type: Date },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 

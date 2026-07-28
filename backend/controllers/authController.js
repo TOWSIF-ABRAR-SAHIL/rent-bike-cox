@@ -396,7 +396,7 @@ exports.deleteAccount = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('name email role phoneNumber address nid license nidImage licenseImage isVerified date');
+    const user = await User.findById(req.user.id).select('name email role phoneNumber address nid license nidImage licenseImage avatar bio emergencyContact isVerified date');
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({ user });
   } catch (error) {
@@ -407,7 +407,7 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, address } = req.body;
+    const { name, phoneNumber, address, bio, emergencyContact } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -418,12 +418,21 @@ exports.updateProfile = async (req, res) => {
     }
     if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
     if (address !== undefined) user.address = sanitize(address) || '';
+    if (bio !== undefined) user.bio = sanitize(bio) || '';
+    if (emergencyContact !== undefined) {
+      user.emergencyContact = {
+        name: sanitize(emergencyContact.name) || user.emergencyContact?.name || '',
+        phone: sanitize(emergencyContact.phone) || user.emergencyContact?.phone || '',
+        relation: sanitize(emergencyContact.relation) || user.emergencyContact?.relation || '',
+      };
+    }
 
     if (req.files?.['nidImage']?.[0]) user.nidImage = req.files['nidImage'][0].path;
     if (req.files?.['licenseImage']?.[0]) user.licenseImage = req.files['licenseImage'][0].path;
+    if (req.files?.['avatar']?.[0]) user.avatar = req.files['avatar'][0].path;
 
     await user.save();
-    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, phoneNumber: user.phoneNumber, address: user.address } });
+    res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role, phoneNumber: user.phoneNumber, address: user.address, avatar: user.avatar, bio: user.bio, emergencyContact: user.emergencyContact } });
   } catch (error) {
     logger.error('updateProfile error', { error: error.message });
     res.status(500).json({ message: 'Profile update failed' });

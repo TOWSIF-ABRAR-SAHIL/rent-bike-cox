@@ -27,7 +27,7 @@ describe('SiteContent model', () => {
   });
 
   it('validates type enum accepts valid values', async () => {
-    for (const t of ['text', 'html', 'number', 'image', 'json']) {
+    for (const t of ['text', 'richText', 'number', 'image', 'json', 'markdown', 'url']) {
       const doc = new SiteContent({ key: `test.${t}`, value: 'x', type: t, page: 'home' });
       await doc.validate();
       expect(doc.type).toBe(t);
@@ -44,18 +44,18 @@ describe('SiteContent model', () => {
     expect(doc.history).toEqual([]);
   });
 
-  it('limits history to 10 entries', async () => {
+  it('limits history to 20 entries', async () => {
     const doc = new SiteContent({
       key: 'test.limit',
       value: 'v',
       page: 'p',
-      history: Array.from({ length: 11 }, (_, i) => ({ value: `old${i}`, at: new Date() }))
+      history: Array.from({ length: 21 }, (_, i) => ({ value: `old${i}`, at: new Date() }))
     });
     try {
       await doc.validate();
       expect.fail('Should have thrown validation error');
     } catch (err) {
-      expect(err.message).toContain('10');
+      expect(err.message).toContain('20');
     }
   });
 });

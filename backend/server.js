@@ -46,6 +46,11 @@ const adminNotificationRoutes = require('./routes/adminNotifications');
 const campaignRoutes = require('./routes/campaigns');
 const systemHealthRoutes = require('./routes/systemHealth');
 const reportRoutes = require('./routes/reports');
+const disputeRoutes = require('./routes/dispute');
+const logRoutes = require('./routes/logs');
+const cacheRoutes = require('./routes/cache');
+const rateLimitRoutes = require('./routes/rateLimit');
+const { registerLimiter } = require('./controllers/rateLimitController');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
@@ -54,6 +59,7 @@ const { startMaintenanceReminder } = require('./jobs/maintenanceReminder');
 const { startAutoHeal } = require('./jobs/autoHeal');
 const { startCleanupScheduler } = require('./jobs/cleanupScheduler');
 const { startScheduledMaintenance } = require('./jobs/scheduledMaintenance');
+const { startEmailCampaignSender } = require('./jobs/emailCampaignSender');
 const mongoSanitize = require('./middleware/sanitize');
 const hpp = require('hpp');
 const securityHeaders = require('./security/middleware/securityHeaders');
@@ -284,6 +290,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/auth', authLimiter);
+registerLimiter('auth', authLimiter);
 
 // Rate limiting on booking/payment routes (prevent abuse)
 const bookingLimiter = rateLimit({
@@ -294,6 +301,7 @@ const bookingLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/booking', bookingLimiter);
+registerLimiter('booking', bookingLimiter);
 
 const paymentLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -303,6 +311,7 @@ const paymentLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/payment', paymentLimiter);
+registerLimiter('payment', paymentLimiter);
 
 const financialLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -312,6 +321,7 @@ const financialLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/financial', financialLimiter);
+registerLimiter('financial', financialLimiter);
 
 const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -320,6 +330,7 @@ const uploadLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: 'Too many file uploads, please try again later' },
 });
+registerLimiter('upload', uploadLimiter);
 
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -330,6 +341,7 @@ const globalLimiter = rateLimit({
 });
 
 app.use('/api', globalLimiter);
+registerLimiter('global', globalLimiter);
 
 // Additional targeted rate limiters
 const searchLimiter = rateLimit({
@@ -340,6 +352,7 @@ const searchLimiter = rateLimit({
   message: { message: 'Too many search requests, please try again later' },
 });
 app.use('/api/search', searchLimiter);
+registerLimiter('search', searchLimiter);
 
 const dashboardLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -349,6 +362,7 @@ const dashboardLimiter = rateLimit({
   message: { message: 'Too many dashboard requests, please try again later' },
 });
 app.use('/api/dashboard', dashboardLimiter);
+registerLimiter('dashboard', dashboardLimiter);
 
 const fleetLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -358,6 +372,7 @@ const fleetLimiter = rateLimit({
   message: { message: 'Too many fleet requests, please try again later' },
 });
 app.use('/api/fleet', fleetLimiter);
+registerLimiter('fleet', fleetLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -395,6 +410,10 @@ app.use('/api', adminNotificationRoutes);
 app.use('/api', campaignRoutes);
 app.use('/api', systemHealthRoutes);
 app.use('/api', reportRoutes);
+app.use('/api/disputes', disputeRoutes);
+app.use('/api', logRoutes);
+app.use('/api', cacheRoutes);
+app.use('/api', rateLimitRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', notFoundHandler);
@@ -409,9 +428,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentbike'
     logger.info('Connected to MongoDB');
     // Seed default data on first boot (idempotent)
     try {
+      await require('./controllers/dashboardController').seedSettings();
       await require('./controllers/notificationTemplateController').seedTemplates();
       await require('./controllers/faqController').seedFaqs();
       await require('./controllers/announcementController').seedAnnouncements();
+      await require('./controllers/siteContentController').seedContent();
       logger.info('Default data seeded');
     } catch (seedErr) {
       logger.warn('Seed skipped (non-blocking)', { error: seedErr.message });
@@ -430,8 +451,8 @@ const server = app.listen(PORT, () => {
   startDataRetention();
   startMaintenanceReminder();
   startAutoHeal();
-  startCleanupScheduler();
   startScheduledMaintenance();
+  startEmailCampaignSender();
 });
 
 gracefulShutdown(server, mongoose);

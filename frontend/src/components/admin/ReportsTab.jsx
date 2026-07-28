@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
 import { useToast } from '../useToast';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Loader } from 'lucide-react';
 
 const REPORT_TYPES = [
   { id: 'bookings', label: 'Bookings Report', icon: '📋', description: 'All bookings with status, amounts, dates' },
@@ -9,6 +9,9 @@ const REPORT_TYPES = [
   { id: 'users', label: 'Users Report', icon: '👥', description: 'User registrations and activity' },
   { id: 'cancellations', label: 'Cancellations Report', icon: '❌', description: 'Cancelled bookings with reasons' },
   { id: 'coupons', label: 'Coupons Report', icon: '🏷️', description: 'Coupon usage and discounts' },
+  { id: 'fleet', label: 'Fleet Report', icon: '🚗', description: 'Vehicle fleet utilization and status' },
+  { id: 'maintenance', label: 'Maintenance Report', icon: '🔧', description: 'Maintenance logs and costs' },
+  { id: 'payments', label: 'Payment Report', icon: '💳', description: 'Payment transactions and failures' },
 ];
 
 const ReportsTab = () => {
@@ -27,8 +30,8 @@ const ReportsTab = () => {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTypes(); }, [fetchTypes]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchTypes(); }, [fetchTypes]);
 
   const generateReport = async (type) => {
     setGenerating(type);
@@ -80,19 +83,18 @@ const ReportsTab = () => {
         </div>
         <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Generate and download reports in CSV or JSON format.</p>
 
-        {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-4">
           <div>
             <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-secondary)' }}>From</label>
-            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="input-dark text-sm" aria-label="Report start date" />
+            <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="input-dark text-sm" aria-label="From date" />
           </div>
           <div>
             <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-secondary)' }}>To</label>
-            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="input-dark text-sm" aria-label="Report end date" />
+            <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="input-dark text-sm" aria-label="To date" />
           </div>
           <div>
             <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--text-secondary)' }}>Format</label>
-            <select value={format} onChange={e => setFormat(e.target.value)} className="input-dark text-sm" aria-label="Report format">
+            <select value={format} onChange={e => setFormat(e.target.value)} className="input-dark text-sm" aria-label="Format">
               <option value="json">JSON</option>
               <option value="csv">CSV</option>
             </select>
@@ -100,7 +102,7 @@ const ReportsTab = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {REPORT_TYPES.map(rt => (
           <button key={rt.id} onClick={() => generateReport(rt.id)} disabled={generating === rt.id}
             className="glass rounded-xl p-5 border text-left transition-all hover:opacity-90 disabled:opacity-50"
@@ -112,7 +114,7 @@ const ReportsTab = () => {
                 <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{rt.label}</p>
                 <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{rt.description}</p>
               </div>
-              <Download size={18} style={{ color: 'var(--accent-text)', opacity: generating === rt.id ? 0.3 : 1 }} className={generating === rt.id ? 'animate-spin' : ''} />
+              {generating === rt.id ? <Loader size={18} className="animate-spin" style={{ color: 'var(--accent-text)' }} /> : <Download size={18} style={{ color: 'var(--accent-text)' }} />}
             </div>
           </button>
         ))}

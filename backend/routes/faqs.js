@@ -5,6 +5,8 @@ const authorize = require('../security/middleware/authorize');
 const ctrl = require('../controllers/faqController');
 
 router.get('/faqs', ctrl.getActive);
+router.get('/faqs/search', ctrl.search);
+router.get('/faqs/:id/related', ctrl.getRelated);
 router.post('/faqs/:id/helpful', ctrl.trackHelpful);
 router.get('/admin/faqs', auth, authorize('Admin'), ctrl.getAll);
 router.post('/admin/faqs', auth, authorize('Admin'), ctrl.create);

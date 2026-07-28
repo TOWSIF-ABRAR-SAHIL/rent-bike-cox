@@ -1,4 +1,5 @@
 const Booking = require('../models/Booking');
+const Bike = require('../models/Bike');
 const LedgerEntry = require('../models/LedgerEntry');
 const FraudEvent = require('../models/FraudEvent');
 const { getBookingLedger, getDailySummary, verifyLedgerBalance } = require('../utils/ledger');
@@ -93,6 +94,56 @@ exports.getFraudEvents = async (req, res) => {
   } catch (error) {
     logger.error('getFraudEvents error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch fraud events' });
+  }
+};
+
+exports.getRenterEarnings = async (req, res) => {
+  try {
+    if (req.user.role !== 'Renter' && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days) || 30));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const renterBikes = await Bike.find({ renter: req.user.id }).select('_id model brand').lean();
+    const bikeIds = renterBikes.map(b => b._id);
+
+    if (bikeIds.length === 0) {
+      return res.json({ totalEarnings: 0, completedBookings: 0, avgPerBooking: 0, pendingPayout: 0, byVehicle: [] });
+    }
+
+    const completed = await Booking.find({
+      bike: { $in: bikeIds },
+      status: 'Completed',
+      createdAt: { $gte: since },
+    }).lean();
+
+    const totalEarnings = completed.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    const completedBookings = completed.length;
+    const avgPerBooking = completedBookings > 0 ? Math.round(totalEarnings / completedBookings) : 0;
+
+    const pendingPayoutAgg = await Booking.aggregate([
+      { $match: { bike: { $in: bikeIds }, status: 'Completed', createdAt: { $gte: since } } },
+      { $group: { _id: null, total: { $sum: '$remainingBalance' } } },
+    ]);
+    const pendingPayout = pendingPayoutAgg[0]?.total || 0;
+
+    const byVehicle = await Booking.aggregate([
+      { $match: { bike: { $in: bikeIds }, status: 'Completed', createdAt: { $gte: since } } },
+      { $group: { _id: '$bike', bookings: { $sum: 1 }, earnings: { $sum: '$totalPrice' } } },
+      {
+        $lookup: { from: 'bikes', localField: '_id', foreignField: '_id', as: 'bike' },
+      },
+      { $unwind: '$bike' },
+      { $project: { _id: 1, model: '$bike.model', brand: '$bike.brand', bookings: 1, earnings: 1 } },
+      { $sort: { earnings: -1 } },
+    ]);
+
+    res.json({ totalEarnings, completedBookings, avgPerBooking, pendingPayout, byVehicle });
+  } catch (error) {
+    logger.error('getRenterEarnings error', { tag: 'Financial', message: error.message });
+    res.status(500).json({ message: 'Failed to fetch earnings' });
   }
 };
 

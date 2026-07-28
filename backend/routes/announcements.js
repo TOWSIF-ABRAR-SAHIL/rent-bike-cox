@@ -11,5 +11,6 @@ router.put('/admin/announcements/:id', auth, authorize('Admin'), ctrl.update);
 router.delete('/admin/announcements/:id', auth, authorize('Admin'), ctrl.remove);
 router.post('/announcements/:id/view', ctrl.trackView);
 router.post('/announcements/:id/click', ctrl.trackClick);
+router.post('/announcements/:id/dismiss', ctrl.trackDismiss);
 
 module.exports = router;

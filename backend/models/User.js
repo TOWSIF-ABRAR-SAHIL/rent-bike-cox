@@ -14,6 +14,13 @@ const UserSchema = new mongoose.Schema({
   licenseImage: { type: String, default: '' },
   phoneNumber: { type: String, required: true },
   address: { type: String, default: '' },
+  avatar: { type: String, default: '' },
+  bio: { type: String, maxlength: 500, default: '' },
+  emergencyContact: {
+    name: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    relation: { type: String, default: '' },
+  },
   isVerified: { type: Boolean, default: false },
   date: { type: Date, default: Date.now },
 });

@@ -22,6 +22,41 @@ const defaultSettings = {
   ]
 };
 
+let settingsSeeded = false;
+
+const seedSettings = async () => {
+  if (settingsSeeded) return;
+  try {
+    let s = await Settings.findOne();
+    if (!s) {
+      s = await Settings.create(defaultSettings);
+    }
+    const br = s.businessRules || {};
+    if (!br.booking) br.booking = {};
+    if (!br.payment) br.payment = {};
+    if (!br.cancellation) br.cancellation = {};
+    if (!br.lateReturn) br.lateReturn = {};
+    if (!br.verification) br.verification = {};
+    if (!br.registration) br.registration = {};
+    if (!br.vehicles) br.vehicles = {};
+    if (!br.fines || br.fines.length === 0) {
+      br.fines = [
+        { name: 'Beach Sand in Vehicle', amount: 1000, description: 'Fine for sand or dirt found in vehicle after return', isActive: true },
+        { name: 'Helmet Missing/Damaged', amount: 2000, description: 'Fine for missing or damaged helmet', isActive: true },
+        { name: 'Boundary Violation', amount: 5000, description: 'Vehicle taken outside permitted zone', isActive: true },
+        { name: 'Speed Violation', amount: 3000, description: 'Excessive speed / traffic violation fine', isActive: true },
+      ];
+    }
+    s.businessRules = br;
+    if (!s.branding) s.branding = {};
+    await s.save();
+    settingsSeeded = true;
+    logger.info('Settings seeded');
+  } catch (error) {
+    logger.warn('Settings seed skipped', { error: error.message });
+  }
+};
+
 let categoriesSeeded = false;
 const seedCategories = async () => {
   if (categoriesSeeded) return;
@@ -333,7 +368,7 @@ exports.getGlobalSettings = async (req, res) => {
 exports.updateGlobalSettings = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const { basePricePerHour, packages } = req.body;
+    const { basePricePerHour, packages, businessRules } = req.body;
     if (basePricePerHour !== undefined) {
       const price = Number(basePricePerHour);
       if (isNaN(price) || price <= 0 || price > 100000) {
@@ -356,10 +391,12 @@ exports.updateGlobalSettings = async (req, res) => {
       const newSettings = {};
       if (basePricePerHour !== undefined) newSettings.basePricePerHour = basePricePerHour;
       if (packages !== undefined) newSettings.packages = packages;
+      if (businessRules !== undefined) newSettings.businessRules = businessRules;
       settings = await Settings.create({ ...defaultSettings, ...newSettings });
     } else {
       if (basePricePerHour !== undefined) settings.basePricePerHour = basePricePerHour;
       if (packages !== undefined) settings.packages = packages;
+      if (businessRules !== undefined) settings.businessRules = businessRules;
       await settings.save();
     }
     res.json(settings);
@@ -476,9 +513,11 @@ exports.updateBranding = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const allowedFields = [
-      'logoUrl', 'logoDarkUrl', 'faviconUrl', 'primaryColor', 'secondaryColor',
-      'accentColor', 'heroImageUrl', 'businessName', 'businessTagline',
-      'businessAddress', 'contactNumbers', 'contactEmail', 'socialLinks', 'metaTags'
+      'logoUrl', 'logoDarkUrl', 'faviconUrl', 'ogImageUrl', 'primaryColor', 'secondaryColor',
+      'accentColor', 'successColor', 'warningColor', 'dangerColor',
+      'heroImageUrl', 'businessName', 'businessTagline',
+      'businessAddress', 'contactNumbers', 'contactEmail', 'whatsappNumber',
+      'socialLinks', 'metaTags', 'legal'
     ];
     const brandingUpdate = {};
     for (const field of allowedFields) {

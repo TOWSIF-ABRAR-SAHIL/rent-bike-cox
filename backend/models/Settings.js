@@ -1,29 +1,115 @@
 const mongoose = require('mongoose');
 
+const validationSchema = new mongoose.Schema({
+  required: { type: Boolean, default: false },
+  minLength: { type: Number },
+  maxLength: { type: Number },
+  regex: { type: String }
+}, { _id: false });
+
 const brandingSchema = new mongoose.Schema({
   logoUrl: { type: String, default: '' },
   logoDarkUrl: { type: String, default: '' },
   faviconUrl: { type: String, default: '' },
+  ogImageUrl: { type: String, default: '' },
   primaryColor: { type: String, default: '#F97316' },
   secondaryColor: { type: String, default: '#8b5cf6' },
   accentColor: { type: String, default: '#f59e0b' },
+  successColor: { type: String, default: '#22C55E' },
+  warningColor: { type: String, default: '#EAB308' },
+  dangerColor: { type: String, default: '#EF4444' },
   heroImageUrl: { type: String, default: '' },
   businessName: { type: String, default: "Rent Bike Cox's Bazar" },
   businessTagline: { type: String, default: "Your ride, your way, in Cox's Bazar" },
   businessAddress: { type: String, default: "Cox's Bazar, Bangladesh" },
   contactNumbers: [{ type: String }],
   contactEmail: { type: String, default: '' },
+  whatsappNumber: { type: String, default: '' },
   socialLinks: {
     facebook: { type: String, default: '' },
     instagram: { type: String, default: '' },
     youtube: { type: String, default: '' },
     whatsapp: { type: String, default: '' },
-    tiktok: { type: String, default: '' }
+    tiktok: { type: String, default: '' },
+    twitter: { type: String, default: '' }
   },
   metaTags: {
     siteTitle: { type: String, default: "Rent Bike Cox's Bazar" },
     siteDescription: { type: String, default: "Bike, car, and jeep rental in Cox's Bazar, Bangladesh" },
     ogImage: { type: String, default: '' }
+  },
+  legal: {
+    companyName: { type: String, default: '' },
+    tradeLicense: { type: String, default: '' },
+    taxId: { type: String, default: '' }
+  }
+}, { _id: false });
+
+const fineSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  amount: { type: Number, required: true },
+  description: { type: String, default: '' },
+  isActive: { type: Boolean, default: true }
+}, { _id: false });
+
+const businessRulesSchema = new mongoose.Schema({
+  booking: {
+    minHours: { type: Number, default: 1 },
+    maxHours: { type: Number, default: 720 },
+    bufferMinutes: { type: Number, default: 30 },
+    minStartTimeMinutes: { type: Number, default: 10 },
+    checkoutTimeoutMinutes: { type: Number, default: 5 },
+    maxActiveBookingsPerUser: { type: Number, default: 3 },
+    requireVerification: { type: Boolean, default: true },
+    allowGuestCheckout: { type: Boolean, default: false }
+  },
+  payment: {
+    advancePercentShortTerm: { type: Number, default: 50 },
+    advancePercentLongTerm: { type: Number, default: 30 },
+    shortTermThresholdHours: { type: Number, default: 24 },
+    securityDeposit: { type: Number, default: 2000 },
+    minPricePerHour: { type: Number, default: 150 },
+    maxPricePerHour: { type: Number, default: 5000 },
+    allowPartialPayment: { type: Boolean, default: false },
+    currency: { type: String, default: 'BDT' },
+    currencySymbol: { type: String, default: '৳' }
+  },
+  cancellation: {
+    fullRefundHours: { type: Number, default: 24 },
+    partialRefundHours: { type: Number, default: 12 },
+    partialRefundPercent: { type: Number, default: 50 },
+    noShowPenaltyPercent: { type: Number, default: 100 },
+    allowCancellationAfterStart: { type: Boolean, default: false },
+    cancellationCooldownHours: { type: Number, default: 1 }
+  },
+  fines: { type: [fineSchema], default: [] },
+  lateReturn: {
+    graceMinutes: { type: Number, default: 15 },
+    penaltyMultiplier: { type: Number, default: 1.5 },
+    maxPenaltyDays: { type: Number, default: 3 },
+    markAsTheftAfterDays: { type: Number, default: 3 }
+  },
+  verification: {
+    requireNID: { type: Boolean, default: true },
+    requireLicense: { type: Boolean, default: true },
+    autoApprove: { type: Boolean, default: false },
+    verificationExpiryDays: { type: Number, default: 365 }
+  },
+  registration: {
+    allowedRoles: { type: [String], default: ['User', 'Renter'] },
+    requirePhone: { type: Boolean, default: true },
+    requireAddress: { type: Boolean, default: true },
+    maxNIDImageSizeMB: { type: Number, default: 5 },
+    maxLicenseImageSizeMB: { type: Number, default: 5 },
+    allowedImageTypes: { type: [String], default: ['jpg', 'jpeg', 'png'] }
+  },
+  vehicles: {
+    maxImagesPerBike: { type: Number, default: 10 },
+    minImagesPerBike: { type: Number, default: 1 },
+    maxCategories: { type: Number, default: 20 },
+    requireDescription: { type: Boolean, default: false },
+    requireRegistrationNumber: { type: Boolean, default: false },
+    autoVerify: { type: Boolean, default: false }
   }
 }, { _id: false });
 
@@ -39,8 +125,13 @@ const settingsSchema = new mongoose.Schema({
   payoutSchedule: { type: String, enum: ['weekly', 'biweekly', 'monthly'], default: 'weekly' },
   supportedCurrencies: [{ type: String, default: 'BDT' }],
   gatewayPreference: [{ type: String, default: 'sslcommerz' }],
-  branding: { type: brandingSchema, default: () => ({}) }
+  branding: { type: brandingSchema, default: () => ({}) },
+  businessRules: { type: businessRulesSchema, default: () => ({}) }
 }, { timestamps: true });
+
+function isValidHex(c) {
+  return /^#[0-9A-Fa-f]{6}$/.test(c);
+}
 
 settingsSchema.pre('save', function (next) {
   if (this.basePricePerHour !== undefined && (this.basePricePerHour < 100 || this.basePricePerHour > 100000)) {
@@ -49,14 +140,14 @@ settingsSchema.pre('save', function (next) {
   if (this.adminCommissionPercent !== undefined && (this.adminCommissionPercent < 0 || this.adminCommissionPercent > 50)) {
     return next(new Error('adminCommissionPercent must be between 0 and 50'));
   }
-  if (this.branding && this.branding.primaryColor && !/^#[0-9A-Fa-f]{6}$/.test(this.branding.primaryColor)) {
-    return next(new Error('primaryColor must be a valid hex color'));
-  }
-  if (this.branding && this.branding.secondaryColor && !/^#[0-9A-Fa-f]{6}$/.test(this.branding.secondaryColor)) {
-    return next(new Error('secondaryColor must be a valid hex color'));
-  }
-  if (this.branding && this.branding.accentColor && !/^#[0-9A-Fa-f]{6}$/.test(this.branding.accentColor)) {
-    return next(new Error('accentColor must be a valid hex color'));
+  const b = this.branding;
+  if (b) {
+    if (b.primaryColor && !isValidHex(b.primaryColor)) return next(new Error('primaryColor must be a valid hex color'));
+    if (b.secondaryColor && !isValidHex(b.secondaryColor)) return next(new Error('secondaryColor must be a valid hex color'));
+    if (b.accentColor && !isValidHex(b.accentColor)) return next(new Error('accentColor must be a valid hex color'));
+    if (b.successColor && !isValidHex(b.successColor)) return next(new Error('successColor must be a valid hex color'));
+    if (b.warningColor && !isValidHex(b.warningColor)) return next(new Error('warningColor must be a valid hex color'));
+    if (b.dangerColor && !isValidHex(b.dangerColor)) return next(new Error('dangerColor must be a valid hex color'));
   }
   next();
 });

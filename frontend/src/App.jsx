@@ -38,6 +38,7 @@ const VehicleDocuments = lazy(() => import('./pages/VehicleDocuments'));
 const NotificationPreferences = lazy(() => import('./pages/NotificationPreferences'));
 const ZoneExplorer = lazy(() => import('./pages/ZoneExplorer'));
 const Profile = lazy(() => import('./pages/Profile'));
+const MyDisputes = lazy(() => import('./pages/MyDisputes'));
 const ChangePassword = lazy(() => import('./pages/ChangePassword'));
 const RefundManagement = lazy(() => import('./pages/RefundManagement'));
 const Login = lazy(() => import('./components/Login'));
@@ -154,6 +155,13 @@ function App() {
                       <PageErrorBoundary>
                         <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
                           <NotificationPreferences />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
+                    } />
+                    <Route path="/my-disputes" element={
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
+                          <MyDisputes />
                         </ProtectedRoute>
                       </PageErrorBoundary>
                     } />

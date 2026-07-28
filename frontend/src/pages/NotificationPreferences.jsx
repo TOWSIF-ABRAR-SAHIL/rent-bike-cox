@@ -14,6 +14,8 @@ const TYPES = [
   { key: 'bookingCancellation', label: 'Booking Cancellation' },
   { key: 'maintenanceReminder', label: 'Maintenance Reminder' },
   { key: 'promotional', label: 'Promotions & Offers' },
+  { key: 'securityAlert', label: 'Security Alerts' },
+  { key: 'systemUpdate', label: 'System Updates' },
 ];
 
 function urlBase64ToUint8Array(base64String) {
@@ -120,16 +122,13 @@ export default function NotificationPreferences() {
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Get notified even when the tab is closed</p>
             </div>
           </div>
-          <button
-            onClick={togglePush}
-            disabled={pushLoading}
+          <button onClick={togglePush} disabled={pushLoading}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
             style={{
               background: pushEnabled ? 'var(--danger-bg)' : 'var(--accent-bg-solid, #f59e0b)',
               color: pushEnabled ? 'var(--danger-text)' : '#fff',
             }}
-            aria-label={pushEnabled ? 'Disable push notifications' : 'Enable push notifications'}
-          >
+            aria-label={pushEnabled ? 'Disable push notifications' : 'Enable push notifications'}>
             {pushLoading ? <RefreshCw size={14} className="animate-spin" /> : pushEnabled ? <><AlertCircle size={14} /> Disable</> : <><CheckCircle size={14} /> Enable</>}
           </button>
         </div>
@@ -149,40 +148,54 @@ export default function NotificationPreferences() {
         </div>
 
         {TYPES.map(type => (
-          <div
-            key={type.key}
-            className="grid grid-cols-4 gap-0 px-4 py-3 items-center"
-            style={{ borderTop: '1px solid var(--border-base)' }}
-          >
+          <div key={type.key} className="grid grid-cols-4 gap-0 px-4 py-3 items-center"
+            style={{ borderTop: '1px solid var(--border-base)' }}>
             <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{type.label}</span>
-            {CHANNELS.map(ch => (
-              <div key={ch.key} className="text-center">
-                <button
-                  onClick={() => toggle(ch.key, type.key)}
-                  className="w-10 h-5 rounded-full transition-colors relative mx-auto"
-                  aria-label={`Toggle ${type.label} ${ch.label} notifications`}
-                  aria-pressed={prefs[ch.key]?.[type.key]}
-                  style={{
-                    background: prefs[ch.key]?.[type.key] ? 'var(--accent-bg-solid, #f59e0b)' : 'var(--border-base)',
-                  }}
-                >
-                  <span
-                    className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm"
-                    style={{ left: prefs[ch.key]?.[type.key] ? '22px' : '2px' }}
-                  />
-                </button>
-              </div>
-            ))}
+            {CHANNELS.map(ch => {
+              if (type.key === 'weeklyDigest' && ch.key !== 'email') {
+                return <div key={ch.key} className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>—</div>;
+              }
+              /* push doesn't support securityAlert/systemUpdate */
+              if (ch.key === 'push' && ['securityAlert', 'systemUpdate', 'weeklyDigest'].includes(type.key)) {
+                return <div key={ch.key} className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>—</div>;
+              }
+              return (
+                <div key={ch.key} className="text-center">
+                  <button onClick={() => toggle(ch.key, type.key)}
+                    className="w-10 h-5 rounded-full transition-colors relative mx-auto"
+                    aria-label={`Toggle ${type.label} ${ch.label} notifications`}
+                    aria-pressed={prefs[ch.key]?.[type.key]}
+                    style={{ background: prefs[ch.key]?.[type.key] ? 'var(--accent-bg-solid, #f59e0b)' : 'var(--border-base)' }}>
+                    <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm"
+                      style={{ left: prefs[ch.key]?.[type.key] ? '22px' : '2px' }} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ))}
+
+        {/* Weekly Digest (email only) */}
+        <div className="grid grid-cols-4 gap-0 px-4 py-3 items-center" style={{ borderTop: '1px solid var(--border-base)' }}>
+          <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Weekly Digest</span>
+          <div className="text-center">
+            <button onClick={() => toggle('email', 'weeklyDigest')}
+              className="w-10 h-5 rounded-full transition-colors relative mx-auto"
+              aria-label="Toggle Weekly Digest email"
+              aria-pressed={prefs.email?.weeklyDigest}
+              style={{ background: prefs.email?.weeklyDigest ? 'var(--accent-bg-solid, #f59e0b)' : 'var(--border-base)' }}>
+              <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm"
+                style={{ left: prefs.email?.weeklyDigest ? '22px' : '2px' }} />
+            </button>
+          </div>
+          <div className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>—</div>
+          <div className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>—</div>
+        </div>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
+      <button onClick={handleSave} disabled={saving}
         className="flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium text-sm text-white mt-6 disabled:opacity-50 transition-all"
-        style={{ background: 'var(--accent-bg-solid, #f59e0b)' }}
-       aria-label="Save changes">
+        style={{ background: 'var(--accent-bg-solid, #f59e0b)' }} aria-label="Save changes">
         {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
         Save Preferences
       </button>

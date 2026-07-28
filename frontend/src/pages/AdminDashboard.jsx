@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download, Database } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -11,6 +11,7 @@ import VehicleHealthCard from '../components/VehicleHealthCard';
 import MaintenanceLogForm from '../components/MaintenanceLogForm';
 import MaintenanceHistory from '../components/MaintenanceHistory';
 import ZoneCard from '../components/ZoneCard';
+import CommandCenter from '../components/admin/CommandCenter';
 import ContentEditor from '../components/admin/ContentEditor';
 import BrandingTab from '../components/admin/BrandingTab';
 import AnnouncementManager from '../components/admin/AnnouncementManager';
@@ -19,6 +20,9 @@ import FAQManager from '../components/admin/FAQManager';
 import MessageInbox from '../components/admin/MessageInbox';
 import CampaignManager from '../components/admin/CampaignManager';
 import SystemHealthTab from '../components/admin/SystemHealthTab';
+import LogsViewer from '../components/admin/LogsViewer';
+import CacheManager from '../components/admin/CacheManager';
+import RateLimitManager from '../components/admin/RateLimitManager';
 import ReportsTab from '../components/admin/ReportsTab';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
@@ -49,7 +53,7 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [activeTab, setActiveTab] = useState('settings');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
   const [newCategory, setNewCategory] = useState('');
@@ -276,6 +280,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8">
+        <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={BarChart3}>Command Center</TabButton>
         <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings}>Settings</TabButton>
         <TabButton active={activeTab === 'bikes'} onClick={() => setActiveTab('bikes')} icon={Bike}>Bikes</TabButton>
         <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={Users}>Users</TabButton>
@@ -293,19 +298,100 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} icon={Inbox}>Messages</TabButton>
         <TabButton active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={Send}>Campaigns</TabButton>
         <TabButton active={activeTab === 'health'} onClick={() => setActiveTab('health')} icon={Activity}>System</TabButton>
+        <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} icon={FileText}>Logs</TabButton>
+        <TabButton active={activeTab === 'cache'} onClick={() => setActiveTab('cache')} icon={Database}>Cache</TabButton>
+        <TabButton active={activeTab === 'ratelimit'} onClick={() => setActiveTab('ratelimit')} icon={Shield}>Rate Limits</TabButton>
         <TabButton active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} icon={Download}>Reports</TabButton>
       </div>
 
+      {activeTab === 'dashboard' && (
+        <CommandCenter onNavigate={setActiveTab} stats={{ bikes: bikes.length, users: users.length, coupons: coupons.length, categories: categories.length }} />
+      )}
+
       {activeTab === 'settings' && (
-        <div className="glass p-6 rounded-2xl max-w-xl">
-          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Global Pricing</h2>
-          <form onSubmit={handleUpdateSettings} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Base Price Per Hour (TK)</label>
-              <input type="number" min="1" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Math.max(1, Number(e.target.value) || 1)})} className="input-dark" aria-label="Base Price Per Hour (TK)" />
+        <div className="space-y-6 max-w-2xl">
+          <div className="glass p-6 rounded-2xl">
+            <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Global Pricing</h2>
+            <form onSubmit={handleUpdateSettings} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Base Price Per Hour (TK)</label>
+                <input type="number" min="1" value={settings.basePricePerHour} onChange={e => setSettings({...settings, basePricePerHour: Math.max(1, Number(e.target.value) || 1)})} className="input-dark" aria-label="Base Price Per Hour (TK)" />
+              </div>
+              <button type="submit" className="btn-primary" aria-label="Save settings">Save Changes</button>
+            </form>
+          </div>
+
+          <div className="glass p-6 rounded-2xl">
+            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Business Rules</h3>
+            <div className="space-y-4 text-sm">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>Booking Rules</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Min Hours</span>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{settings.businessRules?.booking?.minHours || 1}</p>
+                  </div>
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Max Hours</span>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{settings.businessRules?.booking?.maxHours || 720}</p>
+                  </div>
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Buffer (min)</span>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{settings.businessRules?.booking?.bufferMinutes || 30}</p>
+                  </div>
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Min Start (min)</span>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{settings.businessRules?.booking?.minStartMinutes || 10}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>Payment Rules</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Advance ≤24h</span>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{settings.businessRules?.payment?.advancePercentShort || 50}%</p>
+                  </div>
+                  <div className="p-2 rounded-lg" style={{ background: 'var(--bg-tertiary)' }}>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Advance &gt;24h</span>
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{settings.businessRules?.payment?.advancePercentLong || 30}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>Cancellation Refunds</p>
+                <div className="space-y-1">
+                  {[
+                    { label: '24h+', val: settings.businessRules?.cancellation?.fullRefundHours || 24 },
+                    { label: '12-24h', val: settings.businessRules?.cancellation?.partialRefundPercent || 50 },
+                    { label: '&lt;12h', val: settings.businessRules?.cancellation?.noRefundHours || 12 },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between px-2 py-1 rounded-lg text-xs" style={{ background: 'var(--bg-tertiary)' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>{r.label}</span>
+                      <span style={{ color: 'var(--text-primary)' }}>{r.val}{r.label === '24h+' ? 'h for full refund' : '% refund'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide mb-2" style={{ color: 'var(--text-secondary)' }}>Fines</p>
+                <div className="space-y-1">
+                  {(settings.businessRules?.fines || []).map((fine, i) => (
+                    <div key={i} className="flex justify-between px-2 py-1 rounded-lg text-xs" style={{ background: 'var(--bg-tertiary)' }}>
+                      <span style={{ color: 'var(--text-primary)' }}>{fine.name}</span>
+                      <span style={{ color: 'var(--warning-text)' }}>{fine.amount} TK</span>
+                    </div>
+                  ))}
+                  {(!settings.businessRules?.fines || settings.businessRules.fines.length === 0) && (
+                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>No fines configured</span>
+                  )}
+                </div>
+              </div>
             </div>
-            <button type="submit" className="btn-primary" aria-label="Save settings">Save Changes</button>
-          </form>
+          </div>
         </div>
       )}
 
@@ -1037,6 +1123,9 @@ const AdminDashboard = () => {
       {activeTab === 'messages' && <MessageInbox />}
       {activeTab === 'campaigns' && <CampaignManager />}
       {activeTab === 'health' && <SystemHealthTab />}
+      {activeTab === 'logs' && <LogsViewer />}
+      {activeTab === 'cache' && <CacheManager />}
+      {activeTab === 'ratelimit' && <RateLimitManager />}
       {activeTab === 'reports' && <ReportsTab />}
     </div>
   );

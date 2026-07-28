@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const os = require('os');
+const { defaultCache } = require('../utils/cache');
 const logger = require('../utils/logger');
 
 exports.getSystemHealth = async (req, res) => {
@@ -52,7 +53,8 @@ exports.getSystemHealth = async (req, res) => {
       },
       cache: {
         status: 'active',
-        type: 'in-memory'
+        type: 'in-memory',
+        ...defaultCache.stats()
       },
       timestamp: new Date().toISOString()
     };
