@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, memo } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin, BarChart3 } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -778,6 +779,10 @@ const AdminDashboard = () => {
               <StatCard label="Week Revenue" value={`${finance.overview.week.revenue.toLocaleString()} TK`} colorStyle={{ color: 'var(--info-text)' }} />
               <StatCard label="Fraud Events" value={finance.overview.fraudEventsToday} colorStyle={{ color: finance.overview.fraudEventsToday > 0 ? 'var(--danger-text)' : 'var(--text-secondary)' }} />
             </div>
+
+            <Link to="/analytics" className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all glass hover:opacity-80" style={{ color: 'var(--accent-text)' }}>
+              <BarChart3 size={16} /> View Full Analytics Dashboard →
+            </Link>
 
             <div className="glass p-6 rounded-2xl">
               <div className="flex items-center justify-between mb-4">

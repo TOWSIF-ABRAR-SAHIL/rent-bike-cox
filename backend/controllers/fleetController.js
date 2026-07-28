@@ -41,7 +41,7 @@ exports.getFleetSummary = async (req, res) => {
           status: { $in: ['Confirmed', 'Active', 'Completed'] },
         },
       },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      { $group: { _id: null, total: { $sum: '$totalPrice' } } },
     ]);
 
     const bikeIds = await Bike.find(bikeQuery).select('_id').lean();

@@ -1,3 +1,5 @@
+import { BarChart3 } from 'lucide-react';
+
 const BookingTrendChart = ({ data }) => {
   const { statusBreakdown, bookingsByDay } = data;
   const maxTotal = Math.max(...bookingsByDay.map(d => d.total), 1);
@@ -11,9 +13,26 @@ const BookingTrendChart = ({ data }) => {
     Expired: 'var(--text-muted)',
   };
 
+  const completionRate = statusBreakdown.length > 0
+    ? (() => {
+      const completed = statusBreakdown.find(s => s.status === 'Completed')?.count || 0;
+      const total = statusBreakdown.reduce((sum, s) => sum + s.count, 0);
+      return total > 0 ? ((completed / total) * 100).toFixed(1) : 0;
+    })()
+    : 0;
+
   return (
     <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
-      <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Booking Trends</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <BarChart3 size={16} /> Booking Trends
+        </h3>
+        {completionRate > 0 && (
+          <span className="text-xs px-2 py-1 rounded-lg" style={{ background: 'var(--success-bg)', color: 'var(--success-text)' }}>
+            {completionRate}% completed
+          </span>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-3 mb-4">
         {statusBreakdown.map(s => (

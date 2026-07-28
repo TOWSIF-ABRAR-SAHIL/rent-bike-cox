@@ -1,19 +1,24 @@
-import { Users, UserPlus, Repeat, DollarSign } from 'lucide-react';
+import { Users, UserPlus, Repeat, DollarSign, ShoppingCart } from 'lucide-react';
 
 const CustomerInsights = ({ data }) => {
+  const avgBookingsPerCustomer = data.activeCustomers > 0
+    ? (data.repeatCustomers > 0 ? ((data.repeatCustomers * 2 + (data.activeCustomers - data.repeatCustomers)) / data.activeCustomers).toFixed(1) : 1)
+    : 0;
+
   const cards = [
     { label: 'Total Customers', value: data.totalCustomers, icon: Users, color: 'var(--accent-text)', bg: 'var(--accent-bg)' },
     { label: 'New Customers', value: data.newCustomers, icon: UserPlus, color: 'var(--success-text)', bg: 'var(--success-bg)' },
     { label: 'Active Customers', value: data.activeCustomers, icon: Repeat, color: 'var(--info-text)', bg: 'var(--info-bg)' },
     { label: 'Repeat Rate', value: `${data.repeatRate}%`, icon: Repeat, color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
     { label: 'Avg Spend', value: `${data.avgSpendPerCustomer.toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)' },
+    { label: 'Avg Bookings/Customer', value: avgBookingsPerCustomer, icon: ShoppingCart, color: 'var(--info-text)', bg: 'var(--info-bg)' },
   ];
 
   return (
     <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
       <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-primary)' }}>Customer Insights</h3>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
         {cards.map(card => (
           <div key={card.label} className="p-3 rounded-lg" style={{ background: 'var(--input-bg)' }}>
             <div className="flex items-center gap-2 mb-1">

@@ -150,8 +150,8 @@ exports.getVehicleStats = async (req, res) => {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-          totalRevenue: { $sum: '$totalAmount' },
-          avgRevenue: { $avg: '$totalAmount' },
+          totalRevenue: { $sum: '$totalPrice' },
+          avgRevenue: { $avg: '$totalPrice' },
         },
       },
     ]);

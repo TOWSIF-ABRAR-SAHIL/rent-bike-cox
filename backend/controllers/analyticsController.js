@@ -2,11 +2,14 @@ const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const User = require('../models/User');
 const Category = require('../models/Category');
+const Zone = require('../models/Zone');
+const Refund = require('../models/Refund');
 const logger = require('../utils/logger');
 
 exports.getRevenueAnalytics = async (req, res) => {
   try {
-    const { days = 30, ownerId, role } = req.user;
+    const { ownerId, role } = req.user;
+    const { days = 30 } = req.query;
     const numDays = parseInt(days) || 30;
     const since = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
 
@@ -20,7 +23,7 @@ exports.getRevenueAnalytics = async (req, res) => {
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-          revenue: { $sum: '$totalAmount' },
+          revenue: { $sum: '$totalPrice' },
           count: { $sum: 1 },
         },
       },
@@ -41,7 +44,7 @@ exports.getRevenueAnalytics = async (req, res) => {
           status: { $in: ['Confirmed', 'Active', 'Completed'] },
         },
       },
-      { $group: { _id: null, revenue: { $sum: '$totalAmount' }, count: { $sum: 1 } } },
+      { $group: { _id: null, revenue: { $sum: '$totalPrice' }, count: { $sum: 1 } } },
     ]);
 
     const prevRevenue = monthlyComparison[0]?.revenue || 0;
@@ -136,7 +139,7 @@ exports.getCategoryPerformance = async (req, res) => {
             status: { $in: ['Confirmed', 'Active', 'Completed'] },
           },
         },
-        { $group: { _id: null, bookings: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } },
+        { $group: { _id: null, bookings: { $sum: 1 }, revenue: { $sum: '$totalPrice' } } },
       ]);
 
       performance.push({
@@ -172,8 +175,8 @@ exports.getTopBikes = async (req, res) => {
         $group: {
           _id: '$bike',
           bookings: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' },
-          avgRevenue: { $avg: '$totalAmount' },
+          revenue: { $sum: '$totalPrice' },
+          avgRevenue: { $avg: '$totalPrice' },
         },
       },
       { $sort: { revenue: -1 } },
@@ -213,13 +216,13 @@ exports.getCustomerInsights = async (req, res) => {
 
     const repeatCustomers = await Booking.aggregate([
       { $match: { createdAt: { $gte: since }, status: { $in: ['Confirmed', 'Active', 'Completed'] } } },
-      { $group: { _id: '$user', bookingCount: { $sum: 1 }, totalSpent: { $sum: '$totalAmount' } } },
+      { $group: { _id: '$user', bookingCount: { $sum: 1 }, totalSpent: { $sum: '$totalPrice' } } },
       { $group: { _id: null, total: { $sum: 1 }, repeat: { $sum: { $cond: [{ $gt: ['$bookingCount', 1] }, 1, 0] } }, avgSpend: { $avg: '$totalSpent' } } },
     ]);
 
     const topSpenders = await Booking.aggregate([
       { $match: { createdAt: { $gte: since }, status: { $in: ['Confirmed', 'Active', 'Completed'] } } },
-      { $group: { _id: '$user', totalSpent: { $sum: '$totalAmount' }, bookingCount: { $sum: 1 } } },
+      { $group: { _id: '$user', totalSpent: { $sum: '$totalPrice' }, bookingCount: { $sum: 1 } } },
       { $sort: { totalSpent: -1 } },
       { $limit: 5 },
     ]);
@@ -266,7 +269,7 @@ exports.exportAnalytics = async (req, res) => {
         new Date(b.createdAt).toLocaleDateString(),
         b.invoiceNumber || 'N/A',
         `${b.bike?.brand || ''} ${b.bike?.model || ''}`.trim() || 'N/A',
-        b.totalAmount || 0,
+        b.totalPrice || 0,
         b.advancePaid || 0,
         b.status,
         b.paymentStatus,
@@ -281,5 +284,149 @@ exports.exportAnalytics = async (req, res) => {
   } catch (error) {
     logger.error('exportAnalytics error', { message: error.message });
     res.status(500).json({ message: 'Failed to export analytics' });
+  }
+};
+
+exports.getZoneAnalytics = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const numDays = parseInt(days) || 30;
+    const since = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
+
+    const zoneStats = await Booking.aggregate([
+      { $match: { createdAt: { $gte: since }, status: { $in: ['Confirmed', 'Active', 'Completed'] } } },
+      { $lookup: { from: 'bikes', localField: 'bike', foreignField: '_id', as: 'bikeDoc' } },
+      { $unwind: { path: '$bikeDoc', preserveNullAndEmptyArrays: true } },
+      { $group: {
+        _id: '$bikeDoc.zone',
+        bookings: { $sum: 1 },
+        revenue: { $sum: '$totalPrice' },
+        avgRevenue: { $avg: '$totalPrice' },
+      }},
+      { $sort: { revenue: -1 } },
+    ]);
+
+    const zoneIds = zoneStats.filter(z => z._id).map(z => z._id);
+    const zones = await Zone.find({ _id: { $in: zoneIds } }).select('name color slug').lean();
+    const zoneMap = {};
+    zones.forEach(z => { zoneMap[z._id.toString()] = z; });
+
+    const bikeCounts = await Bike.aggregate([
+      { $match: { zone: { $in: zoneIds } } },
+      { $group: { _id: '$zone', count: { $sum: 1 } } },
+    ]);
+    const bikeCountMap = {};
+    bikeCounts.forEach(b => { bikeCountMap[b._id.toString()] = b.count; });
+
+    const result = zoneStats.map(z => {
+      const zoneId = z._id?.toString();
+      const zone = zoneMap[zoneId];
+      return {
+        zone: zone?.name || 'Unassigned',
+        color: zone?.color || '#6b7280',
+        slug: zone?.slug || 'unassigned',
+        bookings: z.bookings,
+        revenue: z.revenue,
+        avgRevenue: Math.round(z.avgRevenue),
+        vehicleCount: bikeCountMap[zoneId] || 0,
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    logger.error('getZoneAnalytics error', { message: error.message });
+    res.status(500).json({ message: 'Failed to fetch zone analytics' });
+  }
+};
+
+exports.getRentalDuration = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const numDays = parseInt(days) || 30;
+    const since = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
+
+    const bookings = await Booking.find({
+      createdAt: { $gte: since },
+      status: 'Completed',
+      startTime: { $exists: true },
+      endTime: { $exists: true },
+    }).select('startTime endTime').lean();
+
+    const durations = bookings.map(b => (new Date(b.endTime) - new Date(b.startTime)) / (1000 * 60 * 60));
+    const sorted = [...durations].sort((a, b) => a - b);
+
+    const buckets = [
+      { label: '<2h', min: 0, max: 2, count: 0 },
+      { label: '2-4h', min: 2, max: 4, count: 0 },
+      { label: '4-8h', min: 4, max: 8, count: 0 },
+      { label: '8-24h', min: 8, max: 24, count: 0 },
+      { label: '24h+', min: 24, max: Infinity, count: 0 },
+    ];
+
+    durations.forEach(d => {
+      const bucket = buckets.find(b => d >= b.min && d < b.max);
+      if (bucket) bucket.count++;
+    });
+
+    const total = durations.length;
+    buckets.forEach(b => { b.percentage = total > 0 ? ((b.count / total) * 100).toFixed(1) : 0; });
+
+    const avgHours = total > 0 ? (durations.reduce((s, d) => s + d, 0) / total).toFixed(1) : 0;
+    const medianHours = total > 0 ? (sorted.length % 2 === 0
+      ? ((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2).toFixed(1)
+      : sorted[Math.floor(sorted.length / 2)].toFixed(1)
+    ) : 0;
+
+    res.json({ buckets, avgHours: parseFloat(avgHours), medianHours: parseFloat(medianHours), totalBookings: total });
+  } catch (error) {
+    logger.error('getRentalDuration error', { message: error.message });
+    res.status(500).json({ message: 'Failed to fetch rental duration analytics' });
+  }
+};
+
+exports.getFinancialSummary = async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const numDays = parseInt(days) || 30;
+    const since = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
+
+    const stats = await Booking.aggregate([
+      { $match: { createdAt: { $gte: since }, status: { $in: ['Confirmed', 'Active', 'Completed'] } } },
+      { $group: {
+        _id: null,
+        totalRevenue: { $sum: '$totalPrice' },
+        totalAdvance: { $sum: '$advancePaid' },
+        totalRemaining: { $sum: '$remainingBalance' },
+        totalSecurityDeposit: { $sum: { $cond: ['$securityDepositPaid', '$securityDeposit', 0] } },
+        count: { $sum: 1 },
+      }},
+    ]);
+
+    const refundStats = await Refund.aggregate([
+      { $match: { createdAt: { $gte: since }, status: { $in: ['APPROVED', 'COMPLETED'] } } },
+      { $group: { _id: null, totalRefunds: { $sum: '$amount' }, refundCount: { $sum: 1 } } },
+    ]);
+
+    const s = stats[0] || { totalRevenue: 0, totalAdvance: 0, totalRemaining: 0, totalSecurityDeposit: 0, count: 0 };
+    const r = refundStats[0] || { totalRefunds: 0, refundCount: 0 };
+    const netRevenue = s.totalRevenue - r.totalRefunds;
+    const collectionRate = s.totalRevenue > 0 ? (((s.totalAdvance + s.totalRemaining) / s.totalRevenue) * 100).toFixed(1) : 0;
+    const refundRate = s.totalRevenue > 0 ? ((r.totalRefunds / s.totalRevenue) * 100).toFixed(1) : 0;
+
+    res.json({
+      totalRevenue: s.totalRevenue,
+      totalAdvanceCollected: s.totalAdvance,
+      totalRemainingCollected: s.totalRemaining,
+      totalSecurityDeposits: s.totalSecurityDeposit,
+      totalRefunds: r.totalRefunds,
+      refundCount: r.refundCount,
+      netRevenue,
+      collectionRate: parseFloat(collectionRate),
+      refundRate: parseFloat(refundRate),
+      totalBookings: s.count,
+    });
+  } catch (error) {
+    logger.error('getFinancialSummary error', { message: error.message });
+    res.status(500).json({ message: 'Failed to fetch financial summary' });
   }
 };

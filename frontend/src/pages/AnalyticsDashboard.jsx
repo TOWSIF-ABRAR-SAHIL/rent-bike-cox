@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import RevenueChart from '../components/RevenueChart';
 import BookingTrendChart from '../components/BookingTrendChart';
 import CategoryPerformance from '../components/CategoryPerformance';
 import TopBikes from '../components/TopBikes';
 import CustomerInsights from '../components/CustomerInsights';
+import ZoneAnalytics from '../components/ZoneAnalytics';
+import RentalDurationChart from '../components/RentalDurationChart';
+import FinancialSummary from '../components/FinancialSummary';
+import HourlyDistribution from '../components/HourlyDistribution';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-import { Calendar, Download } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { Calendar, Download, RefreshCw } from 'lucide-react';
 
 const AnalyticsDashboard = () => {
   const [days, setDays] = useState(30);
@@ -17,23 +19,33 @@ const AnalyticsDashboard = () => {
   const [categories, setCategories] = useState(null);
   const [topBikes, setTopBikes] = useState(null);
   const [customers, setCustomers] = useState(null);
+  const [zones, setZones] = useState(null);
+  const [duration, setDuration] = useState(null);
+  const [financial, setFinancial] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [revRes, trendRes, catRes, bikeRes, custRes] = await Promise.all([
-        axios.get(`${API}/analytics/revenue?days=${days}`),
-        axios.get(`${API}/analytics/bookings?days=${days}`),
-        axios.get(`${API}/analytics/categories?days=${days}`),
-        axios.get(`${API}/analytics/top-bikes?days=${days}&limit=5`),
-        axios.get(`${API}/analytics/customers?days=${days}`),
+      const [revRes, trendRes, catRes, bikeRes, custRes, zoneRes, durRes, finRes] = await Promise.allSettled([
+        api.get(`/analytics/revenue?days=${days}`),
+        api.get(`/analytics/bookings?days=${days}`),
+        api.get(`/analytics/categories?days=${days}`),
+        api.get(`/analytics/top-bikes?days=${days}&limit=5`),
+        api.get(`/analytics/customers?days=${days}`),
+        api.get(`/analytics/zones?days=${days}`),
+        api.get(`/analytics/duration?days=${days}`),
+        api.get(`/analytics/financial?days=${days}`),
       ]);
-      setRevenue(revRes.data);
-      setTrends(trendRes.data);
-      setCategories(catRes.data);
-      setTopBikes(bikeRes.data);
-      setCustomers(custRes.data);
+
+      if (revRes.status === 'fulfilled') setRevenue(revRes.value.data);
+      if (trendRes.status === 'fulfilled') setTrends(trendRes.value.data);
+      if (catRes.status === 'fulfilled') setCategories(catRes.value.data);
+      if (bikeRes.status === 'fulfilled') setTopBikes(bikeRes.value.data);
+      if (custRes.status === 'fulfilled') setCustomers(custRes.value.data);
+      if (zoneRes.status === 'fulfilled') setZones(zoneRes.value.data);
+      if (durRes.status === 'fulfilled') setDuration(durRes.value.data);
+      if (finRes.status === 'fulfilled') setFinancial(finRes.value.data);
     } catch (err) {
       console.error('Analytics fetch error:', err);
     } finally {
@@ -48,7 +60,7 @@ const AnalyticsDashboard = () => {
 
   const handleExport = async () => {
     try {
-      const { data } = await axios.get(`${API}/analytics/export?days=${days}`, { responseType: 'blob' });
+      const { data } = await api.get(`/analytics/export?days=${days}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');
       link.href = url;
@@ -78,15 +90,25 @@ const AnalyticsDashboard = () => {
               aria-label="Select time period"
             >
               <option value={7}>Last 7 days</option>
+              <option value={14}>Last 14 days</option>
               <option value={30}>Last 30 days</option>
               <option value={90}>Last 90 days</option>
               <option value={365}>Last year</option>
             </select>
             <button
+              onClick={fetchAll}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-base)' }}
+              aria-label="Refresh data"
+            >
+              <RefreshCw size={14} />
+            </button>
+            <button
               onClick={handleExport}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
               style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
-             aria-label="Export data">
+              aria-label="Export data"
+            >
               <Download size={16} />
               Export
             </button>
@@ -98,7 +120,7 @@ const AnalyticsDashboard = () => {
         ) : (
           <>
             {revenue && (
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Revenue</p>
                   <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue?.totalRevenue?.toLocaleString() || 0} TK</p>
@@ -115,9 +137,9 @@ const AnalyticsDashboard = () => {
                   <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue?.avgRevenuePerDay?.toLocaleString() || 0} TK</p>
                 </div>
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Period</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Avg Rental Duration</p>
                   <p className="text-xl font-bold mt-1 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                    <Calendar size={18} /> {days} days
+                    <Calendar size={18} /> {duration?.avgHours || 0}h
                   </p>
                 </div>
               </div>
@@ -131,6 +153,16 @@ const AnalyticsDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {categories && <CategoryPerformance data={categories} />}
               {topBikes && <TopBikes data={topBikes} />}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {zones && zones.length > 0 && <ZoneAnalytics data={zones} />}
+              {duration && <RentalDurationChart data={duration} />}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {trends && <HourlyDistribution data={trends} />}
+              {financial && <FinancialSummary data={financial} />}
             </div>
 
             {customers && <CustomerInsights data={customers} />}
