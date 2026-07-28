@@ -28,7 +28,7 @@ cd frontend && npm run build       # prod build
 docker-compose up --build          # Docker (backend + mongo)
 ```
 
-Test suites: Vitest. Backend 125 tests, frontend 26 tests (151 total). Run with `npx vitest run` in either package.
+Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with `npx vitest run` in either package.
 
 ## Architecture
 
@@ -83,6 +83,13 @@ Test suites: Vitest. Backend 125 tests, frontend 26 tests (151 total). Run with 
 | `/api/admin/system-health` | `routes/systemHealth.js` | admin |
 | `/api/admin/reports` | `routes/reports.js` | admin (generate reports) |
 | `/api/dashboard/branding` | `routes/dashboard.js` | public (GET), admin (PUT) |
+| `/api/disputes` | `routes/dispute.js` | auth (create/my), admin (all/resolve/stats) |
+| `GET /api/financial/renter/earnings` | `routes/financial.js` | renter (aggregated earnings) |
+| `GET /api/admin/logs` | `routes/logs.js` | admin (tail server.log / server-error.log) |
+| `GET /api/admin/cache` | `routes/cache.js` | admin (cache stats + keys) |
+| `DELETE /api/admin/cache` | `routes/cache.js` | admin (flush all) |
+| `DELETE /api/admin/cache/key/:key` | `routes/cache.js` | admin (delete single key) |
+| `GET /api/admin/rate-limits` | `routes/rateLimit.js` | admin (limiter configs) |
 | `/api/{*splat}` | catch-all | 404 |
 
 ### Models (20+)
@@ -124,6 +131,7 @@ Test suites: Vitest. Backend 125 tests, frontend 26 tests (151 total). Run with 
 | ContactMessage | contact form inbox with status workflow |
 | EmailCampaign | email campaigns with audience targeting |
 | AdminNotification | admin alerts with severity and read tracking |
+| Dispute | reason enum, status workflow (open→under_review→resolved→dismissed) |
 
 ### Frontend Components
 | Component | Location | Purpose |
@@ -137,6 +145,10 @@ Test suites: Vitest. Backend 125 tests, frontend 26 tests (151 total). Run with 
 | CampaignManager | `components/admin/` | Email campaign management |
 | SystemHealthTab | `components/admin/` | Server/DB health dashboard |
 | ReportsTab | `components/admin/` | CSV/JSON report generation |
+| CommandCenter | `components/admin/` | Quick actions, system status, platform overview (default tab) |
+| LogsViewer | `components/admin/` | App/error log viewer with search, expand, export |
+| CacheManager | `components/admin/` | In-memory cache stats, key browser, flush/delete |
+| RateLimitManager | `components/admin/` | Rate limiter config cards with severity badges |
 | AdminNotificationBell | `components/admin/` | Navbar notification dropdown |
 | RenterEarnings | `components/` | Renter earnings dashboard |
 | ZoneMap | `components/` | Leaflet map with zones |
@@ -193,10 +205,12 @@ express.urlencoded({ extended: true, limit: '1mb' })
 ### Rate limiters
 | Limiter | Window | Max |
 |---------|--------|-----|
-| auth | 15 min | 20 |
-| booking | 15 min | 20 |
-| payment | 15 min | 10 |
-| financial | 15 min | 20 |
+| auth | 15 min | 5 |
+| booking | 15 min | 30 |
+| payment | 15 min | 20 |
+| financial | 15 min | 60 |
+| upload | 60 min | 10 |
+| global | 1 min | 100 |
 | search | 1 min | 30 |
 | dashboard | 1 min | 60 |
 | fleet | 1 min | 40 |
@@ -208,7 +222,7 @@ express.urlencoded({ extended: true, limit: '1mb' })
 `middleware/uploadMiddleware.js` — multer → Cloudinary (if credentials configured) or memory storage fallback. Max 5MB, JPG/JPEG/PNG only. Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`. File size/type errors return 400.
 
 ### Settings
-Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whitelist-only update: `basePricePerHour` + `packages`.
+Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whitelist-only update: `basePricePerHour`, `packages`, `businessRules` (booking rules, payment rules, cancellation rules, fines).
 
 ### Taxonomy
 `Category` model managed by Admin. Defaults in `dashboardController.js`: Bike, Car, Jeep. Bikes reference categories via ObjectId. Deletion blocked while bikes reference the category.
@@ -219,6 +233,8 @@ Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whi
 | `node scripts/seedAdmin.js` | admin@rentbikecox.com / admin123 | Uses `path: '../.env'` — must run from `backend/` |
 | `node seed.js` | Same admin | Simpler script |
 | `node seedDemo.js` | renter + user + categories + 10 demo bikes | Runs `process.exit()` when done |
+| `node scripts/seedSettings.js` | Full settings with business rules + branding | Run once after deployment |
+| `node scripts/seedContent.js` | Default site content pages | Run once after deployment |
 | `GET /api/seed-temp` | All three users + categories + bikes | Dev only, guarded by `NODE_ENV !== 'production'` |
 
 ### Error handler
@@ -235,6 +251,12 @@ Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whi
 | autoHeal | 30min | DB ping, stuck bookings, memory monitoring |
 | cleanupScheduler | 1h | Old notifications, archived messages cleanup |
 | scheduledMaintenance | 6h | Expired announcements/coupons deactivation |
+
+Additional job scripts (not on interval — manually triggered):
+| Script | Purpose |
+|--------|---------|
+| `utils/templateRenderer.js` | Renders notification templates with variables |
+| `jobs/emailCampaignSender.js` | Sends scheduled email campaigns |
 
 All jobs respect `DISABLE_JOBS=true` env var and have MongoDB connection guards (`mongoose.connection.readyState !== 1`).
 
@@ -264,8 +286,11 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - `/login` — Login
 - `/signup` — Signup
 - `/forgot-password` — Forgot password (OTP flow)
-- `/renter-dashboard` — Renter (roles: Renter, Admin)
-- `/admin-dashboard` — Admin only (19 tabs: Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Zones, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Reports)
+- `/profile` — Profile (avatar upload, bio, emergency contact, memberSince badge)
+- `/my-bookings` — My Bookings (search, status filter, sort, pagination, cancel with reason)
+- `/renter-dashboard` — Renter (roles: Renter, Admin; stats cards: total/available/maintenance/zones)
+- `/my-disputes` — My Disputes (create dispute, expand/collapse, status filter, pagination)
+- `/admin-dashboard` — Admin only (22 tabs: Command Center, Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Zones, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Logs, Cache, Rate Limits, Reports)
 - `/admin/notifications` — Admin notifications full page (Admin only)
 - `/fleet` — Fleet dashboard (roles: Renter, Admin)
 - `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, zones, duration, financial, hourly, customers)
@@ -331,4 +356,4 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - **`context` hooks** — must be in separate files from providers (ESLint enforced)
 
 ## Business rules
-See `RULES.md` for full pricing, fine policies, and operational constraints. Base: 200 TK/hr minimum. Tier-based pricing per vehicle. Seasonal rates. 30-minute buffer between bookings. 10-minute start time minimum. 5-minute checkout timeout. Advance: 50% ≤24h, 30% >24h. Cancellation: 24h+ full refund, 12-24h 50%, <12h none, no-show none.
+See `RULES.md` for full pricing, fine policies, and operational constraints. Base: 200 TK/hr minimum. Tier-based pricing per vehicle. Seasonal rates. 30-minute buffer between bookings. 10-minute start time minimum. 5-minute checkout timeout. Advance: 50% ≤24h, 30% >24h. Cancellation: 24h+ full refund, 12-24h 50%, <12h none, no-show none. Business rules editable live via Settings model (businessRules JSON in admin Settings tab).
