@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin, Heart, GitCompareArrows } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
@@ -29,6 +29,7 @@ const BikeDetails = () => {
   const [reviewPages, setReviewPages] = useState(1);
   const [reviewSort, setReviewSort] = useState('newest');
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [recommended, setRecommended] = useState([]);
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
@@ -79,6 +80,18 @@ const BikeDetails = () => {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchBike(); }, [fetchBike]);
+
+  useEffect(() => {
+    if (!bike) return;
+    const params = {};
+    if (bike.category?._id) params.category = bike.category._id;
+    api.get('/dashboard/bikes/available', { params })
+      .then(res => {
+        const recs = res.data.filter(b => b._id !== bike._id).slice(0, 3);
+        setRecommended(recs);
+      })
+      .catch(() => {});
+  }, [bike]);
 
   const handleBooking = (hoursOverride) => {
     if (!token) { navigate('/login'); return; }
@@ -359,6 +372,40 @@ const BikeDetails = () => {
           />
         )}
       </div>
+
+      {/* You Might Also Like */}
+      {recommended.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
+          <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+            You Might Also Like
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {recommended.map(rec => (
+              <Link key={rec._id} to={`/bike/${rec._id}`}
+                className="glass rounded-2xl overflow-hidden card-hover group block" style={{ border: '1px solid var(--border-base)' }}>
+                <div className="relative overflow-hidden">
+                  <img src={rec.images?.[0] || 'https://placehold.co/400x300/1a1a2e/666?text=No+Image'} alt={rec.model}
+                    className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                  <div className="absolute top-3 right-3">
+                    <span className="px-3 py-1 gradient-primary rounded-lg text-xs font-bold text-white shadow-lg">
+                      {rec.pricePerHour} TK/hr
+                    </span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{rec.model}</h3>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{rec.brand} • {rec.category?.name || 'Vehicle'}</p>
+                  {rec.zone && (
+                    <div className="flex items-center gap-1 mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <MapPin size={10} /> {rec.zone.name}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

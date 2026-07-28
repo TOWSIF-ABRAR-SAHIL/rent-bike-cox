@@ -35,6 +35,8 @@ const Home = () => {
   const [slowNetwork, setSlowNetwork] = useState(false);
   const [zones, setZones] = useState([]);
   const [activeZone, setActiveZone] = useState('');
+  const [heroSlide, setHeroSlide] = useState(0);
+  const [bikeRatings, setBikeRatings] = useState({});
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
@@ -78,6 +80,27 @@ const Home = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchBikes(); }, [fetchBikes]);
 
+  useEffect(() => {
+    if (bikes.length === 0) return;
+    const interval = setInterval(() => {
+      setHeroSlide(prev => (prev + 1) % Math.min(bikes.length, 5));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [bikes.length]);
+
+  useEffect(() => {
+    if (bikes.length === 0) return;
+    bikes.forEach(bike => {
+      api.get(`/reviews/${bike._id}?limit=1`)
+        .then(res => {
+          if (res.data?.stats) {
+            setBikeRatings(prev => ({ ...prev, [bike._id]: res.data.stats }));
+          }
+        })
+        .catch(() => {});
+    });
+  }, [bikes]);
+
   const handleCategoryClick = (slug) => {
     setActiveCategory(prev => prev === slug ? '' : slug);
   };
@@ -119,31 +142,46 @@ const Home = () => {
         </div>
       )}
       {/* Hero */}
-      <section className="gradient-hero relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/15 rounded-full blur-[100px] animate-float" />
-          <div className="absolute bottom-10 right-20 w-96 h-96 bg-orange-500/10 rounded-full blur-[120px] animate-float hidden sm:block" style={{ animationDelay: '2s' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] animate-float" style={{ animationDelay: '4s' }} />
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 relative">
+      <section className="gradient-hero relative overflow-hidden min-h-[500px] sm:min-h-[560px]">
+        {/* Background Images */}
+        {bikes.length > 0 && (
+          <div className="absolute inset-0">
+            {bikes.slice(0, 5).map((bike, i) => (
+              <div key={bike._id} className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: heroSlide === i ? 1 : 0 }}>
+                <img
+                  src={bike.images?.[0] || ''}
+                  alt={bike.model}
+                  className="w-full h-full object-cover"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+              </div>
+            ))}
+            {/* Fallback gradient if no images loaded */}
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(0,0,0,0.8) 50%, rgba(139,92,246,0.1) 100%)' }} />
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 relative z-10">
           <div className="max-w-2xl animate-fade-in">
             <div className="inline-flex items-center px-4 py-1.5 rounded-full glass text-xs font-medium mb-6" style={{ color: 'var(--pill-text)', borderColor: 'var(--pill-border)' }}>
               <MapPin size={12} className="mr-1.5" /> Cox's Bazar, Bangladesh
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6" style={{ color: 'var(--hero-text)' }}>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight mb-6 text-white">
               Explore Cox's Bazar on{' '}
               <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Two Wheels</span>
             </h1>
-            <p className="text-lg mb-8 max-w-lg leading-relaxed" style={{ color: 'var(--hero-sub)' }}>
+            <p className="text-lg mb-8 max-w-lg leading-relaxed text-white/80">
               Rent bikes, cars & beach jeeps at the world's longest beach. Best prices, verified vehicles, secure online payment.
             </p>
             <div className="flex flex-wrap gap-3 mb-8">
-              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm" style={{ color: 'var(--pill-text)' }}>
-                <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} />
+              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm text-white/90">
+                <Clock size={16} className="mr-2 text-amber-400" />
                 Starting from 200 TK/hr
               </div>
-              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm" style={{ color: 'var(--pill-text)' }}>
-                <MapPin size={16} className="mr-2" style={{ color: 'var(--success-text)' }} />
+              <div className="flex items-center px-4 py-2.5 rounded-xl glass text-sm text-white/90">
+                <MapPin size={16} className="mr-2 text-green-400" />
                 {bikes.length} vehicles available
               </div>
             </div>
@@ -151,7 +189,7 @@ const Home = () => {
               <a href="#vehicles" className="btn-primary !px-8 !py-3.5 text-sm">
                 Browse Vehicles
               </a>
-              <Link to="/policies" className="btn-ghost !px-8 !py-3.5 text-sm">
+              <Link to="/policies" className="btn-ghost !px-8 !py-3.5 text-sm !border-white/30 !text-white/90 hover:!bg-white/10">
                 Learn More
               </Link>
             </div>
@@ -159,6 +197,42 @@ const Home = () => {
               <CurrentSeasonalInfo />
             </div>
           </div>
+
+          {/* Carousel Controls */}
+          {bikes.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
+              <button onClick={() => setHeroSlide(prev => prev === 0 ? Math.min(bikes.length, 5) - 1 : prev - 1)}
+                className="w-9 h-9 glass rounded-full flex items-center justify-center text-white/80 hover:text-white transition-all"
+                aria-label="Previous slide">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div className="flex gap-2">
+                {bikes.slice(0, 5).map((_, i) => (
+                  <button key={i} onClick={() => setHeroSlide(i)}
+                    className={`w-2 h-2 rounded-full transition-all ${heroSlide === i ? 'bg-amber-400 w-6' : 'bg-white/40 hover:bg-white/60'}`}
+                    aria-label={`Go to slide ${i + 1}`} />
+                ))}
+              </div>
+              <button onClick={() => setHeroSlide(prev => (prev + 1) % Math.min(bikes.length, 5))}
+                className="w-9 h-9 glass rounded-full flex items-center justify-center text-white/80 hover:text-white transition-all"
+                aria-label="Next slide">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          )}
+
+          {/* Featured Vehicle Label */}
+          {bikes.length > 0 && bikes[heroSlide] && (
+            <div className="absolute bottom-8 right-8 hidden lg:block z-20">
+              <div className="glass rounded-xl px-4 py-2 flex items-center gap-3">
+                <img src={bikes[heroSlide].images?.[0] || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                <div>
+                  <p className="text-xs font-medium text-white">{bikes[heroSlide].model}</p>
+                  <p className="text-xs text-amber-400 font-bold">{bikes[heroSlide].pricePerHour} TK/hr</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -382,7 +456,19 @@ const Home = () => {
                 </div>
                 <div className="p-5">
                   <h2 className="text-lg font-bold mb-1 truncate transition-colors" style={{ color: 'var(--card-title)' }}>{bike.model}</h2>
-                  <p className="text-sm mb-4" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
+                  <p className="text-sm" style={{ color: 'var(--card-sub)' }}>{bike.brand}</p>
+                  {bikeRatings[bike._id] && (
+                    <div className="flex items-center gap-1.5 mt-1.5 mb-3">
+                      <div className="flex items-center">
+                        {[1,2,3,4,5].map(star => (
+                          <Star key={star} size={12} fill={star <= Math.round(bikeRatings[bike._id].average) ? '#f59e0b' : 'none'} color={star <= Math.round(bikeRatings[bike._id].average) ? '#f59e0b' : 'var(--text-muted)'} />
+                        ))}
+                      </div>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {bikeRatings[bike._id].average?.toFixed(1)} ({bikeRatings[bike._id].count})
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-semibold transition-all group-hover:border-amber-500/50 group-hover:text-amber-400"
                     style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}
                   >
