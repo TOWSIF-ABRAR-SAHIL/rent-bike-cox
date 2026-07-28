@@ -12,6 +12,7 @@ const securityConfig = require('../security/config/securityConfig');
 const { logSecurityEvent } = require('../utils/securityLogger');
 const logger = require('../utils/logger');
 const notificationService = require('../services/NotificationService');
+const adminNotify = require('../services/AdminNotificationService');
 
 const MAX_ATTEMPTS = securityConfig.lockout.maxAttempts;
 const LOCK_DURATION = securityConfig.lockout.lockDuration;
@@ -90,6 +91,7 @@ exports.register = async (req, res) => {
     await storeRefreshToken(refreshToken, user._id, familyId, req);
 
     try { await notificationService.notifyWelcome(user); } catch { /* non-blocking */ }
+    try { await adminNotify.notifyNewUser({ _id: user._id, name: cleanName, email, role: user.role }); } catch { /* non-blocking */ }
 
     res.status(201).json({
       accessToken,

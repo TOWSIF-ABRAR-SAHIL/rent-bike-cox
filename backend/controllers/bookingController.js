@@ -15,6 +15,7 @@ const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
 
 const notificationService = require('../services/NotificationService');
+const adminNotify = require('../services/AdminNotificationService');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -137,6 +138,13 @@ exports.createBooking = async (req, res) => {
     } catch (nErr) {
       logger.warn('Booking notification failed (non-blocking)', { error: nErr.message });
     }
+
+    try {
+      await adminNotify.notifyNewBooking(
+        { _id: lockResult.booking._id, bike: { model: `${bike.brand} ${bike.model}` }, totalPrice: pricing.totalPrice },
+        { name: userDoc.name }
+      );
+    } catch { /* non-blocking */ }
   } catch (error) {
     logger.error('createBooking error', { tag: 'Booking', message: error.message, stack: error.stack });
     res.status(500).json({ message: 'Booking creation failed' });

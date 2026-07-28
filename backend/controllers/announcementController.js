@@ -2,6 +2,28 @@ const Announcement = require('../models/Announcement');
 const { sanitize } = require('../utils/sanitize');
 const logger = require('../utils/logger');
 
+let announcementsSeeded = false;
+exports.seedAnnouncements = async () => {
+  if (announcementsSeeded) return;
+  const count = await Announcement.countDocuments();
+  if (count === 0) {
+    await Announcement.create({
+      title: 'Welcome to Rent Bike Cox\'s Bazar',
+      message: 'Explore Cox\'s Bazar on two wheels! Browse our collection of bikes, cars, and jeeps.',
+      type: 'banner',
+      position: 'top',
+      pages: ['all'],
+      audience: 'all',
+      isActive: false,
+      isDismissible: true,
+      bgColor: '#f59e0b',
+      textColor: '#000000',
+      priority: 10
+    });
+  }
+  announcementsSeeded = true;
+};
+
 exports.getActive = async (req, res) => {
   try {
     const { page } = req.query;

@@ -42,6 +42,10 @@ const notificationTemplateRoutes = require('./routes/notificationTemplates');
 const announcementRoutes = require('./routes/announcements');
 const faqRoutes = require('./routes/faqs');
 const contactRoutes = require('./routes/contact');
+const adminNotificationRoutes = require('./routes/adminNotifications');
+const campaignRoutes = require('./routes/campaigns');
+const systemHealthRoutes = require('./routes/systemHealth');
+const reportRoutes = require('./routes/reports');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
@@ -384,6 +388,10 @@ app.use('/api/admin/notification-templates', notificationTemplateRoutes);
 app.use('/api', announcementRoutes);
 app.use('/api', faqRoutes);
 app.use('/api', contactRoutes);
+app.use('/api', adminNotificationRoutes);
+app.use('/api', campaignRoutes);
+app.use('/api', systemHealthRoutes);
+app.use('/api', reportRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', notFoundHandler);
@@ -394,7 +402,18 @@ app.use(errorHandler);
 // MongoDB Connection
 const logger = require('./utils/logger');
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentbike')
-  .then(() => logger.info('Connected to MongoDB'))
+  .then(async () => {
+    logger.info('Connected to MongoDB');
+    // Seed default data on first boot (idempotent)
+    try {
+      await require('./controllers/notificationTemplateController').seedTemplates();
+      await require('./controllers/faqController').seedFaqs();
+      await require('./controllers/announcementController').seedAnnouncements();
+      logger.info('Default data seeded');
+    } catch (seedErr) {
+      logger.warn('Seed skipped (non-blocking)', { error: seedErr.message });
+    }
+  })
   .catch(err => logger.error('MongoDB connection error', { error: err.message }));
 
 const gracefulShutdown = require('./utils/gracefulShutdown');

@@ -14,6 +14,7 @@ const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
 
 const notificationService = require('../services/NotificationService');
+const adminNotify = require('../services/AdminNotificationService');
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASS || process.env.SSLCOMMERZ_STORE_PASSWORD;
@@ -278,6 +279,10 @@ exports.paymentSuccess = async (req, res) => {
     } catch (nErr) {
       logger.warn('Payment notification failed (non-blocking)', { error: nErr.message });
     }
+
+    try {
+      await adminNotify.notifyPaymentSuccess({ _id: booking._id, invoiceNumber: booking.invoiceNumber, totalPrice: booking.totalPrice });
+    } catch { /* non-blocking */ }
 
     return res.redirect(`${frontendUrl}/invoice/${bookingId}`);
   } catch (error) {
