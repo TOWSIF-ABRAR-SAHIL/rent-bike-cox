@@ -22,7 +22,9 @@ const {
   updateCategory,
   deleteCategory,
   deleteBike,
-  updateBike
+  updateBike,
+  getBranding,
+  updateBranding
 } = require('../controllers/dashboardController');
 
 const { createBikeRules, paginationRules } = require('../security/validators/index');
@@ -335,6 +337,10 @@ router.delete('/admin/bikes/:id', auth, authorize('Admin'), deleteBike);
  *         description: Admin access required
  */
 router.put('/admin/settings', auth, authorize('Admin'), updateGlobalSettings);
+
+// Branding routes
+router.get('/branding', getBranding);
+router.put('/admin/branding', auth, authorize('Admin'), updateBranding);
 
 /**
  * @swagger

@@ -451,3 +451,52 @@ exports.toggleBikeAvailability = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// --- Branding ---
+
+exports.getBranding = async (req, res) => {
+  try {
+    const cached = defaultCache.get('branding');
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.json(cached);
+    }
+    let settings = await Settings.findOne().lean();
+    if (!settings) settings = await Settings.create(defaultSettings);
+    const branding = settings.branding || {};
+    defaultCache.set('branding', branding, 300000);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(branding);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.updateBranding = async (req, res) => {
+  try {
+    if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
+    const allowedFields = [
+      'logoUrl', 'logoDarkUrl', 'faviconUrl', 'primaryColor', 'secondaryColor',
+      'accentColor', 'heroImageUrl', 'businessName', 'businessTagline',
+      'businessAddress', 'contactNumbers', 'contactEmail', 'socialLinks', 'metaTags'
+    ];
+    const brandingUpdate = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        brandingUpdate[`branding.${field}`] = req.body[field];
+      }
+    }
+    if (Object.keys(brandingUpdate).length === 0) {
+      return res.status(400).json({ message: 'No valid branding fields provided' });
+    }
+    let settings = await Settings.findOne();
+    if (!settings) settings = await Settings.create(defaultSettings);
+    Object.assign(settings, brandingUpdate);
+    await settings.save();
+    defaultCache.del('branding');
+    res.json(settings.branding);
+  } catch (error) {
+    logger.error('updateBranding error:', error.message);
+    res.status(500).json({ message: 'Failed to update branding' });
+  }
+};
