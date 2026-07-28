@@ -44,6 +44,9 @@ const Login = lazy(() => import('./components/Login'));
 const Signup = lazy(() => import('./components/Signup'));
 const CompareVehicles = lazy(() => import('./pages/CompareVehicles'));
 const WishlistPage = lazy(() => import('./pages/Wishlist'));
+const FAQPage = lazy(() => import('./pages/FAQ'));
+const ContactPage = lazy(() => import('./pages/Contact'));
+const AdminNotificationsPage = lazy(() => import('./pages/AdminNotificationsPage'));
 
 function App() {
   return (
@@ -174,6 +177,15 @@ function App() {
                       <PageErrorBoundary>
                         <ProtectedRoute roles={['User', 'Renter', 'Admin']}>
                           <WishlistPage />
+                        </ProtectedRoute>
+                      </PageErrorBoundary>
+                    } />
+                    <Route path="/faq" element={<PageErrorBoundary><FAQPage /></PageErrorBoundary>} />
+                    <Route path="/contact" element={<PageErrorBoundary><ContactPage /></PageErrorBoundary>} />
+                    <Route path="/admin/notifications" element={
+                      <PageErrorBoundary>
+                        <ProtectedRoute roles={['Admin']}>
+                          <AdminNotificationsPage />
                         </ProtectedRoute>
                       </PageErrorBoundary>
                     } />
