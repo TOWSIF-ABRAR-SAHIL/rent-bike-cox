@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin, Heart, GitCompareArrows } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin, Heart, GitCompareArrows, Expand } from 'lucide-react';
+import Lightbox from '../components/Lightbox';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
 import { useCompare } from '../context/useCompare';
@@ -19,6 +20,8 @@ const BikeDetails = () => {
   const [bike, setBike] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [selectedTierHours, setSelectedTierHours] = useState(null);
   const [fetchError, setFetchError] = useState('');
   const [availabilityStatus, setAvailabilityStatus] = useState(null);
@@ -141,6 +144,11 @@ const BikeDetails = () => {
         <div className="space-y-3">
           <div className="rounded-2xl overflow-hidden glass aspect-[4/3] relative group">
             <img src={bike.images?.[selectedImage] || 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'} alt={bike.model} className="w-full h-full object-cover transition-transform duration-300" onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }} />
+            <button onClick={() => { setLightboxIndex(selectedImage); setLightboxOpen(true); }}
+              className="absolute top-3 right-3 w-10 h-10 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
+              style={{ color: 'white' }} aria-label="Open fullscreen gallery">
+              <Expand size={18} />
+            </button>
             {bike.images?.length > 1 && (
               <>
                 <button onClick={() => setSelectedImage(prev => prev === 0 ? bike.images.length - 1 : prev - 1)}
@@ -405,6 +413,10 @@ const BikeDetails = () => {
             ))}
           </div>
         </div>
+      )}
+
+      {lightboxOpen && bike.images?.length > 0 && (
+        <Lightbox images={bike.images} initialIndex={lightboxIndex} onClose={() => setLightboxOpen(false)} />
       )}
     </div>
   );

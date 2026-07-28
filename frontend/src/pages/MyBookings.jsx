@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Clock, MapPin, Loader2, AlertTriangle, Plus, Download, Trash2 } from 'lucide-react';
+import { Clock, MapPin, Loader2, AlertTriangle, Plus, Download, Trash2, RotateCcw } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -194,6 +194,16 @@ const MyBookings = () => {
                       style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }} aria-label="Cancel booking">
                       <AlertTriangle size={14} className="mr-1" /> Cancel Booking
                     </button>
+                  </div>
+                )}
+
+                {booking.status === 'Completed' && booking.bike?._id && (
+                  <div className="pt-3 border-t" style={{ borderColor: 'var(--border-base)' }}>
+                    <Link to={`/bike/${booking.bike._id}`}
+                      className="flex items-center gap-1.5 px-4 py-2.5 min-h-10 rounded-xl text-xs font-medium transition-all"
+                      style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}>
+                      <RotateCcw size={14} /> Rebook This Vehicle
+                    </Link>
                   </div>
                 )}
 

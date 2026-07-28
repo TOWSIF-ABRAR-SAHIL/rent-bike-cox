@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Navigation, Star, Heart, GitCompareArrows } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
@@ -513,6 +513,57 @@ const Home = () => {
               <div className="text-4xl sm:text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-3">{s.num}</div>
               <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--section-title)' }}>{s.title}</h3>
               <p className="text-sm" style={{ color: 'var(--section-sub)' }}>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t" style={{ borderColor: 'var(--divider)' }}>
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>What Riders Say</h2>
+          <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">Real experiences from our customers in Cox's Bazar</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            {
+              name: 'Rahim Uddin',
+              role: 'Tourist from Dhaka',
+              text: 'Rented a bike for 3 days. The booking process was super easy and the bike was in great condition. Highly recommend for exploring Cox\'s Bazar!',
+              rating: 5,
+              vehicle: 'TVS Scooty',
+            },
+            {
+              name: 'Fatima Ahmed',
+              role: 'Local Resident',
+              text: 'Best rental service in Cox\'s Bazar. Affordable prices and the online payment was seamless. Will definitely use again.',
+              rating: 5,
+              vehicle: 'Honda CB Shine',
+            },
+            {
+              name: 'Kamal Hossain',
+              role: 'Adventure Seeker',
+              text: 'Took a jeep to Himchari. Amazing experience! The vehicle was well-maintained and the pickup was right on time.',
+              rating: 4,
+              vehicle: 'Mahindra Thar',
+            },
+          ].map((t, i) => (
+            <div key={i} className="glass rounded-2xl p-6 card-hover animate-slide-up" style={{ animationDelay: `${i * 0.1}s`, border: '1px solid var(--border-base)' }}>
+              <div className="flex items-center gap-1 mb-3">
+                {[1,2,3,4,5].map(s => (
+                  <span key={s} style={{ color: s <= t.rating ? '#f59e0b' : 'var(--text-muted)', fontSize: '14px' }}>★</span>
+                ))}
+              </div>
+              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>"{t.text}"</p>
+              <div className="flex items-center gap-3 pt-3" style={{ borderTop: '1px solid var(--border-base)' }}>
+                <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold">
+                  {t.name.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t.name}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t.role} • {t.vehicle}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
