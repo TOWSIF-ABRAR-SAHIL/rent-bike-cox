@@ -40,8 +40,13 @@ exports.getActiveZones = async (req, res) => {
   }
 };
 
+const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
 exports.getZoneById = async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid zone ID' });
+    }
     const zone = await Zone.findById(req.params.id);
     if (!zone) return res.status(404).json({ message: 'Zone not found' });
     res.json(zone);
