@@ -1,5 +1,16 @@
 const PDFDocument = require('pdfkit');
 
+const MAX_ROW_HEIGHT = 42;
+const MIN_ROW_HEIGHT = 18;
+const CHAR_W = 4.5;
+
+function truncateText(text, maxWidth) {
+  const s = String(text ?? '');
+  const avgChars = Math.floor(maxWidth / CHAR_W);
+  if (s.length <= avgChars) return s;
+  return s.slice(0, Math.max(avgChars - 2, 1)) + '…';
+}
+
 function generatePDF({ title, subtitle, headers, rows, dateRange, generatedBy }) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -13,6 +24,7 @@ function generatePDF({ title, subtitle, headers, rows, dateRange, generatedBy })
     const headerBg = '#1a1a2e';
     const altRowColor = '#f8f6fc';
     const borderColor = '#e2dff0';
+    const baseFontSize = 8;
 
     const addHeader = () => {
       doc.fontSize(22).font('Helvetica-Bold').fillColor(headerBg)
@@ -31,14 +43,54 @@ function generatePDF({ title, subtitle, headers, rows, dateRange, generatedBy })
       );
     };
 
-    const addTableHeader = (headers, y) => {
-      doc.font('Helvetica-Bold').fontSize(8).fillColor('#ffffff');
+    const addTableHeader = (yPos) => {
       const colWidth = pageWidth / headers.length;
+      doc.font('Helvetica-Bold').fontSize(baseFontSize).fillColor('#ffffff');
       headers.forEach((h, i) => {
-        doc.rect(50 + i * colWidth, y, colWidth, 20).fill(headerBg);
-        doc.fillColor('#ffffff').text(h, 50 + i * colWidth + 4, y + 5, { width: colWidth - 8, align: i === 0 ? 'left' : 'right' });
+        doc.rect(50 + i * colWidth, yPos, colWidth, 20).fill(headerBg);
+        doc.fillColor('#ffffff').text(h, 50 + i * colWidth + 4, yPos + 5, { width: colWidth - 8, align: i === 0 ? 'left' : 'right' });
       });
-      return y + 20;
+      return yPos + 20;
+    };
+
+    const calcRowHeight = (row) => {
+      const colWidth = pageWidth / headers.length;
+      doc.font('Helvetica').fontSize(baseFontSize);
+      let maxH = MIN_ROW_HEIGHT;
+      row.forEach((cell, ci) => {
+        const w = colWidth - 8;
+        const text = String(cell ?? '');
+        const truncated = truncateText(text, w);
+        const h = doc.heightOfString(truncated, { width: w });
+        maxH = Math.max(maxH, Math.min(h + 4, MAX_ROW_HEIGHT));
+      });
+      return maxH;
+    };
+
+    const drawRow = (row, rowIndex) => {
+      const colWidth = pageWidth / headers.length;
+      const rowH = calcRowHeight(row);
+
+      if (y + rowH + 20 > doc.page.height - 50) {
+        addFooter();
+        doc.addPage();
+        addHeader();
+        y = 110;
+        y = addTableHeader(y);
+      }
+
+      const bgColor = rowIndex % 2 === 1 ? altRowColor : '#ffffff';
+      doc.rect(50, y, pageWidth, rowH).fill(bgColor);
+
+      doc.font('Helvetica').fontSize(baseFontSize).fillColor('#374151');
+      row.forEach((cell, ci) => {
+        const align = ci === 0 ? 'left' : 'right';
+        const w = colWidth - 8;
+        const text = truncateText(String(cell ?? ''), w);
+        doc.text(text, 50 + ci * colWidth + 4, y + 2, { width: w, align });
+      });
+
+      y += rowH;
     };
 
     addHeader();
@@ -60,29 +112,7 @@ function generatePDF({ title, subtitle, headers, rows, dateRange, generatedBy })
     y += 8;
 
     if (headers.length && rows.length) {
-      const colWidth = pageWidth / headers.length;
-      y = addTableHeader(headers, y);
-
-      const drawRow = (row, rowIndex) => {
-        if (y > doc.page.height - 80) {
-          addFooter();
-          doc.addPage();
-          addHeader();
-          y = 110;
-          y = addTableHeader(headers, y);
-        }
-        const bgColor = rowIndex % 2 === 1 ? altRowColor : '#ffffff';
-        doc.rect(50, y, pageWidth, 18).fill(bgColor);
-        doc.font('Helvetica').fontSize(8).fillColor('#374151');
-        row.forEach((cell, ci) => {
-          const align = ci === 0 ? 'left' : 'right';
-          doc.text(String(cell ?? ''), 50 + ci * colWidth + 4, y + 4, {
-            width: colWidth - 8, align
-          });
-        });
-        y += 18;
-      };
-
+      y = addTableHeader(y);
       rows.forEach(drawRow);
     }
 
