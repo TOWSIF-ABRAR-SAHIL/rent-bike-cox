@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, LayoutGrid, List } from 'lucide-react';
+import { LayoutGrid, List } from 'lucide-react';
 
 const conditionColors = {
   excellent: { text: 'var(--success-text)', bg: 'var(--success-bg)' },
@@ -39,11 +39,6 @@ const SearchResults = ({ bikes }) => {
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name}</span>
-                  {bike.zone && (
-                    <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <MapPin size={10} /> {bike.zone.name}
-                    </span>
-                  )}
                   <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ background: conditionColors[bike.condition]?.bg, color: conditionColors[bike.condition]?.text }}>
                     {bike.condition}
                   </span>
@@ -93,7 +88,7 @@ const SearchResults = ({ bikes }) => {
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name}</span>
                 {bike.zone && (
                   <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    <MapPin size={10} /> {bike.zone.name}
+                    {bike.zone.name}
                   </span>
                 )}
               </div>

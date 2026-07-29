@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
-import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, MapPin, DollarSign, BarChart3, CalendarCheck, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Bike as BikeIcon, ToggleLeft, ToggleRight, Loader2, X, Timer, Wrench, DollarSign, BarChart3, CalendarCheck, AlertTriangle, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -10,6 +10,7 @@ import VehicleHealthCard from '../components/VehicleHealthCard';
 import MaintenanceLogForm from '../components/MaintenanceLogForm';
 import MaintenanceHistory from '../components/MaintenanceHistory';
 import RenterEarnings from '../components/RenterEarnings';
+import LiveFleetMap from '../components/LiveFleetMap';
 
 function generateDefaultTiers(pricePerHour) {
   if (!pricePerHour || pricePerHour <= 0) return [];
@@ -109,7 +110,6 @@ const RenterDashboard = () => {
   const [bikeFiles, setBikeFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState('');
-  const [zones, setZones] = useState([]);
 
   const fetchDashboard = useCallback(() => {
     setLoading(true);
@@ -117,17 +117,15 @@ const RenterDashboard = () => {
     Promise.allSettled([
       api.get('/dashboard/my-bikes'),
       api.get('/dashboard/categories'),
-      api.get('/zones/active'),
-    ]).then(([bikesRes, catsRes, zonesRes]) => {
+    ]).then(([bikesRes, catsRes]) => {
       if (bikesRes.status === 'fulfilled') setBikes(bikesRes.value.data);
       if (catsRes.status === 'fulfilled') {
         setCategories(catsRes.value.data);
         if (catsRes.value.data.length > 0) setNewBike(prev => ({ ...prev, category: catsRes.value.data[0]._id }));
       }
-      if (zonesRes.status === 'fulfilled') setZones(zonesRes.value.data);
-      const failedCount = [bikesRes, catsRes, zonesRes].filter(r => r.status === 'rejected').length;
+      const failedCount = [bikesRes, catsRes].filter(r => r.status === 'rejected').length;
       if (failedCount > 0) {
-        addToast(`Failed to load ${failedCount} of 3 data sources`, 'error');
+        addToast(`Failed to load ${failedCount} of 2 data sources`, 'error');
       }
     }).catch(() => { addToast('Failed to fetch data', 'error'); setFetchError('Failed to load dashboard data.'); })
       .finally(() => setLoading(false));
@@ -199,6 +197,9 @@ const RenterDashboard = () => {
         <button onClick={() => setActiveTab('earnings')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'earnings' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'earnings' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to earnings tab" aria-pressed={activeTab === 'earnings'}>
           <DollarSign className="mr-2" size={16} /> Earnings
         </button>
+        <button onClick={() => setActiveTab('tracking')} className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all ${activeTab === 'tracking' ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'}`} style={activeTab === 'tracking' ? { color: 'white' } : { color: 'var(--text-secondary)' }} aria-label="Switch to tracking tab" aria-pressed={activeTab === 'tracking'}>
+          <MapPin className="mr-2" size={16} /> Tracking
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -224,13 +225,6 @@ const RenterDashboard = () => {
           </div>
           <p className="text-xl font-bold" style={{ color: 'var(--warning-text)' }}>{bikes.filter(b => b.isUnderMaintenance).length}</p>
         </div>
-        <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
-          <div className="flex items-center gap-2 mb-1">
-            <MapPin size={14} style={{ color: 'var(--info-text)' }} />
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Zones Active</p>
-          </div>
-          <p className="text-xl font-bold" style={{ color: 'var(--info-text)' }}>{new Set(bikes.filter(b => b.zone).map(b => b.zone?.name)).size}</p>
-        </div>
       </div>
 
       {activeTab === 'vehicles' && (
@@ -241,10 +235,6 @@ const RenterDashboard = () => {
               <input type="text" placeholder="Brand" className="input-dark text-sm" value={newBike.brand} onChange={e => setNewBike({...newBike, brand: e.target.value})} required aria-label="Brand" />
               <select className="input-dark text-sm" value={newBike.category} onChange={e => setNewBike({...newBike, category: e.target.value})} required aria-label="Select category">
                 {categories.map(cat => <option key={cat._id} value={cat._id} style={{ background: 'var(--bg-surface)' }}>{cat.name}</option>)}
-              </select>
-              <select className="input-dark text-sm" value={newBike.zone || ''} onChange={e => setNewBike({...newBike, zone: e.target.value || ''})} aria-label="Select zone">
-                <option value="">No Zone (optional)</option>
-                {zones.map(z => <option key={z._id} value={z._id} style={{ background: 'var(--bg-surface)' }}>{z.name}</option>)}
               </select>
               <input type="number" placeholder="Price Per Hour" className="input-dark text-sm" value={newBike.pricePerHour} onChange={e => setNewBike({...newBike, pricePerHour: Number(e.target.value) || 0})} required aria-label="Price Per Hour" />
               <textarea placeholder="Description" className="input-dark text-sm md:col-span-2 min-h-[80px] resize-none" value={newBike.description} onChange={e => setNewBike({...newBike, description: e.target.value})} required />
@@ -293,7 +283,6 @@ const RenterDashboard = () => {
                     )}
                     {bike.zone && (
                       <div className="flex items-center gap-1 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                        <MapPin size={10} />
                         <span>{bike.zone.name}</span>
                       </div>
                     )}
@@ -368,6 +357,14 @@ const RenterDashboard = () => {
       )}
 
       {activeTab === 'earnings' && <RenterEarnings />}
+      {activeTab === 'tracking' && (
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Live Vehicle Tracking</h2>
+          </div>
+          <LiveFleetMap height="500px" />
+        </div>
+      )}
     </div>
   );
 };

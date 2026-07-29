@@ -1,24 +1,8 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
 const FleetFilter = ({ filters, onFilterChange }) => {
-  const [zones, setZones] = useState([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
-
-  useEffect(() => {
-    const fetchZones = async () => {
-      try {
-        const { data } = await axios.get(`${API}/zones/active`);
-        setZones(data);
-      } catch (err) {
-        console.error('Failed to fetch zones:', err);
-      }
-    };
-    fetchZones();
-  }, []);
 
   return (
     <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
@@ -74,18 +58,6 @@ const FleetFilter = ({ filters, onFilterChange }) => {
             <option value="good">Good</option>
             <option value="fair">Fair</option>
             <option value="poor">Poor</option>
-          </select>
-
-          <select
-            value={filters.zone}
-            onChange={e => onFilterChange('zone', e.target.value)}
-            className="px-3 py-2 rounded-lg text-sm outline-none"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
-            aria-label="Filter by zone"
-          >
-            {zones.map(z => (
-              <option key={z._id} value={z._id}>{z.name}</option>
-            ))}
           </select>
 
           <select

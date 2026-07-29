@@ -5,7 +5,6 @@ import BookingTrendChart from '../components/BookingTrendChart';
 import CategoryPerformance from '../components/CategoryPerformance';
 import TopBikes from '../components/TopBikes';
 import CustomerInsights from '../components/CustomerInsights';
-import ZoneAnalytics from '../components/ZoneAnalytics';
 import RentalDurationChart from '../components/RentalDurationChart';
 import FinancialSummary from '../components/FinancialSummary';
 import HourlyDistribution from '../components/HourlyDistribution';
@@ -19,7 +18,6 @@ const AnalyticsDashboard = () => {
   const [categories, setCategories] = useState(null);
   const [topBikes, setTopBikes] = useState(null);
   const [customers, setCustomers] = useState(null);
-  const [zones, setZones] = useState(null);
   const [duration, setDuration] = useState(null);
   const [financial, setFinancial] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -27,13 +25,12 @@ const AnalyticsDashboard = () => {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [revRes, trendRes, catRes, bikeRes, custRes, zoneRes, durRes, finRes] = await Promise.allSettled([
+      const [revRes, trendRes, catRes, bikeRes, custRes, durRes, finRes] = await Promise.allSettled([
         api.get(`/analytics/revenue?days=${days}`),
         api.get(`/analytics/bookings?days=${days}`),
         api.get(`/analytics/categories?days=${days}`),
         api.get(`/analytics/top-bikes?days=${days}&limit=5`),
         api.get(`/analytics/customers?days=${days}`),
-        api.get(`/analytics/zones?days=${days}`),
         api.get(`/analytics/duration?days=${days}`),
         api.get(`/analytics/financial?days=${days}`),
       ]);
@@ -43,7 +40,6 @@ const AnalyticsDashboard = () => {
       if (catRes.status === 'fulfilled') setCategories(catRes.value.data);
       if (bikeRes.status === 'fulfilled') setTopBikes(bikeRes.value.data);
       if (custRes.status === 'fulfilled') setCustomers(custRes.value.data);
-      if (zoneRes.status === 'fulfilled') setZones(zoneRes.value.data);
       if (durRes.status === 'fulfilled') setDuration(durRes.value.data);
       if (finRes.status === 'fulfilled') setFinancial(finRes.value.data);
     } catch (err) {
@@ -156,12 +152,11 @@ const AnalyticsDashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {zones && zones.length > 0 && <ZoneAnalytics data={zones} />}
               {duration && <RentalDurationChart data={duration} />}
+              {trends && <HourlyDistribution data={trends} />}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {trends && <HourlyDistribution data={trends} />}
               {financial && <FinancialSummary data={financial} />}
             </div>
 

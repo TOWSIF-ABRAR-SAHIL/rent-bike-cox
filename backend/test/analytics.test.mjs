@@ -29,10 +29,6 @@ describe('analyticsController exports', () => {
     expect(typeof analyticsController.exportAnalytics).toBe('function');
   });
 
-  it('exports getZoneAnalytics (new)', () => {
-    expect(typeof analyticsController.getZoneAnalytics).toBe('function');
-  });
-
   it('exports getRentalDuration (new)', () => {
     expect(typeof analyticsController.getRentalDuration).toBe('function');
   });

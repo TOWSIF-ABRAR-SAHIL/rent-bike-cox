@@ -34,29 +34,6 @@ exports.bulkUpdateStatus = async (req, res) => {
   }
 };
 
-exports.bulkAssignZone = async (req, res) => {
-  try {
-    const { ownerId, role } = req.user;
-    const { bikeIds, zoneId } = req.body;
-
-    if (!Array.isArray(bikeIds) || bikeIds.length === 0) {
-      return res.status(400).json({ message: 'bikeIds array is required' });
-    }
-
-    const bikeQuery = { _id: { $in: bikeIds } };
-    if (role !== 'Admin') bikeQuery.renter = ownerId;
-
-    const result = await Bike.updateMany(bikeQuery, { $set: { zone: zoneId || null } });
-
-    logger.info('Bulk zone assignment', { userId: req.user.id, bikeIds, zoneId, modified: result.modifiedCount });
-
-    res.json({ message: `${result.modifiedCount} vehicles assigned to zone`, modified: result.modifiedCount });
-  } catch (error) {
-    logger.error('bulkAssignZone error', { message: error.message });
-    res.status(500).json({ message: 'Failed to assign zone' });
-  }
-};
-
 exports.bulkScheduleMaintenance = async (req, res) => {
   try {
     const { ownerId, role } = req.user;
@@ -114,17 +91,15 @@ exports.bulkExportSelected = async (req, res) => {
 
     const bikes = await Bike.find(bikeQuery)
       .populate('category', 'name')
-      .populate('zone', 'name')
       .sort('-createdAt');
 
-    const rows = [['Model', 'Brand', 'Category', 'Zone', 'Price/Hr', 'Condition', 'Status', 'Mileage', 'Next Service']];
+    const rows = [['Model', 'Brand', 'Category', 'Price/Hr', 'Condition', 'Status', 'Mileage', 'Next Service']];
 
     for (const bike of bikes) {
       rows.push([
         bike.model,
         bike.brand,
         bike.category?.name || 'N/A',
-        bike.zone?.name || 'N/A',
         bike.pricePerHour,
         bike.condition,
         bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'Active' : 'Unavailable',

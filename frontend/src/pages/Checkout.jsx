@@ -201,13 +201,14 @@ const Checkout = () => {
       setError('');
       setTimeAdjusted('');
       clearInterval(pollRef.current);
-      const res = await api.post('/booking', {
+      const body = {
         bikeId,
         startTime: new Date(effectiveStartTime),
         endTime: new Date(addHoursToDate(effectiveStartTime, hours)),
-        couponCode,
-        destination,
-      });
+      };
+      if (couponCode) body.couponCode = couponCode;
+      if (destination) body.destination = destination;
+      const res = await api.post('/booking', body);
       const booking = res.data.booking;
       if (!booking || !booking._id) {
         throw new Error('Invalid response from server — booking not created');
@@ -251,7 +252,12 @@ const Checkout = () => {
       } else if (status === 500) {
         userMsg = 'Payment gateway error, try again.';
       } else {
-        userMsg = serverMsg || 'Failed to create booking. Please try again.';
+        const errors = err.response?.data?.errors;
+        if (errors && errors.length > 0) {
+          userMsg = errors.map(e => `${e.field}: ${e.message}`).join('; ');
+        } else {
+          userMsg = serverMsg || 'Failed to create booking. Please try again.';
+        }
       }
 
       setError(userMsg);

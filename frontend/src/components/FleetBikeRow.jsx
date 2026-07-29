@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Wrench, Clock, History } from 'lucide-react';
+import { Wrench, Clock, History } from 'lucide-react';
 import PageSpinner from './PageSpinner';
 
 const VehicleHistory = lazy(() => import('../pages/VehicleHistory'));
@@ -68,7 +68,6 @@ const FleetBikeRow = ({ bike, selected, onToggle }) => {
             <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
             {bike.zone && (
               <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md" style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', border: '1px solid var(--border-base)' }}>
-                <MapPin size={10} />
                 {bike.zone.name}
               </span>
             )}

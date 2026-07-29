@@ -23,17 +23,19 @@ const bikeSchema = new mongoose.Schema({
   nextServiceMileage: { type: Number, min: 0 },
   isUnderMaintenance: { type: Boolean, default: false },
   condition: { type: String, enum: ['excellent', 'good', 'fair', 'poor'], default: 'good' },
-  zone: { type: mongoose.Schema.Types.ObjectId, ref: 'Zone', default: null },
+  currentLocation: {
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    coordinates: { type: [Number], default: [92.0100, 21.4200] },
+    updatedAt: { type: Date, default: Date.now },
+  },
 }, { timestamps: true });
 
 bikeSchema.index({ availability: 1, isVerified: 1 });
 bikeSchema.index({ renter: 1 });
 bikeSchema.index({ category: 1 });
 bikeSchema.index({ model: 'text', brand: 'text' });
-bikeSchema.index({ zone: 1 });
-
+bikeSchema.index({ 'currentLocation': '2dsphere' });
 bikeSchema.index({ category: 1, availability: 1, isVerified: 1 });
 bikeSchema.index({ renter: 1, createdAt: -1 });
-bikeSchema.index({ zone: 1, availability: 1 });
 
 module.exports = mongoose.model('Bike', bikeSchema);

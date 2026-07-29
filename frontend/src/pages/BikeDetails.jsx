@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, MapPin, Heart, GitCompareArrows, Expand } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Fuel, Users, Zap, ChevronLeft, ChevronRight, AlertTriangle, Timer, CheckCircle, Heart, GitCompareArrows, Expand } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
 import api from '../api/axios';
 import { useAuth } from '../context/useAuth';
@@ -11,7 +11,6 @@ import AvailabilityCalendar from '../components/AvailabilityCalendar';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import SeasonalBadge from '../components/SeasonalBadge';
-import ZoneMap from '../components/ZoneMap';
 
 const BikeDetails = () => {
   const { id } = useParams();
@@ -200,21 +199,6 @@ const BikeDetails = () => {
             <SeasonalBadge startTime={selectedDateRange?.start || null} />
             <h1 className="text-3xl sm:text-4xl font-bold break-words" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
             <p className="mt-1 break-words" style={{ color: 'var(--text-secondary)' }}>{bike.brand}</p>
-            {bike.zone && (
-              <div className="flex items-center gap-1 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                <MapPin size={12} />
-                <span>{bike.zone.name}</span>
-              </div>
-            )}
-            {bike.zone?.center && (
-              <div className="mt-3 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-base)' }}>
-                <ZoneMap
-                  center={[bike.zone.center.lat, bike.zone.center.lng]}
-                  zoom={14}
-                  height="200px"
-                />
-              </div>
-            )}
           </div>
 
           {/* Action Buttons Row */}
@@ -405,7 +389,7 @@ const BikeDetails = () => {
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{rec.brand} • {rec.category?.name || 'Vehicle'}</p>
                   {rec.zone && (
                     <div className="flex items-center gap-1 mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <MapPin size={10} /> {rec.zone.name}
+                      {rec.zone.name}
                     </div>
                   )}
                 </div>

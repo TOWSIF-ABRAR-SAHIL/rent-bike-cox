@@ -15,7 +15,7 @@ const FleetDashboard = () => {
   const [utilization, setUtilization] = useState(null);
   const [bikes, setBikes] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
-  const [filters, setFilters] = useState({ search: '', status: 'all', condition: 'all', zone: 'all', sort: '-createdAt' });
+  const [filters, setFilters] = useState({ search: '', status: 'all', condition: 'all', sort: '-createdAt' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedBikes, setSelectedBikes] = useState([]);
@@ -47,7 +47,6 @@ const FleetDashboard = () => {
         ...(filters.search && { search: filters.search }),
         ...(filters.status !== 'all' && { status: filters.status }),
         ...(filters.condition !== 'all' && { condition: filters.condition }),
-        ...(filters.zone !== 'all' && { zone: filters.zone }),
         ...(filters.sort && { sort: filters.sort }),
       });
       const { data } = await axios.get(`${API}/fleet/bikes?${params}`);

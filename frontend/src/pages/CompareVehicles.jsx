@@ -21,7 +21,6 @@ const CompareVehicles = () => {
     { label: 'Price', key: 'pricePerHour', format: (v) => `${v || 0} TK/hr` },
     { label: 'Category', key: 'category', format: (v) => v?.name || '—' },
     { label: 'Brand', key: 'brand', format: (v) => v || '—' },
-    { label: 'Zone', key: 'zone', format: (v) => v?.name || '—' },
     { label: 'Availability', key: 'availability', format: (v) => v !== false ? 'Available' : 'Unavailable' },
     { label: 'Maintenance', key: 'isUnderMaintenance', format: (v) => v ? 'Under Maintenance' : 'OK' },
     { label: 'Description', key: 'description', format: (v) => v || '—' },

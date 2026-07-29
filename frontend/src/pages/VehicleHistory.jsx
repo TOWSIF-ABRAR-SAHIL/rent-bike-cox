@@ -92,9 +92,6 @@ const VehicleHistory = ({ bikeId, onClose }) => {
               {bike.category && (
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category.name}</span>
               )}
-              {bike.zone && (
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.zone.name}</span>
-              )}
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.pricePerHour} TK/hr</span>
             </div>
           )}

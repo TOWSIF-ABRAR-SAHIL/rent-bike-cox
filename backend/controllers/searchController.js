@@ -1,12 +1,11 @@
 const Bike = require('../models/Bike');
 const Category = require('../models/Category');
-const Zone = require('../models/Zone');
 const logger = require('../utils/logger');
 
 exports.advancedSearch = async (req, res) => {
   try {
     const {
-      q, category, zone, minPrice, maxPrice,
+      q, category, minPrice, maxPrice,
       availability, condition, sort, page = 1, limit = 12,
     } = req.query;
 
@@ -24,10 +23,6 @@ exports.advancedSearch = async (req, res) => {
     if (category) {
       const cat = await Category.findOne({ slug: category }).lean();
       if (cat) filter.category = cat._id;
-    }
-
-    if (zone) {
-      filter.zone = zone;
     }
 
     if (minPrice || maxPrice) {
@@ -61,14 +56,12 @@ exports.advancedSearch = async (req, res) => {
     const bikes = await Bike.find(filter)
       .populate('renter', 'name')
       .populate('category', 'name slug')
-      .populate('zone', 'name color')
       .sort(sortObj)
       .skip((pageNum - 1) * limitNum)
       .limit(limitNum)
       .lean();
 
     const categories = await Category.find({ isActive: true }).sort('name').lean();
-    const zones = await Zone.find({ isActive: true }).sort('name').lean();
 
     const priceRange = await Bike.aggregate([
       { $match: { isVerified: true } },
@@ -78,7 +71,6 @@ exports.advancedSearch = async (req, res) => {
     res.json({
       bikes,
       categories,
-      zones,
       priceRange: priceRange[0] || { min: 0, max: 1000 },
       page: pageNum,
       limit: limitNum,

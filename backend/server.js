@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server: SocketIOServer } = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -25,7 +27,6 @@ const fraudRoutes = require('./routes/fraud');
 const payoutRoutes = require('./routes/payout');
 const maintenanceRoutes = require('./routes/maintenance');
 const availabilityRoutes = require('./routes/availability');
-const zoneRoutes = require('./routes/zone');
 const fleetRoutes = require('./routes/fleet');
 const bulkRoutes = require('./routes/bulk');
 const vehicleHistoryRoutes = require('./routes/vehicleHistory');
@@ -50,6 +51,8 @@ const disputeRoutes = require('./routes/dispute');
 const logRoutes = require('./routes/logs');
 const cacheRoutes = require('./routes/cache');
 const rateLimitRoutes = require('./routes/rateLimit');
+const trackingRoutes = require('./routes/tracking');
+const { setIO } = require('./controllers/trackingController');
 const { registerLimiter } = require('./controllers/rateLimitController');
 const { getMetrics } = require('./utils/metrics');
 const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
@@ -142,6 +145,24 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Socket.IO
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+  },
+});
+
+io.on('connection', (socket) => {
+  logger.info('Socket.IO client connected', { id: socket.id });
+  socket.on('disconnect', () => {
+    logger.info('Socket.IO client disconnected', { id: socket.id });
+  });
+});
+
+setIO(io);
 
 // Swagger API Documentation
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -389,7 +410,6 @@ app.use('/api/fraud', fraudRoutes);
 app.use('/api/payouts', payoutRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/availability', availabilityRoutes);
-app.use('/api/zones', zoneRoutes);
 app.use('/api/fleet', fleetRoutes);
 app.use('/api/bulk', bulkRoutes);
 app.use('/api/vehicle-history', vehicleHistoryRoutes);
@@ -414,6 +434,7 @@ app.use('/api/disputes', disputeRoutes);
 app.use('/api', logRoutes);
 app.use('/api', cacheRoutes);
 app.use('/api', rateLimitRoutes);
+app.use('/api/tracking', trackingRoutes);
 
 // 404 handler
 app.use('/api/{*splat}', notFoundHandler);
@@ -443,7 +464,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rentbike'
 const gracefulShutdown = require('./utils/gracefulShutdown');
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`, { env: process.env.NODE_ENV });
   startCleanupScheduler();
   startExpiredIntentCleanup();

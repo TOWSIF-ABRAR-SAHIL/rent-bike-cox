@@ -1,15 +1,11 @@
 import { memo } from 'react';
 import { X, SlidersHorizontal, ArrowUpDown, DollarSign } from 'lucide-react';
 
-const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange, onClear }) => {
+const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClear }) => {
   const activeFilters = [];
   if (filters.category) {
     const cat = categories.find(c => c.slug === filters.category);
     activeFilters.push({ key: 'category', label: cat?.name || filters.category });
-  }
-  if (filters.zone) {
-    const zone = zones.find(z => z._id === filters.zone);
-    activeFilters.push({ key: 'zone', label: zone?.name || 'Zone' });
   }
   if (filters.minPrice) activeFilters.push({ key: 'minPrice', label: `Min ${filters.minPrice} TK` });
   if (filters.maxPrice) activeFilters.push({ key: 'maxPrice', label: `Max ${filters.maxPrice} TK` });
@@ -17,7 +13,7 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
   if (filters.condition !== 'all') activeFilters.push({ key: 'condition', label: filters.condition });
 
   const removeFilter = (key) => {
-    if (key === 'category' || key === 'zone') onFilterChange(key, '');
+    if (key === 'category') onFilterChange(key, '');
     else if (key === 'availability' || key === 'condition') onFilterChange(key, 'all');
     else onFilterChange(key, '');
   };
@@ -64,23 +60,6 @@ const SearchFilters = ({ filters, categories, zones, priceRange, onFilterChange,
             <option value="">All Categories</option>
             {categories.map(c => (
               <option key={c._id} value={c.slug}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Zone */}
-        <div>
-          <label htmlFor="filter-zone" className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>Zone</label>
-          <select
-            id="filter-zone"
-            value={filters.zone}
-            onChange={e => onFilterChange('zone', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
-          >
-            <option value="">All Zones</option>
-            {zones.map(z => (
-              <option key={z._id} value={z._id}>{z.name}</option>
             ))}
           </select>
         </div>

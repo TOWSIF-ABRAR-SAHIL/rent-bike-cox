@@ -2,7 +2,6 @@ const Bike = require('../models/Bike');
 const Booking = require('../models/Booking');
 const MaintenanceLog = require('../models/MaintenanceLog');
 const Category = require('../models/Category');
-const Zone = require('../models/Zone');
 const logger = require('../utils/logger');
 
 exports.getFleetSummary = async (req, res) => {
@@ -133,7 +132,6 @@ exports.getFleetBikes = async (req, res) => {
     const search = req.query.search || '';
     const status = req.query.status || 'all';
     const condition = req.query.condition || 'all';
-    const zone = req.query.zone || 'all';
     const sort = req.query.sort || '-createdAt';
 
     if (search) {
@@ -158,15 +156,10 @@ exports.getFleetBikes = async (req, res) => {
       bikeQuery.condition = condition;
     }
 
-    if (zone !== 'all') {
-      bikeQuery.zone = zone;
-    }
-
     const total = await Bike.countDocuments(bikeQuery);
 
     const bikes = await Bike.find(bikeQuery)
       .populate('category', 'name')
-      .populate('zone', 'name color')
       .sort(sort)
       .skip((page - 1) * limit)
       .limit(limit);
@@ -234,18 +227,16 @@ exports.exportFleet = async (req, res) => {
 
     const bikes = await Bike.find(bikeQuery)
       .populate('category', 'name')
-      .populate('zone', 'name')
       .sort('-createdAt')
       .lean();
 
-    const rows = [['Model', 'Brand', 'Category', 'Zone', 'Price/Hr', 'Condition', 'Status', 'Mileage', 'Next Service', 'Owner']];
+    const rows = [['Model', 'Brand', 'Category', 'Price/Hr', 'Condition', 'Status', 'Mileage', 'Next Service', 'Owner']];
 
     for (const bike of bikes) {
       rows.push([
         bike.model,
         bike.brand,
         bike.category?.name || 'N/A',
-        bike.zone?.name || 'N/A',
         bike.pricePerHour,
         bike.condition,
         bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'Active' : 'Unavailable',

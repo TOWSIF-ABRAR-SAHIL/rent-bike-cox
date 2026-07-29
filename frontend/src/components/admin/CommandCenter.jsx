@@ -19,8 +19,13 @@ const CommandCenter = ({ onNavigate, stats }) => {
 
   const fetchHealth = useCallback(async () => {
     try {
-      const res = await api.get('/admin/system-health');
-      setHealth(res.data);
+      const res = await api.get('/health/info');
+      const d = res.data;
+      setHealth({
+        server: { status: d.status === 'ok' ? 'online' : d.status, uptime: d.uptime },
+        database: { status: d.status === 'ok' ? 'connected' : 'disconnected' },
+        memory: d.memory ? { heapUsed: d.memory.heapUsed, heapTotal: d.memory.heapTotal } : null,
+      });
     } catch { /* */ } finally { setLoading(false); }
   }, []);
 

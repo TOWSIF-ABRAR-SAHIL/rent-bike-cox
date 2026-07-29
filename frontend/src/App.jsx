@@ -36,7 +36,6 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const SeasonalPricingManager = lazy(() => import('./pages/SeasonalPricingManager'));
 const VehicleDocuments = lazy(() => import('./pages/VehicleDocuments'));
 const NotificationPreferences = lazy(() => import('./pages/NotificationPreferences'));
-const ZoneExplorer = lazy(() => import('./pages/ZoneExplorer'));
 const Profile = lazy(() => import('./pages/Profile'));
 const MyDisputes = lazy(() => import('./pages/MyDisputes'));
 const ChangePassword = lazy(() => import('./pages/ChangePassword'));
@@ -179,7 +178,6 @@ function App() {
                         </ProtectedRoute>
                       </PageErrorBoundary>
                     } />
-                    <Route path="/zones" element={<PageErrorBoundary><ZoneExplorer /></PageErrorBoundary>} />
                     <Route path="/compare" element={<PageErrorBoundary><CompareVehicles /></PageErrorBoundary>} />
                     <Route path="/wishlist" element={
                       <PageErrorBoundary>

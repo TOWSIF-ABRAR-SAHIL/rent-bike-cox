@@ -56,12 +56,11 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | `/api/payouts` | `routes/payouts.js` | admin |
 | `/api/maintenance` | `routes/maintenance.js` | auth (Renter + Admin) |
 | `/api/availability` | `routes/availability.js` | public |
-| `/api/zones` | `routes/zone.js` | public GET, admin CRUD |
 | `/api/fleet` | `routes/fleet.js` | auth (Renter + Admin) |
 | `/api/bulk` | `routes/bulk.js` | auth (Renter + Admin) |
 | `/api/vehicle-history` | `routes/vehicleHistory.js` | auth (Renter + Admin) |
 | `/api/search` | `routes/search.js` | public |
-| `/api/analytics` | `routes/analytics.js` | admin only (revenue, bookings, categories, top-bikes, customers, zones, duration, financial, export) |
+| `/api/analytics` | `routes/analytics.js` | admin only (revenue, bookings, categories, top-bikes, customers, duration, financial, export) |
 | `/api/notifications` | `routes/engagement.js` | auth |
 | `/api/reviews` | `routes/engagement.js` | public GET, auth POST/PUT/DELETE |
 | `/api/seasonal-rates` | `routes/seasonal.js` | public GET (active) |
@@ -90,13 +89,18 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | `DELETE /api/admin/cache` | `routes/cache.js` | admin (flush all) |
 | `DELETE /api/admin/cache/key/:key` | `routes/cache.js` | admin (delete single key) |
 | `GET /api/admin/rate-limits` | `routes/rateLimit.js` | admin (limiter configs) |
+| `POST /api/tracking` | `routes/tracking.js` | IoT device (X-API-Key auth) — accepts lat, lng, speed, heading, battery, accuracy |
+| `GET /api/tracking` | `routes/tracking.js` | auth (all live locations with speed/battery/heading) |
+| `GET /api/tracking/stats` | `routes/tracking.js` | auth (aggregated stats per bike: avg/max speed, total points) |
+| `GET /api/tracking/history/:bikeId` | `routes/tracking.js` | auth (last N trail points for path polyline) |
+| `GET /api/tracking/:bikeId` | `routes/tracking.js` | auth (single bike location + latest telemetry) |
 | `/api/{*splat}` | catch-all | 404 |
 
 ### Models (20+)
 | Model | Purpose |
 |-------|---------|
 | User | role enum (Admin/Renter/User), select:false password, NID/license |
-| Bike | category ref, renter ref, tier pricing, images |
+| Bike | category ref, renter ref, tier pricing, images, currentLocation (GeoJSON Point) |
 | Booking | status machine (Pending→Confirmed→Active→Completed/Cancelled), invoice number, 30min buffer |
 | Category | slug, isActive (Bike, Car, Jeep) |
 | Settings | singleton (basePricePerHour, packages) |
@@ -117,10 +121,10 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | IdempotencyKey | prevent duplicate operations |
 | MaintenanceLog | fleet maintenance tracking |
 | MaintenanceNotification | maintenance alerts |
-| Zone | service zones (slug, geo) |
 | Notification | in-app notifications |
 | NotificationPreference | per-user email/push/inApp toggles |
 | Review | bike reviews and ratings |
+| LocationHistory | bike GPS trail history (7-day TTL), speed, heading, battery, accuracy |
 | SeasonalRate | peak/off-peak/holiday pricing |
 | VehicleDocument | registration/insurance/fitness docs |
 | SiteContent | key/value content management, page grouping, history |
@@ -151,11 +155,10 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | RateLimitManager | `components/admin/` | Rate limiter config cards with severity badges |
 | AdminNotificationBell | `components/admin/` | Navbar notification dropdown |
 | RenterEarnings | `components/` | Renter earnings dashboard |
-| ZoneMap | `components/` | Leaflet map with zones |
-| RoutePlanner | `components/` | Distance/time calculator |
 | CompareBar | `components/` | Vehicle comparison floating bar |
 | BottomNav | `components/` | Mobile bottom navigation |
 | WhatsAppButton | `components/` | Floating WhatsApp contact |
+| LiveFleetMap | `components/` | Advanced real-time Leaflet map with Socket.IO: category icons (Bike/Car/Jeep), movement trail polyline, smooth marker animation, marker clustering (leaflet.markercluster), speed/battery/heading telemetry, legend overlay, auto-fit bounds, search/filter by model, connection status badge, info panel |
 | Lightbox | `components/` | Image gallery lightbox |
 
 ### Hooks
@@ -236,6 +239,7 @@ Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whi
 | `node scripts/seedSettings.js` | Full settings with business rules + branding | Run once after deployment |
 | `node scripts/seedContent.js` | Default site content pages | Run once after deployment |
 | `GET /api/seed-temp` | All three users + categories + bikes | Dev only, guarded by `NODE_ENV !== 'production'` |
+| `node seedTracking.js` | GPS trail points + currentLocation for all bikes | Must run from `backend/`; creates LocationHistory docs |
 
 ### Error handler
 404 catch-all at `/api/{*splat}`. Centralized `middleware/errorHandler.js` — no stack traces. Distinct messages for CORS, file size, file type, and generic 500. Request logger tracks correlation ID, method, URL, status, and duration.
@@ -279,8 +283,8 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - Z-index hierarchy: content z-10 → navbar z-50 → dropdown z-[100] → modal z-[200] → toast z-[300]
 
 ### Pages (all React.lazy loaded)
-- `/` — Home (hero carousel, vehicle ratings, Explore Zones, testimonials)
-- `/bike/:id` — BikeDetails (gallery, lightbox, zone map, save/compare, recommendations)
+- `/` — Home (hero carousel, vehicle ratings, testimonials)
+- `/bike/:id` — BikeDetails (gallery, lightbox, save/compare, recommendations)
 - `/checkout/:bikeId` — Checkout (booking + payment)
 - `/invoice/:bookingId` — Invoice (printable)
 - `/login` — Login
@@ -288,12 +292,12 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - `/forgot-password` — Forgot password (OTP flow)
 - `/profile` — Profile (avatar upload, bio, emergency contact, memberSince badge)
 - `/my-bookings` — My Bookings (search, status filter, sort, pagination, cancel with reason)
-- `/renter-dashboard` — Renter (roles: Renter, Admin; stats cards: total/available/maintenance/zones)
+- `/renter-dashboard` — Renter (roles: Renter, Admin; stats cards: total/available/maintenance)
 - `/my-disputes` — My Disputes (create dispute, expand/collapse, status filter, pagination)
-- `/admin-dashboard` — Admin only (22 tabs: Command Center, Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Zones, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Logs, Cache, Rate Limits, Reports)
+- `/admin-dashboard` — Admin only (21 tabs: Command Center, Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Logs, Cache, Rate Limits, Reports)
 - `/admin/notifications` — Admin notifications full page (Admin only)
 - `/fleet` — Fleet dashboard (roles: Renter, Admin)
-- `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, zones, duration, financial, hourly, customers)
+- `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, duration, financial, hourly, customers)
 - `/search` — Advanced search with filters (price range, category, sort)
 - `/vehicle-history/:bikeId` — Vehicle history timeline
 - `/notifications` — Notifications
@@ -303,7 +307,6 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - `/policies` — Public policy list
 - `/faq` — Public FAQ page (category grouped, search, helpful tracking)
 - `/contact` — Contact form (POST /api/contact, WhatsApp CTA)
-- `/zones` — Zone explorer with Leaflet map
 - `/compare` — Vehicle comparison (max 3, side-by-side)
 - `/wishlist` — Saved vehicles (localStorage)
 - `/refunds` — Refund management (Admin only)
@@ -321,7 +324,7 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 
 ### Backend (Render)
 - `render.yaml` blueprint: `cd backend && npm install` (build), `cd backend && node server.js` (start)
-- Env vars in dashboard: MONGODB_URI, JWT_SECRET, Cloudinary, SSLCommerz, BACKEND_URL, FRONTEND_URL
+- Env vars in dashboard: MONGODB_URI, JWT_SECRET, Cloudinary, SSLCommerz, BACKEND_URL, FRONTEND_URL, IOT_API_KEY (used by ESP32/GSM devices for POST /api/tracking auth)
 - Free tier: cold starts ~30s after idle
 
 ### Frontend (Vercel)
@@ -351,6 +354,7 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - **MongoDB Atlas M0** — no transactions; booking lock uses CAS fallback
 - **`vercel.json`** — must be in `frontend/` directory (not repo root) for SPA rewrites
 - **`SSLCOMMERZ_STORE_PASS`** — code reads both `SSLCOMMERZ_STORE_PASS` and `SSLCOMMERZ_STORE_PASSWORD` (fallback)
+- **`leaflet.markercluster`** — installed; MarkerCluster CSS imported in LiveFleetMap; cluster icons colored by count (gold <5, purple 5-10, red >10)
 - **`express-mongo-sanitize`** — replaced with custom `middleware/sanitize.js` (Express 5 incompatible)
 - **`Date.now()` in render** — React 19 ESLint `set-state-in-effect` rule; keep side effects out of render
 - **`context` hooks** — must be in separate files from providers (ESLint enforced)

@@ -32,8 +32,8 @@ const createBookingRules = [
   body('bikeId').isMongoId().withMessage('Valid bike ID required'),
   body('startTime').isISO8601().withMessage('Valid start time required'),
   body('endTime').isISO8601().withMessage('Valid end time required'),
-  body('destination').optional().trim().isLength({ min: 2, max: 200 }).withMessage('Destination 2-200 characters'),
-  body('couponCode').optional().trim().isLength({ min: 3, max: 20 }).withMessage('Coupon code 3-20 characters'),
+  body('destination').optional({ values: 'falsy' }).trim().isLength({ min: 2, max: 200 }).withMessage('Destination 2-200 characters'),
+  body('couponCode').optional({ values: 'falsy' }).trim().isLength({ min: 3, max: 20 }).withMessage('Coupon code 3-20 characters'),
   handleValidation,
 ];
 

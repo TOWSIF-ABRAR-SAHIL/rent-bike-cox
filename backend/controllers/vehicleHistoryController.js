@@ -14,7 +14,6 @@ exports.getVehicleHistory = async (req, res) => {
 
     const bike = await Bike.findOne(bikeQuery)
       .populate('category', 'name')
-      .populate('zone', 'name color')
       .populate('renter', 'name email');
 
     if (!bike) return res.status(404).json({ message: 'Vehicle not found' });
@@ -207,7 +206,6 @@ exports.exportVehicleHistory = async (req, res) => {
 
     const bike = await Bike.findOne(bikeQuery)
       .populate('category', 'name')
-      .populate('zone', 'name')
       .lean();
 
     if (!bike) return res.status(404).json({ message: 'Vehicle not found' });

@@ -72,7 +72,7 @@ const seedCategories = async () => {
 
 exports.addBike = async (req, res) => {
   try {
-    const { model, brand, category, description, pricePerHour, videoUrl, packages, zone } = req.body;
+    const { model, brand, category, description, pricePerHour, videoUrl, packages } = req.body;
     const cleanModel = sanitize(model);
     const cleanBrand = sanitize(brand);
     const cleanDescription = sanitize(description);
@@ -114,7 +114,6 @@ exports.addBike = async (req, res) => {
       videoUrl: cleanVideoUrl || undefined,
       renter: req.user.id,
       packages: parsedPackages,
-      zone: zone || undefined,
     });
     await bike.save();
     res.status(201).json(bike);
@@ -127,7 +126,7 @@ exports.addBike = async (req, res) => {
 exports.getRenterBikes = async (req, res) => {
   try {
     if (req.user.role !== 'Renter' && req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
-    const bikes = await Bike.find({ renter: req.user.id }).populate('category', 'name slug').populate('zone', 'name color').lean();
+    const bikes = await Bike.find({ renter: req.user.id }).populate('category', 'name slug').lean();
     res.json(bikes);
   } catch (error) {
     logger.error('getRenterBikes error', { message: error.message });
@@ -140,8 +139,8 @@ exports.getRenterBikes = async (req, res) => {
 exports.getAvailableBikes = async (req, res) => {
   try {
     await seedCategories();
-    const { search, category, zone } = req.query;
-    if (!search && !category && !zone) {
+    const { search, category } = req.query;
+    if (!search && !category) {
       const cached = defaultCache.get('bikes:available');
       if (cached) return res.json(cached);
     }
@@ -150,10 +149,6 @@ exports.getAvailableBikes = async (req, res) => {
     if (category) {
       const cat = await Category.findOne({ slug: category }).lean();
       if (cat) filter.category = cat._id;
-    }
-
-    if (zone) {
-      filter.zone = zone;
     }
 
     if (search) {
@@ -168,10 +163,9 @@ exports.getAvailableBikes = async (req, res) => {
     const bikes = await Bike.find(filter)
       .populate('renter', 'name')
       .populate('category', 'name slug')
-      .populate('zone', 'name color')
       .lean();
     res.json(bikes);
-    if (!search && !category && !zone) {
+    if (!search && !category) {
       defaultCache.set('bikes:available', bikes, 120000);
     }
   } catch (error) {
@@ -188,7 +182,6 @@ exports.getBikeById = async (req, res) => {
     const bike = await Bike.findById(req.params.id)
       .populate('renter', 'name')
       .populate('category', 'name slug')
-      .populate('zone', 'name color')
       .lean();
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
     res.json(bike);
@@ -204,15 +197,13 @@ exports.updateBike = async (req, res) => {
     const bike = await Bike.findById(req.params.id);
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
 
-    const { model, brand, category, description, pricePerHour, videoUrl, packages, zone } = req.body;
+    const { model, brand, category, description, pricePerHour, videoUrl, packages } = req.body;
 
     if (model !== undefined) bike.model = sanitize(model) || bike.model;
     if (brand !== undefined) bike.brand = sanitize(brand) || bike.brand;
     if (category !== undefined) bike.category = category;
     if (description !== undefined) bike.description = sanitize(description) || bike.description;
     if (videoUrl !== undefined) bike.videoUrl = sanitize(videoUrl);
-    if (zone !== undefined) bike.zone = zone || null;
-
     if (pricePerHour !== undefined) {
       const price = Number(pricePerHour);
       if (isNaN(price) || price <= 0 || price > 100000) {
@@ -413,7 +404,7 @@ exports.getAllBikes = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const total = await Bike.countDocuments();
-    const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name').populate('zone', 'name color').lean();
+    const bikes = await Bike.find().skip((page - 1) * limit).limit(limit).populate('renter', 'name email').populate('category', 'name').lean();
     res.json({ bikes, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

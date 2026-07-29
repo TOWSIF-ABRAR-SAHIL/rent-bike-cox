@@ -1,31 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '../api/axios';
 import { X } from 'lucide-react';
 
 const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
-  const [zones, setZones] = useState([]);
   const [action, setAction] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
   const [statusValue, setStatusValue] = useState('active');
-  const [zoneValue, setZoneValue] = useState('');
   const [maintenanceType, setMaintenanceType] = useState('service');
   const [maintenanceTitle, setMaintenanceTitle] = useState('');
   const [maintenanceDate, setMaintenanceDate] = useState('');
-
-  useEffect(() => {
-    const fetchZones = async () => {
-      try {
-        const { data } = await api.get('/zones/active');
-        setZones(data);
-      } catch (err) {
-        console.error('Failed to fetch zones:', err);
-      }
-    };
-    fetchZones();
-  }, []);
 
   const handleExecute = async () => {
     if (!action) return;
@@ -40,12 +26,6 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
             bikeIds: selectedBikes,
             availability: statusValue === 'active',
             isUnderMaintenance: statusValue === 'maintenance',
-          });
-          break;
-        case 'zone':
-          result = await api.post('/bulk/zone', {
-            bikeIds: selectedBikes,
-            zoneId: zoneValue || null,
           });
           break;
         case 'maintenance':
@@ -111,7 +91,6 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
         >
           <option value="">Choose action...</option>
           <option value="status">Update Status</option>
-          <option value="zone">Assign Zone</option>
           <option value="maintenance">Schedule Maintenance</option>
           <option value="export">Export Selected</option>
           <option value="delete">Deactivate</option>
@@ -164,23 +143,6 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
                 >
                   <option value="unavailable">Unavailable</option>
                   <option value="maintenance">Under Maintenance</option>
-                </select>
-              </div>
-            )}
-
-            {action === 'zone' && (
-              <div className="mb-4">
-                <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Assign to zone</label>
-                <select
-                  value={zoneValue}
-                  onChange={e => setZoneValue(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-primary)' }}
-                  aria-label="Assign to zone"
-                >
-                  {zones.map(z => (
-                    <option key={z._id} value={z._id}>{z.name}</option>
-                  ))}
                 </select>
               </div>
             )}

@@ -2,7 +2,6 @@ const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const User = require('../models/User');
 const Category = require('../models/Category');
-const Zone = require('../models/Zone');
 const Refund = require('../models/Refund');
 const logger = require('../utils/logger');
 
@@ -284,58 +283,6 @@ exports.exportAnalytics = async (req, res) => {
   } catch (error) {
     logger.error('exportAnalytics error', { message: error.message });
     res.status(500).json({ message: 'Failed to export analytics' });
-  }
-};
-
-exports.getZoneAnalytics = async (req, res) => {
-  try {
-    const { days = 30 } = req.query;
-    const numDays = parseInt(days) || 30;
-    const since = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);
-
-    const zoneStats = await Booking.aggregate([
-      { $match: { createdAt: { $gte: since }, status: { $in: ['Confirmed', 'Active', 'Completed'] } } },
-      { $lookup: { from: 'bikes', localField: 'bike', foreignField: '_id', as: 'bikeDoc' } },
-      { $unwind: { path: '$bikeDoc', preserveNullAndEmptyArrays: true } },
-      { $group: {
-        _id: '$bikeDoc.zone',
-        bookings: { $sum: 1 },
-        revenue: { $sum: '$totalPrice' },
-        avgRevenue: { $avg: '$totalPrice' },
-      }},
-      { $sort: { revenue: -1 } },
-    ]);
-
-    const zoneIds = zoneStats.filter(z => z._id).map(z => z._id);
-    const zones = await Zone.find({ _id: { $in: zoneIds } }).select('name color slug').lean();
-    const zoneMap = {};
-    zones.forEach(z => { zoneMap[z._id.toString()] = z; });
-
-    const bikeCounts = await Bike.aggregate([
-      { $match: { zone: { $in: zoneIds } } },
-      { $group: { _id: '$zone', count: { $sum: 1 } } },
-    ]);
-    const bikeCountMap = {};
-    bikeCounts.forEach(b => { bikeCountMap[b._id.toString()] = b.count; });
-
-    const result = zoneStats.map(z => {
-      const zoneId = z._id?.toString();
-      const zone = zoneMap[zoneId];
-      return {
-        zone: zone?.name || 'Unassigned',
-        color: zone?.color || '#6b7280',
-        slug: zone?.slug || 'unassigned',
-        bookings: z.bookings,
-        revenue: z.revenue,
-        avgRevenue: Math.round(z.avgRevenue),
-        vehicleCount: bikeCountMap[zoneId] || 0,
-      };
-    });
-
-    res.json(result);
-  } catch (error) {
-    logger.error('getZoneAnalytics error', { message: error.message });
-    res.status(500).json({ message: 'Failed to fetch zone analytics' });
   }
 };
 

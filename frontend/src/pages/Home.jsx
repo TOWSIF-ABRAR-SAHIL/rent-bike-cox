@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows, Calendar } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows, Calendar, Navigation } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
-import ZoneMap from '../components/ZoneMap';
 import { useCompare } from '../context/useCompare';
 import { useWishlist } from '../context/useWishlist';
 import useSiteContent from '../hooks/useSiteContent';
+import LiveFleetMap from '../components/LiveFleetMap';
 
 const categoryIcons = { Bike, Car, Jeep: Truck };
 
@@ -35,8 +35,6 @@ const Home = () => {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [fetchError, setFetchError] = useState('');
   const [slowNetwork, setSlowNetwork] = useState(false);
-  const [zones, setZones] = useState([]);
-  const [activeZone, setActiveZone] = useState('');
   const [heroSlide, setHeroSlide] = useState(0);
   const [bikeRatings, setBikeRatings] = useState({});
 
@@ -59,7 +57,6 @@ const Home = () => {
 
   useEffect(() => {
     api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
-    api.get('/zones/active').then(res => setZones(res.data)).catch(() => setZones([]));
   }, []);
 
   const fetchBikes = useCallback(async () => {
@@ -69,7 +66,6 @@ const Home = () => {
       const params = {};
       if (debouncedSearch) params.search = debouncedSearch;
       if (activeCategory) params.category = activeCategory;
-      if (activeZone) params.zone = activeZone;
       const res = await api.get('/dashboard/bikes/available', { params });
       setBikes(res.data);
     } catch {
@@ -77,7 +73,7 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, activeCategory, activeZone]);
+  }, [debouncedSearch, activeCategory]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchBikes(); }, [fetchBikes]);
@@ -348,38 +344,6 @@ const Home = () => {
           </div>
         )}
 
-        {/* Zone Filter */}
-        {zones.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            <button
-              onClick={() => setActiveZone('')}
-              className={`px-4 py-2 min-h-9 rounded-lg text-xs font-medium transition-all duration-200 ${
-                activeZone === ''
-                  ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
-                  : 'glass'
-              }`}
-              style={activeZone !== '' ? { color: 'var(--text-secondary)' } : undefined}
-             aria-label="Filter by zone">
-              All Zones
-            </button>
-            {zones.map(z => (
-              <button
-                key={z._id}
-                onClick={() => setActiveZone(prev => prev === z._id ? '' : z._id)}
-                className={`px-4 py-2 min-h-9 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                  activeZone === z._id
-                    ? 'gradient-primary text-white shadow-lg shadow-amber-500/25'
-                    : 'glass'
-                }`}
-                style={activeZone !== z._id ? { color: 'var(--text-secondary)' } : undefined}
-               aria-label="Filter by zone">
-                <span className="w-2 h-2 rounded-full" style={{ background: z.color || '#f59e0b' }} />
-                {z.name}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Grid */}
         {loading ? (
           <div className="space-y-4">
@@ -538,6 +502,18 @@ const Home = () => {
 
       </div>
 
+      {/* Live Fleet */}
+      <section className="max-w-7xl mx-auto px-4 mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Live Fleet</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Track our available vehicles in real-time</p>
+          </div>
+          <Navigation size={20} style={{ color: 'var(--accent-text)' }} />
+        </div>
+        <LiveFleetMap height="400px" showRecenter={true} />
+      </section>
+
       {/* Testimonials */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
         <div className="text-center mb-12">
@@ -590,68 +566,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Explore Zones */}
-      <div style={{ background: 'var(--bg-section-alt)' }}>
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--section-title)' }}>
-              <MapPin size={28} className="inline mr-2" style={{ color: 'var(--accent-text)' }} />
-              Explore Zones
-            </h2>
-            <p className="text-sm" style={{ color: 'var(--section-sub)' }}>
-              Discover rental zones across Cox's Bazar — from city center to St. Martin's Island
-            </p>
-          </div>
-          <Link to="/zones" className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-xl transition-all" style={{ color: 'var(--accent-text)', border: '1px solid var(--accent-text)' }}>
-            View All <ArrowRight size={14} />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Map */}
-          <div className="lg:row-span-2">
-            <ZoneMap height="420px" />
-          </div>
-
-          {/* Zone Cards */}
-          {zones.slice(0, 6).map((zone, i) => (
-            <Link
-              key={zone._id}
-              to={`/search?zone=${zone.slug || zone._id}`}
-              className="glass rounded-xl p-4 card-hover group flex items-center gap-4 animate-slide-up"
-              style={{ animationDelay: `${i * 0.05}s`, border: '1px solid var(--border-base)' }}
-            >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: (zone.color || '#f59e0b') + '20' }}>
-                <MapPin size={18} style={{ color: zone.color || '#f59e0b' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{zone.name}</h3>
-                {zone.description && (
-                  <p className="text-xs truncate mt-0.5" style={{ color: 'var(--text-muted)' }}>{zone.description}</p>
-                )}
-                <div className="flex items-center gap-3 mt-1.5">
-                  {zone.bikeCount > 0 ? (
-                    <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <Bike size={10} /> {zone.bikeCount} vehicles
-                    </span>
-                  ) : (
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>No vehicles yet</span>
-                  )}
-                </div>
-              </div>
-              <ArrowRight size={16} className="flex-shrink-0 transition-opacity" style={{ color: 'var(--accent-text)' }} />
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-6 text-center sm:hidden">
-          <Link to="/zones" className="inline-flex items-center gap-1.5 text-sm font-medium px-6 py-3 rounded-xl transition-all" style={{ color: 'var(--accent-text)', border: '1px solid var(--accent-text)' }}>
-            View All Zones <ArrowRight size={14} />
-          </Link>
-        </div>
-      </section>
-      </div>
     </div>
   );
 };

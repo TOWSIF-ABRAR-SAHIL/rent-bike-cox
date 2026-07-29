@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, MapPin, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download, Database } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download, Database, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
+import TabErrorBoundary from '../components/TabErrorBoundary';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import FleetOverview from '../components/FleetOverview';
@@ -10,7 +11,6 @@ import MaintenanceSchedule from '../components/MaintenanceSchedule';
 import VehicleHealthCard from '../components/VehicleHealthCard';
 import MaintenanceLogForm from '../components/MaintenanceLogForm';
 import MaintenanceHistory from '../components/MaintenanceHistory';
-import ZoneCard from '../components/ZoneCard';
 import CommandCenter from '../components/admin/CommandCenter';
 import ContentEditor from '../components/admin/ContentEditor';
 import BrandingTab from '../components/admin/BrandingTab';
@@ -24,10 +24,11 @@ import LogsViewer from '../components/admin/LogsViewer';
 import CacheManager from '../components/admin/CacheManager';
 import RateLimitManager from '../components/admin/RateLimitManager';
 import ReportsTab from '../components/admin/ReportsTab';
+import LiveFleetMap from '../components/LiveFleetMap';
 
 const TabButton = ({ active, onClick, icon: Icon, children }) => (
   <button onClick={onClick}
-    className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 ${
+    className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap snap-start ${
       active ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'
     }`}
     style={active ? { color: 'white' } : { color: 'var(--text-secondary)' }}
@@ -66,8 +67,6 @@ const AdminDashboard = () => {
   const [editPackages, setEditPackages] = useState([]);
   const [editSaving, setEditSaving] = useState(false);
   const [selectedBikeId, setSelectedBikeId] = useState(null);
-  const [zones, setZones] = useState([]);
-  const [newZone, setNewZone] = useState({ name: '', description: '', color: '#f59e0b' });
 
   const fetchDashboard = useCallback(() => {
     setLoading(true);
@@ -78,15 +77,19 @@ const AdminDashboard = () => {
       api.get('/dashboard/admin/users'),
       api.get('/coupons'),
       api.get('/dashboard/admin/categories'),
-      api.get('/zones'),
-    ]).then(([settingsRes, bikesRes, usersRes, couponsRes, categoriesRes, zonesRes]) => {
+    ]).then(([settingsRes, bikesRes, usersRes, couponsRes, categoriesRes]) => {
       if (settingsRes.status === 'fulfilled') setSettings(settingsRes.value.data);
-      if (bikesRes.status === 'fulfilled') setBikes(bikesRes.value.data);
-      if (usersRes.status === 'fulfilled') setUsers(usersRes.value.data);
+      if (bikesRes.status === 'fulfilled') {
+        const d = bikesRes.value.data;
+        setBikes(Array.isArray(d) ? d : (d?.bikes || []));
+      }
+      if (usersRes.status === 'fulfilled') {
+        const d = usersRes.value.data;
+        setUsers(Array.isArray(d) ? d : (d?.users || []));
+      }
       if (couponsRes.status === 'fulfilled') setCoupons(couponsRes.value.data);
       if (categoriesRes.status === 'fulfilled') setCategories(categoriesRes.value.data);
-      if (zonesRes.status === 'fulfilled') setZones(zonesRes.value.data);
-      const failedCount = [settingsRes, bikesRes, usersRes, couponsRes, categoriesRes, zonesRes].filter(r => r.status === 'rejected').length;
+      const failedCount = [settingsRes, bikesRes, usersRes, couponsRes, categoriesRes].filter(r => r.status === 'rejected').length;
       if (failedCount > 0) {
         addToast(`Failed to load ${failedCount} of 6 data sources`, 'error');
         if (failedCount >= 6) setFetchError('Failed to load dashboard data. Please try again.');
@@ -279,7 +282,7 @@ const AdminDashboard = () => {
         <StatCard label="Categories" value={categories.length} colorStyle={{ color: 'var(--purple-text)' }} />
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin flex-nowrap snap-x">
         <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={BarChart3}>Command Center</TabButton>
         <TabButton active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} icon={Settings}>Settings</TabButton>
         <TabButton active={activeTab === 'bikes'} onClick={() => setActiveTab('bikes')} icon={Bike}>Bikes</TabButton>
@@ -289,7 +292,6 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'walkin'} onClick={() => setActiveTab('walkin')} icon={UserPlus}>Walk-in</TabButton>
         <TabButton active={activeTab === 'finance'} onClick={() => { setActiveTab('finance'); if (!finance) fetchFinance(); }} icon={Shield}>Finance</TabButton>
         <TabButton active={activeTab === 'maintenance'} onClick={() => setActiveTab('maintenance')} icon={Wrench}>Maintenance</TabButton>
-        <TabButton active={activeTab === 'zones'} onClick={() => setActiveTab('zones')} icon={MapPin}>Zones</TabButton>
         <TabButton active={activeTab === 'content'} onClick={() => setActiveTab('content')} icon={FileText}>Content</TabButton>
         <TabButton active={activeTab === 'branding'} onClick={() => setActiveTab('branding')} icon={Palette}>Branding</TabButton>
         <TabButton active={activeTab === 'announcements'} onClick={() => setActiveTab('announcements')} icon={Megaphone}>Announcements</TabButton>
@@ -301,6 +303,7 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} icon={FileText}>Logs</TabButton>
         <TabButton active={activeTab === 'cache'} onClick={() => setActiveTab('cache')} icon={Database}>Cache</TabButton>
         <TabButton active={activeTab === 'ratelimit'} onClick={() => setActiveTab('ratelimit')} icon={Shield}>Rate Limits</TabButton>
+        <TabButton active={activeTab === 'tracking'} onClick={() => setActiveTab('tracking')} icon={MapPin}>Tracking</TabButton>
         <TabButton active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} icon={Download}>Reports</TabButton>
       </div>
 
@@ -1066,67 +1069,19 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {activeTab === 'zones' && (
-        <div className="space-y-6">
-          <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
-            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Create New Zone</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input type="text" value={newZone.name} onChange={e => setNewZone({...newZone, name: e.target.value})} placeholder="Zone name" className="input-dark text-sm" aria-label="Zone name" />
-              <input type="text" value={newZone.description} onChange={e => setNewZone({...newZone, description: e.target.value})} placeholder="Description (optional)" className="input-dark text-sm" aria-label="Description (optional)" />
-              <div className="flex items-center gap-2">
-                <input type="color" value={newZone.color} onChange={e => setNewZone({...newZone, color: e.target.value})} className="w-10 h-10 rounded cursor-pointer border-0" />
-                <button onClick={async () => {
-                  if (!newZone.name) return;
-                  try {
-                    await api.post('/zones', newZone);
-                    const res = await api.get('/zones');
-                    setZones(res.data);
-                    setNewZone({ name: '', description: '', color: '#f59e0b' });
-                    addToast('Zone created!', 'success');
-                  } catch (err) {
-                    addToast(err.response?.data?.message || 'Failed to create zone', 'error');
-                  }
-                }} disabled={!newZone.name} className="btn-primary flex-1 text-sm"
-                  aria-label="Create zone">
-                  <Plus size={16} className="mr-1" /> Create Zone
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>All Zones ({zones.length})</h3>
-            {zones.length === 0 ? (
-              <EmptyState icon={MapPin} title="No zones yet" description="Create your first zone to organize vehicles by location" />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {zones.map(zone => (
-                  <ZoneCard key={zone._id} zone={zone} onUpdate={async () => {
-                    const res = await api.get('/zones');
-                    setZones(res.data);
-                  }} onDelete={async () => {
-                    const res = await api.get('/zones');
-                    setZones(res.data);
-                  }} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'content' && <ContentEditor />}
-      {activeTab === 'branding' && <BrandingTab />}
-      {activeTab === 'announcements' && <AnnouncementManager />}
-      {activeTab === 'templates' && <TemplateManager />}
-      {activeTab === 'faq' && <FAQManager />}
-      {activeTab === 'messages' && <MessageInbox />}
-      {activeTab === 'campaigns' && <CampaignManager />}
-      {activeTab === 'health' && <SystemHealthTab />}
-      {activeTab === 'logs' && <LogsViewer />}
-      {activeTab === 'cache' && <CacheManager />}
-      {activeTab === 'ratelimit' && <RateLimitManager />}
-      {activeTab === 'reports' && <ReportsTab />}
+      {activeTab === 'content' && <TabErrorBoundary name="Content Editor"><ContentEditor /></TabErrorBoundary>}
+      {activeTab === 'branding' && <TabErrorBoundary name="Branding"><BrandingTab /></TabErrorBoundary>}
+      {activeTab === 'announcements' && <TabErrorBoundary name="Announcements"><AnnouncementManager /></TabErrorBoundary>}
+      {activeTab === 'templates' && <TabErrorBoundary name="Templates"><TemplateManager /></TabErrorBoundary>}
+      {activeTab === 'faq' && <TabErrorBoundary name="FAQ"><FAQManager /></TabErrorBoundary>}
+      {activeTab === 'messages' && <TabErrorBoundary name="Messages"><MessageInbox /></TabErrorBoundary>}
+      {activeTab === 'campaigns' && <TabErrorBoundary name="Campaigns"><CampaignManager /></TabErrorBoundary>}
+      {activeTab === 'health' && <TabErrorBoundary name="System Health"><SystemHealthTab /></TabErrorBoundary>}
+      {activeTab === 'logs' && <TabErrorBoundary name="Logs"><LogsViewer /></TabErrorBoundary>}
+      {activeTab === 'cache' && <TabErrorBoundary name="Cache"><CacheManager /></TabErrorBoundary>}
+      {activeTab === 'ratelimit' && <TabErrorBoundary name="Rate Limits"><RateLimitManager /></TabErrorBoundary>}
+      {activeTab === 'tracking' && <LiveFleetMap height="600px" />}
+      {activeTab === 'reports' && <TabErrorBoundary name="Reports"><ReportsTab /></TabErrorBoundary>}
     </div>
   );
 };
