@@ -1,8 +1,10 @@
 import { Users, UserPlus, Repeat, DollarSign, ShoppingCart } from 'lucide-react';
 
 const CustomerInsights = ({ data }) => {
-  const avgBookingsPerCustomer = data.activeCustomers > 0
-    ? (data.repeatCustomers > 0 ? ((data.repeatCustomers * 2 + (data.activeCustomers - data.repeatCustomers)) / data.activeCustomers).toFixed(1) : 1)
+  const activeCustomers = data.activeCustomers ?? 0;
+  const repeatCustomers = data.repeatCustomers ?? 0;
+  const avgBookingsPerCustomer = activeCustomers > 0
+    ? (repeatCustomers > 0 ? ((repeatCustomers * 2 + (activeCustomers - repeatCustomers)) / activeCustomers).toFixed(1) : 1)
     : 0;
 
   const cards = [
@@ -10,7 +12,7 @@ const CustomerInsights = ({ data }) => {
     { label: 'New Customers', value: data.newCustomers, icon: UserPlus, color: 'var(--success-text)', bg: 'var(--success-bg)' },
     { label: 'Active Customers', value: data.activeCustomers, icon: Repeat, color: 'var(--info-text)', bg: 'var(--info-bg)' },
     { label: 'Repeat Rate', value: `${data.repeatRate}%`, icon: Repeat, color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
-    { label: 'Avg Spend', value: `${data.avgSpendPerCustomer.toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)' },
+    { label: 'Avg Spend', value: `${(data.avgSpendPerCustomer ?? 0).toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)' },
     { label: 'Avg Bookings/Customer', value: avgBookingsPerCustomer, icon: ShoppingCart, color: 'var(--info-text)', bg: 'var(--info-bg)' },
   ];
 
@@ -43,7 +45,7 @@ const CustomerInsights = ({ data }) => {
                   <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{s.name}</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>{s.totalSpent.toLocaleString()} TK</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>{(s.totalSpent ?? 0).toLocaleString()} TK</p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.bookings} bookings</p>
                 </div>
               </div>

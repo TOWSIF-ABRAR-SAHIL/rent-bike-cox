@@ -7,7 +7,7 @@ const FleetSummary = ({ summary }) => {
     { label: 'Under Maintenance', value: summary.maintenanceBikes, icon: Wrench, color: 'var(--warning-text)', bg: 'var(--warning-bg)', border: 'var(--warning-border)' },
     { label: 'Unavailable', value: summary.unavailableBikes, icon: AlertTriangle, color: 'var(--danger-text)', bg: 'var(--danger-bg)', border: 'var(--danger-border)' },
     { label: 'Bookings (Month)', value: summary.bookingsThisMonth, icon: Calendar, color: 'var(--accent-text)', bg: 'var(--accent-bg)', border: 'var(--accent-border)' },
-    { label: 'Revenue (Month)', value: `${summary.revenueThisMonth.toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
+    { label: 'Revenue (Month)', value: `${(summary.revenueThisMonth ?? 0).toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
     { label: 'Active Bookings', value: summary.activeBookings, icon: BarChart3, color: 'var(--info-text)', bg: 'var(--info-bg)', border: 'var(--info-border)' },
   ];
 

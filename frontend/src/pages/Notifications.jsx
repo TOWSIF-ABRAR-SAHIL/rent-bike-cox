@@ -24,22 +24,28 @@ const Notifications = () => {
   }, []);
 
   const markRead = async (id) => {
+    const prevNotifications = notifications;
+    const prevUnread = unread;
     try {
-      await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
       setUnread(prev => Math.max(0, prev - 1));
+      await api.put(`/notifications/${id}/read`);
     } catch {
-      // ignore
+      setNotifications(prevNotifications);
+      setUnread(prevUnread);
     }
   };
 
   const markAllRead = async () => {
+    const prevNotifications = notifications;
+    const prevUnread = unread;
     try {
-      await api.put('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnread(0);
+      await api.put('/notifications/read-all');
     } catch {
-      // ignore
+      setNotifications(prevNotifications);
+      setUnread(prevUnread);
     }
   };
 

@@ -43,7 +43,7 @@ exports.create = async (req, res) => {
       template: template || undefined,
       audience: audience || { filter: 'all' },
       scheduledAt: scheduledAt || undefined,
-      createdBy: req.user._id
+      createdBy: req.user.id
     });
     res.status(201).json(campaign);
   } catch (error) {

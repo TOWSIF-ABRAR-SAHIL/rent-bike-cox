@@ -91,7 +91,8 @@ const MyBookings = () => {
     try {
       const res = await api.put(`/booking/${bookingId}/cancel`, { reason: cancelReason });
       setBookings(prev => prev.map(b => b._id === bookingId ? res.data.booking : b));
-      addToast(`Cancelled. Refund: ${res.data.refund.refundableAmount} TK (${res.data.refund.reason})`, 'success');
+      const refund = res.data.refund;
+      addToast(refund ? `Cancelled. Refund: ${refund.refundableAmount} TK (${refund.reason})` : 'Booking cancelled', 'success');
       setCancelModal(null);
       setCancelReason('Changed my mind');
     } catch (err) {
@@ -110,7 +111,9 @@ const MyBookings = () => {
       a.download = `rentbikecox-data-${Date.now()}.json`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* export failed */ } finally {
+    } catch {
+      addToast('Export failed', 'error');
+    } finally {
       setExporting(false);
     }
   };
@@ -125,7 +128,7 @@ const MyBookings = () => {
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';
     } catch (err) {
-      alert(err.response?.data?.message || 'Account deletion failed');
+      addToast(err.response?.data?.message || 'Account deletion failed', 'error');
     } finally {
       setDeleting(false);
     }

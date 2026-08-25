@@ -4,14 +4,20 @@ const logger = require('../utils/logger');
 
 const contentCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000;
+const CACHE_MAX = 1000;
 
 function getCached(key) {
   const entry = contentCache.get(key);
   if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  if (entry) contentCache.delete(key);
   return null;
 }
 
 function setCache(key, data) {
+  if (contentCache.size >= CACHE_MAX) {
+    const oldest = contentCache.keys().next().value;
+    contentCache.delete(oldest);
+  }
   contentCache.set(key, { data, ts: Date.now() });
 }
 
@@ -107,13 +113,13 @@ exports.adminUpdate = async (req, res) => {
     if (item.isLocked) return res.status(423).json({ message: 'Content is locked and cannot be edited' });
 
     const oldValue = item.value;
-    item.history.push({ value: oldValue, modifiedBy: req.user._id, at: new Date() });
+    item.history.push({ value: oldValue, modifiedBy: req.user.id, at: new Date() });
     if (item.history.length > 20) item.history = item.history.slice(-20);
 
     const sanitizedValue = typeof value === 'string' ? sanitize(String(value)) : value;
     item.value = sanitizedValue;
     if (description !== undefined) item.description = description;
-    item.lastModifiedBy = req.user._id;
+    item.lastModifiedBy = req.user.id;
 
     await item.save();
     invalidateCache(key.split('.')[0]);
@@ -138,17 +144,17 @@ exports.rollback = async (req, res) => {
     if (historyIndex === undefined) {
       if (item.history.length === 0) return res.status(400).json({ message: 'No history to rollback to' });
       const last = item.history[item.history.length - 1];
-      item.history.push({ value: item.value, modifiedBy: req.user._id, at: new Date() });
+      item.history.push({ value: item.value, modifiedBy: req.user.id, at: new Date() });
       item.value = last.value;
     } else {
       if (!item.history[historyIndex]) return res.status(400).json({ message: 'Invalid history index' });
       const target = item.history[historyIndex];
-      item.history.push({ value: item.value, modifiedBy: req.user._id, at: new Date() });
+      item.history.push({ value: item.value, modifiedBy: req.user.id, at: new Date() });
       item.value = target.value;
     }
 
     if (item.history.length > 20) item.history = item.history.slice(-20);
-    item.lastModifiedBy = req.user._id;
+    item.lastModifiedBy = req.user.id;
     await item.save();
 
     invalidateCache(key.split('.')[0]);
@@ -168,10 +174,10 @@ exports.resetToDefault = async (req, res) => {
     if (!item) return res.status(404).json({ message: 'Content not found' });
     if (item.defaultValue === undefined) return res.status(400).json({ message: 'No default value defined' });
 
-    item.history.push({ value: item.value, modifiedBy: req.user._id, at: new Date() });
+    item.history.push({ value: item.value, modifiedBy: req.user.id, at: new Date() });
     item.value = item.defaultValue;
     if (item.history.length > 20) item.history = item.history.slice(-20);
-    item.lastModifiedBy = req.user._id;
+    item.lastModifiedBy = req.user.id;
     await item.save();
 
     invalidateCache(key.split('.')[0]);
@@ -203,10 +209,10 @@ exports.bulkUpdate = async (req, res) => {
         results.errors.push({ key, error: item ? 'Locked' : 'Not found' });
         continue;
       }
-      item.history.push({ value: item.value, modifiedBy: req.user._id, at: new Date() });
+      item.history.push({ value: item.value, modifiedBy: req.user.id, at: new Date() });
       item.value = typeof value === 'string' ? sanitize(String(value)) : value;
       if (item.history.length > 20) item.history = item.history.slice(-20);
-      item.lastModifiedBy = req.user._id;
+      item.lastModifiedBy = req.user.id;
       await item.save();
       results.updated++;
     }
@@ -255,7 +261,7 @@ exports.importContent = async (req, res) => {
             continue;
           }
           existing.value = item.value;
-          existing.lastModifiedBy = req.user._id;
+          existing.lastModifiedBy = req.user.id;
           await existing.save();
           results.updated++;
         } else {

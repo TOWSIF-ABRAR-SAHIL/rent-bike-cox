@@ -87,7 +87,7 @@ exports.update = async (req, res) => {
     template.history.push({
       channels: JSON.parse(JSON.stringify(template.channels)),
       changedAt: new Date(),
-      changedBy: req.user._id
+      changedBy: req.user.id
     });
 
     if (name !== undefined) template.name = String(name);
@@ -115,7 +115,7 @@ exports.update = async (req, res) => {
     if (variables !== undefined) template.variables = variables;
     if (category !== undefined) template.category = category;
     if (isActive !== undefined) template.isActive = isActive;
-    template.lastModifiedBy = req.user._id;
+    template.lastModifiedBy = req.user.id;
 
     await template.save();
     res.json(template);

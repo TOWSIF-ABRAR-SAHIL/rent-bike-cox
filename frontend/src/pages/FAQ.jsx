@@ -82,7 +82,7 @@ const FAQPage = () => {
           {filtered.length === 0 ? (
             <p className="text-center text-sm py-8" style={{ color: 'var(--text-muted)' }}>No matching questions found</p>
           ) : (
-            filtered.map(faq => <FAQItem key={faq._id} faq={faq} helpfulMap={helpfulMap} trackHelpful={trackHelpful} expanded={expanded} setExpanded={setExpanded} />)
+            filtered.map(faq => <FAQItem key={faq._id} faq={faq} helpfulMap={helpfulMap} trackHelpful={trackHelpful} />)
           )}
         </div>
       ) : (
@@ -97,7 +97,7 @@ const FAQPage = () => {
             </button>
             {expanded[cat] && (
               <div className="space-y-2 ml-6">
-                {items.map(faq => <FAQItem key={faq._id} faq={faq} helpfulMap={helpfulMap} trackHelpful={trackHelpful} expanded={expanded} setExpanded={setExpanded} />)}
+                {items.map(faq => <FAQItem key={faq._id} faq={faq} helpfulMap={helpfulMap} trackHelpful={trackHelpful} />)}
               </div>
             )}
           </div>
@@ -124,7 +124,8 @@ const FAQItem = ({ faq, helpfulMap, trackHelpful }) => {
         className="w-full flex items-center justify-between p-4 text-left transition-colors"
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
         onMouseLeave={e => { e.currentTarget.style.background = ''; }}
-        aria-label={`Toggle answer for: ${faq.question}`}>
+        aria-label={`Toggle answer for: ${faq.question}`}
+        aria-expanded={open}>
         <span className="text-sm font-medium pr-4" style={{ color: 'var(--text-primary)' }}>{faq.question}</span>
         {open ? <ChevronDown size={16} className="shrink-0" style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={16} className="shrink-0" style={{ color: 'var(--text-muted)' }} />}
       </button>

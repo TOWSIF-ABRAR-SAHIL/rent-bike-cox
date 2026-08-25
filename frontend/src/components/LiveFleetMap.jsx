@@ -318,9 +318,9 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } =
             </p>
             <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
               <span>{selectedBike.category}</span>
-              <span>🚀 {(selectedBike.speed * 3.6).toFixed(0)} km/h</span>
-              <span style={{ color: selectedBike.battery > 50 ? '#22c55e' : selectedBike.battery > 20 ? '#f59e0b' : '#ef4444' }}>
-                🔋 {selectedBike.battery}%
+              <span>🚀 {((selectedBike.speed ?? 0) * 3.6).toFixed(0)} km/h</span>
+              <span style={{ color: (selectedBike.battery ?? 0) > 50 ? '#22c55e' : (selectedBike.battery ?? 0) > 20 ? '#f59e0b' : '#ef4444' }}>
+                🔋 {selectedBike.battery ?? 0}%
               </span>
             </div>
           </div>

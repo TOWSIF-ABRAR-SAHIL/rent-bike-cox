@@ -6,10 +6,10 @@ const HistoryStats = ({ stats }) => {
     { label: 'Completed', value: stats.completedBookings, icon: CheckCircle, color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
     { label: 'Cancelled', value: stats.cancelledBookings, icon: Clock, color: 'var(--danger-text)', bg: 'var(--danger-bg)', border: 'var(--danger-border)' },
     { label: 'Completion Rate', value: `${stats.completionRate}%`, icon: TrendingUp, color: 'var(--info-text)', bg: 'var(--info-bg)', border: 'var(--info-border)' },
-    { label: 'Total Revenue', value: `${stats.totalRevenue.toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
-    { label: 'Avg/Booking', value: `${parseInt(stats.avgRevenuePerBooking).toLocaleString()} TK`, icon: DollarSign, color: 'var(--accent-text)', bg: 'var(--accent-bg)', border: 'var(--accent-border)' },
-    { label: 'Maintenance Events', value: stats.totalMaintenanceEvents, icon: Wrench, color: 'var(--warning-text)', bg: 'var(--warning-bg)', border: 'var(--warning-border)' },
-    { label: 'Maintenance Cost', value: `${stats.totalMaintenanceCost.toLocaleString()} TK`, icon: Wrench, color: 'var(--danger-text)', bg: 'var(--danger-bg)', border: 'var(--danger-border)' },
+    { label: 'Total Revenue', value: `${(stats.totalRevenue ?? 0).toLocaleString()} TK`, icon: DollarSign, color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
+    { label: 'Avg/Booking', value: `${parseInt(stats.avgRevenuePerBooking ?? 0).toLocaleString()} TK`, icon: DollarSign, color: 'var(--accent-text)', bg: 'var(--accent-bg)', border: 'var(--accent-border)' },
+    { label: 'Maintenance Events', value: stats.totalMaintenanceEvents ?? 0, icon: Wrench, color: 'var(--warning-text)', bg: 'var(--warning-bg)', border: 'var(--warning-border)' },
+    { label: 'Maintenance Cost', value: `${(stats.totalMaintenanceCost ?? 0).toLocaleString()} TK`, icon: Wrench, color: 'var(--danger-text)', bg: 'var(--danger-bg)', border: 'var(--danger-border)' },
   ];
 
   return (

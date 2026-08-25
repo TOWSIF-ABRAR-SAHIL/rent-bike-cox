@@ -1,15 +1,25 @@
 import { DollarSign, TrendingUp, ArrowDownRight, Shield, Percent, RotateCcw } from 'lucide-react';
 
 const FinancialSummary = ({ data }) => {
+  const totalRevenue = data.totalRevenue ?? 0;
+  const totalAdvanceCollected = data.totalAdvanceCollected ?? 0;
+  const totalRemainingCollected = data.totalRemainingCollected ?? 0;
+  const netRevenue = data.netRevenue ?? 0;
+  const totalSecurityDeposits = data.totalSecurityDeposits ?? 0;
+  const totalRefunds = data.totalRefunds ?? 0;
+  const refundCount = data.refundCount ?? 0;
+  const collectionRate = data.collectionRate ?? 0;
+  const refundRate = data.refundRate ?? 0;
+
   const cards = [
-    { label: 'Total Revenue', value: `${data.totalRevenue.toLocaleString()} TK`, icon: DollarSign, color: 'var(--accent-text)', bg: 'var(--accent-bg)' },
-    { label: 'Advance Collected', value: `${data.totalAdvanceCollected.toLocaleString()} TK`, icon: TrendingUp, color: 'var(--success-text)', bg: 'var(--success-bg)' },
-    { label: 'Remaining Collected', value: `${data.totalRemainingCollected.toLocaleString()} TK`, icon: ArrowDownRight, color: 'var(--info-text)', bg: 'var(--info-bg)' },
-    { label: 'Net Revenue', value: `${data.netRevenue.toLocaleString()} TK`, icon: DollarSign, color: data.netRevenue >= 0 ? 'var(--success-text)' : 'var(--danger-text)', bg: data.netRevenue >= 0 ? 'var(--success-bg)' : 'var(--danger-bg)' },
-    { label: 'Security Deposits', value: `${data.totalSecurityDeposits.toLocaleString()} TK`, icon: Shield, color: 'var(--purple-text)', bg: 'var(--purple-bg)' },
-    { label: 'Total Refunds', value: `${data.totalRefunds.toLocaleString()} TK (${data.refundCount})`, icon: RotateCcw, color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
-    { label: 'Collection Rate', value: `${data.collectionRate}%`, icon: Percent, color: 'var(--success-text)', bg: 'var(--success-bg)' },
-    { label: 'Refund Rate', value: `${data.refundRate}%`, icon: Percent, color: data.refundRate > 10 ? 'var(--danger-text)' : 'var(--text-muted)', bg: data.refundRate > 10 ? 'var(--danger-bg)' : 'var(--input-bg)' },
+    { label: 'Total Revenue', value: `${totalRevenue.toLocaleString()} TK`, icon: DollarSign, color: 'var(--accent-text)', bg: 'var(--accent-bg)' },
+    { label: 'Advance Collected', value: `${totalAdvanceCollected.toLocaleString()} TK`, icon: TrendingUp, color: 'var(--success-text)', bg: 'var(--success-bg)' },
+    { label: 'Remaining Collected', value: `${totalRemainingCollected.toLocaleString()} TK`, icon: ArrowDownRight, color: 'var(--info-text)', bg: 'var(--info-bg)' },
+    { label: 'Net Revenue', value: `${netRevenue.toLocaleString()} TK`, icon: DollarSign, color: netRevenue >= 0 ? 'var(--success-text)' : 'var(--danger-text)', bg: netRevenue >= 0 ? 'var(--success-bg)' : 'var(--danger-bg)' },
+    { label: 'Security Deposits', value: `${totalSecurityDeposits.toLocaleString()} TK`, icon: Shield, color: 'var(--purple-text)', bg: 'var(--purple-bg)' },
+    { label: 'Total Refunds', value: `${totalRefunds.toLocaleString()} TK (${refundCount})`, icon: RotateCcw, color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
+    { label: 'Collection Rate', value: `${collectionRate}%`, icon: Percent, color: 'var(--success-text)', bg: 'var(--success-bg)' },
+    { label: 'Refund Rate', value: `${refundRate}%`, icon: Percent, color: refundRate > 10 ? 'var(--danger-text)' : 'var(--text-muted)', bg: refundRate > 10 ? 'var(--danger-bg)' : 'var(--input-bg)' },
   ];
 
   return (

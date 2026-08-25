@@ -75,7 +75,7 @@ exports.submitMessage = async (req, res) => {
     };
 
     if (req.user) {
-      msgObj.user = req.user._id;
+      msgObj.user = req.user.id;
       msgObj.name = req.user.name || msgObj.name;
       msgObj.email = req.user.email || msgObj.email;
     }
@@ -94,7 +94,7 @@ exports.submitMessage = async (req, res) => {
 
 exports.getMyTickets = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const messages = await ContactMessage.find({ user: userId })
       .sort({ createdAt: -1 })
       .lean();
@@ -112,7 +112,7 @@ exports.replyAsUser = async (req, res) => {
 
     const msg = await ContactMessage.findById(req.params.id);
     if (!msg) return res.status(404).json({ message: 'Message not found' });
-    if (req.user._id && msg.user && req.user._id.toString() !== msg.user.toString()) {
+    if (req.user.id && msg.user && req.user.id.toString() !== msg.user.toString()) {
       return res.status(403).json({ message: 'Not your ticket' });
     }
 
@@ -120,7 +120,7 @@ exports.replyAsUser = async (req, res) => {
       sender: 'customer',
       message: sanitize(String(message)),
       sentAt: new Date(),
-      sentBy: req.user._id
+      sentBy: req.user.id
     });
     msg.status = 'waitingReply';
     await msg.save();
@@ -264,11 +264,11 @@ exports.reply = async (req, res) => {
       sender: 'admin',
       message: sanitize(String(reply)),
       sentAt: new Date(),
-      sentBy: req.user._id
+      sentBy: req.user.id
     });
     msg.status = 'replied';
     msg.repliedAt = new Date();
-    msg.repliedBy = req.user._id;
+    msg.repliedBy = req.user.id;
     await msg.save();
 
     res.json(msg);

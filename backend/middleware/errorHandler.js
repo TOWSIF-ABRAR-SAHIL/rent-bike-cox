@@ -9,6 +9,11 @@ function errorHandler(err, req, res, _next) {
     url: req.originalUrl || req.url,
   };
 
+  if (res.headersSent) {
+    logger.warn('Headers already sent, error swallowed', meta);
+    return;
+  }
+
   if (err.message === 'Not allowed by CORS') {
     logger.warn('CORS blocked', meta);
     return res.status(403).json({ message: 'Not allowed by CORS' });

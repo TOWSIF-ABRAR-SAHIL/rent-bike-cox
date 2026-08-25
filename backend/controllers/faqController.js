@@ -120,7 +120,7 @@ exports.create = async (req, res) => {
       order: order || 0,
       tags: tags || [],
       isPinned: isPinned || false,
-      lastModifiedBy: req.user._id
+      lastModifiedBy: req.user.id
     });
     res.status(201).json(faq);
   } catch (error) {
@@ -140,7 +140,7 @@ exports.update = async (req, res) => {
     if (isActive !== undefined) update.isActive = isActive;
     if (tags !== undefined) update.tags = tags;
     if (isPinned !== undefined) update.isPinned = isPinned;
-    update.lastModifiedBy = req.user._id;
+    update.lastModifiedBy = req.user.id;
     const faq = await FAQ.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!faq) return res.status(404).json({ message: 'FAQ not found' });
     res.json(faq);

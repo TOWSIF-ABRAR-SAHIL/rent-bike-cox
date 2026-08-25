@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import HistoryTimeline from '../components/HistoryTimeline';
 import HistoryFilter from '../components/HistoryFilter';
 import HistoryStats from '../components/HistoryStats';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const VehicleHistory = ({ bikeId, onClose }) => {
   const [bike, setBike] = useState(null);
@@ -26,7 +24,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
         ...(filters.from && { from: filters.from }),
         ...(filters.to && { to: filters.to }),
       });
-      const { data } = await axios.get(`${API}/vehicle-history/${bikeId}/history?${params}`);
+      const { data } = await api.get(`/vehicle-history/${bikeId}/history?${params}`);
       setBike(data.bike);
       setEvents(data.events);
       setPagination({ page: data.page, pages: data.pages, total: data.total });
@@ -40,7 +38,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
 
   const fetchStats = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API}/vehicle-history/${bikeId}/stats?days=90`);
+      const { data } = await api.get(`/vehicle-history/${bikeId}/stats?days=90`);
       setStats(data);
     } catch (err) {
       console.error('Vehicle stats error:', err);
@@ -67,7 +65,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
 
   const handleExport = async () => {
     try {
-      const { data } = await axios.get(`${API}/vehicle-history/${bikeId}/export-history`, { responseType: 'blob' });
+      const { data } = await api.get(`/vehicle-history/${bikeId}/export-history`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');
       link.href = url;

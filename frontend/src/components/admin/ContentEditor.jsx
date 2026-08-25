@@ -3,6 +3,17 @@ import api from '../../api/axios';
 import { useToast } from '../useToast';
 import { FileText, Save, RotateCcw, Download, Upload, ChevronDown, ChevronRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
+function sanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
+  doc.querySelectorAll('*').forEach(el => {
+    [...el.attributes].forEach(attr => {
+      if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
+    });
+  });
+  return doc.body.innerHTML;
+}
+
 const PAGES = [
   { value: '', label: 'All Content' },
   { value: 'home', label: 'Home Page' },
@@ -282,7 +293,7 @@ const ContentEditor = () => {
                       {previews[item.key] && (
                         <div className="p-3 rounded-xl border mt-1" style={{ borderColor: 'var(--border-base)', background: 'var(--bg-primary)' }}>
                           <p className="text-[10px] font-medium mb-1 uppercase" style={{ color: 'var(--text-muted)' }}>Preview</p>
-                          <div className="text-sm prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: content[item.key] || '' }} />
+                          <div className="text-sm prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: sanitizeHtml(content[item.key] || '') }} />
                         </div>
                       )}
                       {item.validation && (

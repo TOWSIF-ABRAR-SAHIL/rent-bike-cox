@@ -27,7 +27,7 @@ async function healthCheck() {
         type: 'system',
         title: 'Stuck Pending Bookings',
         message: `${stuckBookings} bookings stuck in Pending state for >10 minutes`,
-        severity: 'high',
+        severity: 'critical',
       });
     }
 
@@ -53,7 +53,7 @@ async function healthCheck() {
         type: 'system',
         title: 'High Memory Usage',
         message: `Heap usage at ${heapUsedMB}MB (>512MB threshold)`,
-        severity: 'high',
+        severity: 'critical',
       });
     }
 

@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import SearchFilters from '../components/SearchFilters';
 import SearchResults from '../components/SearchResults';
 import SearchAutocomplete from '../components/SearchAutocomplete';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const AdvancedSearch = () => {
   const navigate = useNavigate();
@@ -50,7 +48,7 @@ const AdvancedSearch = () => {
         ...(filters.sort && { sort: filters.sort }),
       });
 
-      const { data } = await axios.get(`${API}/search?${params}`);
+      const { data } = await api.get(`/search?${params}`);
       setResults(data.bikes || []);
       setCategories(data.categories);
       setZones(data.zones);
@@ -82,7 +80,7 @@ const AdvancedSearch = () => {
   const fetchSuggestions = useCallback(async (q) => {
     if (!q || q.length < 2) { setSuggestions([]); return; }
     try {
-      const { data } = await axios.get(`${API}/search/suggestions?q=${encodeURIComponent(q)}`);
+      const { data } = await api.get(`/search/suggestions?q=${encodeURIComponent(q)}`);
       setSuggestions(data);
     } catch {
       setSuggestions([]);

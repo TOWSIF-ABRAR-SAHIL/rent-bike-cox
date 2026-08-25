@@ -88,7 +88,7 @@ exports.create = async (req, res) => {
       isActive, isDismissible, priority,
       style: style || {},
       actions: actions || {},
-      createdBy: req.user._id
+      createdBy: req.user.id
     });
     res.status(201).json(announcement);
   } catch (error) {

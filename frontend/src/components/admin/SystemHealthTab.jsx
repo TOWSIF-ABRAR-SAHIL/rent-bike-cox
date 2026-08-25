@@ -148,7 +148,7 @@ const SystemHealthTab = () => {
                 <div className="w-full h-2 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
                   <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (health.memory.heapUsed / health.memory.heapTotal) * 100)}%`, background: (health.memory.heapUsed / health.memory.heapTotal) > 0.8 ? 'var(--danger-text)' : 'var(--accent-text)' }} />
                 </div>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{((health.memory.heapUsed / health.memory.heapTotal) * 100).toFixed(1)}% used</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{((health.memory.heapUsed / health.memory.heapTotal) * 100 || 0).toFixed(1)}% used</p>
               </div>
             )}
           </div>
