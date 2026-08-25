@@ -88,15 +88,14 @@ const Home = () => {
 
   useEffect(() => {
     if (bikes.length === 0) return;
-    bikes.forEach(bike => {
-      api.get(`/reviews/${bike._id}?limit=1`)
-        .then(res => {
-          if (res.data?.stats) {
-            setBikeRatings(prev => ({ ...prev, [bike._id]: res.data.stats }));
-          }
-        })
-        .catch(() => {});
-    });
+    const ids = bikes.map(b => b._id).join(',');
+    api.get(`/reviews/stats?bikeIds=${encodeURIComponent(ids)}`)
+      .then(res => {
+        if (res.data && typeof res.data === 'object') {
+          setBikeRatings(res.data);
+        }
+      })
+      .catch(() => {});
   }, [bikes]);
 
   const handleCategoryClick = (slug) => {
@@ -428,11 +427,11 @@ const Home = () => {
                   <div className="flex items-center gap-1.5 mt-2 mb-3">
                     <div className="flex items-center">
                       {[1,2,3,4,5].map(star => (
-                        <Star key={star} size={12} fill={rating && star <= Math.round(rating.average) ? '#f59e0b' : 'none'} color={rating && star <= Math.round(rating.average) ? '#f59e0b' : 'var(--text-muted)'} />
+                        <Star key={star} size={12} fill={rating && star <= Math.round(rating.avgRating || 0) ? '#f59e0b' : 'none'} color={rating && star <= Math.round(rating.avgRating || 0) ? '#f59e0b' : 'var(--text-muted)'} />
                       ))}
                     </div>
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {rating ? `${rating.average.toFixed(1)} (${rating.count})` : 'No reviews'}
+                      {rating ? `${(rating.avgRating || 0).toFixed(1)} (${rating.total || 0})` : 'No reviews'}
                     </span>
                   </div>
                   <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-semibold transition-all mt-auto group-hover:border-amber-500/50 group-hover:text-amber-400"

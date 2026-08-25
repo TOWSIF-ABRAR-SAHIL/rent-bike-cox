@@ -31,12 +31,14 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - **Vehicle categories** — Bike, Car, Jeep with tier-based pricing
 - **Booking flow** — checkout, SSLCommerz payment, invoice, cancellation
 - **Fleet management** — zones, availability calendar, maintenance logs, bulk operations
+- **GPS Live Tracking** — real-time fleet map with Leaflet, category icons, movement trails, smooth marker animation, marker clustering, speed/battery/heading telemetry, ESP32/GSM IoT API
+- **Reports** — 18 report types in CSV/JSON/PDF/XLSX with preview modal, download, and report history
 - **Analytics** — revenue charts, booking trends, category performance, top bikes, zone analytics, rental duration, financial summary, hourly distribution
 - **Notifications** — in-app + email + push notifications with per-user preferences
 - **Reviews** — rider reviews and ratings on vehicles
 - **Seasonal pricing** — admin-configurable peak/off-peak/holiday rates
 - **Vehicle documents** — upload, verify, expiry tracking
-- **Maps & zones** — Leaflet/OpenStreetMap with 8 Cox's Bazar zones, zone explorer, route planner
+- **Fleet maps** — Leaflet/OpenStreetMap with LiveFleetMap (real-time tracking, clustering, telemetry)
 - **Vehicle comparison** — compare up to 3 vehicles side-by-side
 - **Wishlist** — save favorite vehicles (localStorage)
 - **Theme switcher** — Light, Dark, System mode
@@ -45,7 +47,7 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - **Photo lightbox** — fullscreen gallery with zoom and keyboard navigation
 - **SEO** — meta tags, robots.txt, sitemap.xml, JSON-LD schema
 - **Security** — Helmet CSP, rate limiting, audit logging, fraud detection, circuit breaker
-- **Testing** — 123 tests (97 backend + 26 frontend) with Vitest
+- **Testing** — 157 tests (131 backend + 26 frontend) with Vitest
 
 ## Demo Accounts
 
@@ -115,9 +117,9 @@ Runs backend + MongoDB on `http://localhost:5000`.
 ```
 rent-bike-cox/
 ├── backend/
-│   ├── controllers/      # 18 controllers
-│   ├── models/           # 20+ Mongoose models
-│   ├── routes/           # 20+ route files
+│   ├── controllers/      # 21 controllers
+│   ├── models/           # 30+ Mongoose models
+│   ├── routes/           # 30+ route files
 │   ├── middleware/        # auth, upload, error handling, sanitize, logging
 │   ├── security/         # validators, sanitizers, authorization
 │   ├── services/         # Pricing, Payment, Refund, Cancellation, Coupon, Fraud, Payout, Email, Notification
@@ -130,8 +132,8 @@ rent-bike-cox/
 │   └── server.js         # Express app entry
 ├── frontend/
 │   └── src/
-│       ├── pages/        # 23 route pages
-│       ├── components/   # 50+ reusable components
+│   ├── pages/        # 30+ route pages
+│   ├── components/   # 60+ reusable components
 │       ├── context/      # AuthContext, ThemeContext
 │       └── api/          # Axios instance
 ├── docs/                 # Architecture, Security, Phases, etc

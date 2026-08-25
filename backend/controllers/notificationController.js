@@ -51,10 +51,10 @@ exports.markAllAsRead = async (req, res) => {
 exports.getUnreadCount = async (req, res) => {
   try {
     const unread = await Notification.countDocuments({ user: req.user.id, read: false });
-    res.json({ unread });
+    if (!res.headersSent) res.json({ unread });
   } catch (error) {
     logger.error('getUnreadCount error', { message: error.message });
-    res.status(500).json({ unread: 0 });
+    if (!res.headersSent) res.status(500).json({ unread: 0 });
   }
 };
 

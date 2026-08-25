@@ -2,6 +2,7 @@ const Review = require('../models/Review');
 const Bike = require('../models/Bike');
 const Booking = require('../models/Booking');
 const logger = require('../utils/logger');
+const mongoose = require('mongoose');
 
 exports.createReview = async (req, res) => {
   try {
@@ -65,7 +66,7 @@ exports.getBikeReviews = async (req, res) => {
       .lean();
 
     const stats = await Review.aggregate([
-      { $match: { bike: bike._id } },
+      { $match: { bike: mongoose.Types.ObjectId.isValid(bikeId) ? new mongoose.Types.ObjectId(bikeId) : bikeId } },
       {
         $group: {
           _id: null,
@@ -89,6 +90,49 @@ exports.getBikeReviews = async (req, res) => {
   } catch (error) {
     logger.error('getBikeReviews error', { message: error.message });
     res.status(500).json({ message: 'Failed to fetch reviews' });
+  }
+};
+
+exports.getBulkReviewStats = async (req, res) => {
+  try {
+    const { bikeIds } = req.query;
+    const ids = String(bikeIds || '').split(',').map(s => s.trim()).filter(Boolean);
+
+    const result = {};
+    if (ids.length > 0) {
+      const agg = await Review.aggregate([
+        { $match: { bike: { $in: ids } } },
+        {
+          $group: {
+            _id: '$bike',
+            avgRating: { $avg: '$rating' },
+            total: { $sum: 1 },
+            five: { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
+            four: { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
+            three: { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
+            two: { $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] } },
+            one: { $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] } },
+          },
+        },
+      ]);
+
+      for (const row of agg) {
+        result[row._id.toString()] = {
+          avgRating: row.avgRating,
+          total: row.total,
+          five: row.five,
+          four: row.four,
+          three: row.three,
+          two: row.two,
+          one: row.one,
+        };
+      }
+    }
+
+    res.json(result);
+  } catch (error) {
+    logger.error('getBulkReviewStats error', { message: error.message });
+    res.status(500).json({ message: 'Failed to fetch review stats' });
   }
 };
 

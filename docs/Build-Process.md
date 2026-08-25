@@ -57,6 +57,9 @@ docker-compose up --build
 | `node scripts/seedAdmin.js` | backend/ | Seed admin user |
 | `node seed.js` | backend/ | Seed admin (simple) |
 | `node seedDemo.js` | backend/ | Seed demo data |
+| `node seedTracking.js` | backend/ | Seed GPS trail data + currentLocation for all bikes |
+| `node scripts/seedSettings.js` | backend/ | Seed full settings + business rules + branding |
+| `node scripts/seedContent.js` | backend/ | Seed default site content pages |
 | `docker-compose up --build` | root/ | Docker dev environment |
 
 ## Code Quality

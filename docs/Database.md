@@ -6,7 +6,7 @@
 - **Local fallback:** `mongodb://localhost:27017/rentbike`
 - **Driver:** Mongoose 9.6.1
 
-## Collections (28 models)
+## Collections (39 models)
 
 ### User
 ```js
@@ -40,7 +40,9 @@
   availability:   { type: Boolean, default: true },
   isVerified:     { type: Boolean, default: false },
   renter:         { type: ObjectId, ref: 'User', required: true },
-  zone:           { type: ObjectId, ref: 'Zone', default: null },
+  currentLocation: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] },  // GeoJSON
+  currentRenter:  { type: ObjectId, ref: 'User', default: null },
+  lastActive:     { type: Date },
   tierPricing:    [{ minHours: Number, maxHours: Number, pricePerHour: Number }],
   condition:      { type: String, enum: ['excellent', 'good', 'fair', 'poor'], default: 'good' },
   currentMileage: { type: Number, default: 0 },
@@ -50,8 +52,8 @@
   createdAt:      { type: Date, default: Date.now }
 }
 ```
-- Indexes: unique compound (model, brand, category, renter), zone, category+availability
-- References: Category, User (renter), Zone. Referenced by Booking.
+- Indexes: unique compound (model, brand, category, renter), category+availability, currentLocation (2dsphere)
+- References: Category, User (renter). Referenced by Booking.
 
 ### Booking
 ```js
@@ -159,23 +161,34 @@
 ```
 - Discount codes applied at checkout. Admin CRUD only.
 
-### Zone
+### LocationHistory
 ```js
 {
-  name:           { type: String, required: true, trim: true },
-  slug:           { type: String, required: true, unique: true, lowercase: true },
-  description:    { type: String },
-  polygon:        [{ lat: Number, lng: Number }],  // GeoJSON-like boundary
-  center:         { lat: Number, lng: Number },
-  bounds:         { north: Number, south: Number, east: Number, west: Number },
-  color:          { type: String, default: '#f59e0b' },
-  highlights:     [{ type: String }],
-  distanceFromCenter: { type: Number },
-  typicalRentPrice:  { type: Number },
-  isActive:       { type: Boolean, default: true }
+  bike:           { type: ObjectId, ref: 'Bike', required: true },
+  coordinates:    { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] },
+  speed:          { type: Number, default: 0 },
+  heading:        { type: Number, default: 0 },
+  battery:        { type: Number, default: 100 },
+  accuracy:       { type: Number, default: 0 },
+  recordedAt:     { type: Date, default: Date.now }
 }
 ```
-- Seeded with 8 Cox's Bazar zones. Referenced by Bike.
+- Indexes: bike+recordedAt, coordinates (2dsphere), recordedAt (TTL 7 days)
+- Populated by IoT devices via POST /api/tracking or seedTracking.js
+
+### ReportHistory
+```js
+{
+  reportType:     { type: String, required: true },
+  format:         { type: String, enum: ['csv', 'json', 'pdf', 'xlsx'], required: true },
+  dateRange:      { from: Date, to: Date },
+  fileSize:       { type: String },
+  rowCount:       { type: Number, default: 0 },
+  generatedBy:    { type: ObjectId, ref: 'User' }
+}
+```
+- Indexes: createdAt, generatedBy+createdAt
+- Auto-saved on every report generation
 
 ### PaymentIntent
 ```js
@@ -414,7 +427,10 @@ User (1) ──────< (N) Bike              [renter owns bikes]
 User (1) ──────< (N) Booking           [user makes bookings]
 Bike  (1) ──────< (N) Booking          [bike is booked]
 Bike  (N) >───── (1) Category          [bike has category]
-Bike  (N) >───── (1) Zone              [bike in zone]
+Bike  (1) ──────< (N) LocationHistory  [GPS trail points]
+Bike  (1) ──────< (N) MaintenanceLog   [maintenance history]
+Bike  (1) ──────< (N) VehicleDocument  [registration/insurance]
+Bike  (1) ──────< (N) Review           [bike ratings]
 Booking (1) ────< (N) Refund           [booking refunds]
 Booking (1) ────< (N) PaymentIntent    [payment session]
 Booking (1) ────< (N) LedgerEntry      [financial records]
@@ -423,16 +439,14 @@ User (1) ──────< (N) Notification      [in-app notifications]
 User (1) ──────< (1) NotificationPreference [push/email/inApp toggles]
 User (1) ──────< (N) Review            [bike reviews]
 User (1) ──────< (N) PushSubscription  [web push endpoints]
-Bike  (1) ──────< (N) MaintenanceLog   [maintenance history]
-Bike  (1) ──────< (N) VehicleDocument  [registration/insurance]
-Bike  (1) ──────< (N) Review           [bike ratings]
+User (1) ──────< (N) ReportHistory     [generated reports]
 Category (1) ───< (N) SeasonalRate     [seasonal pricing]
+Category (1) ───< (N) Bike             [vehicle category]
 
-Settings:  singleton (global pricing)
+Settings:  singleton (global pricing + business rules)
 Counter:   singleton per type (invoice)
 Policy:    independent collection
 Coupon:    independent collection
-Zone:      independent collection (seeded with Cox's Bazar zones)
 PasswordReset: OTP tokens (15-min expiry)
 RefreshToken:  JWT refresh tokens
 BlacklistedToken: logged-out tokens
@@ -441,6 +455,14 @@ CircuitBreaker: payment gateway state
 IdempotencyKey: duplicate prevention
 FraudEvent:    suspicious activity
 Payout:        renter payouts
+Dispute:       dispute lifecycle
+Announcement:  banner/popup management
+FAQ:           categorized questions
+ContactMessage: contact form inbox
+SiteContent:   key/value CMS
+NotificationTemplate: email/push templates
+EmailCampaign: targeted email sends
+AdminNotification: admin alerts
 ```
 
 ## Current Database State
@@ -450,8 +472,14 @@ Payout:        renter payouts
 | users | 3+ | admin, renter, test user |
 | bikes | 3 | TVS Scooty, Honda Dio 110, TVS Jupiter 110 |
 | categories | 3 | Bike, Car, Jeep |
-| zones | 8 | Cox's Bazar zones (seeded) |
-| bookings | 0 | Empty (clean DB) |
-| settings | 1 | Base: 175 TK/hr, 4 packages |
+| bookings | 0 | Empty |
+| settings | 1 | Base: 175 TK/hr, 4 packages, business rules |
+| locationhistories | 25+ | GPS trail data (seeded via seedTracking.js) |
 | policies | 0 | Empty |
 | coupons | 0 | Empty |
+| seasonalrates | 0 | Empty |
+| sitecontents | 8 | Default page groups (seeded via seedContent.js) |
+| announcements | 0 | Empty |
+| faqs | 0 | Empty |
+| contactmessages | 0 | Empty |
+| disputes | 0 | Empty |

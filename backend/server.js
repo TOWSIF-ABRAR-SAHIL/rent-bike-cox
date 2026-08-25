@@ -355,7 +355,7 @@ registerLimiter('upload', uploadLimiter);
 
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many requests, please try again later' },
@@ -377,7 +377,7 @@ registerLimiter('search', searchLimiter);
 
 const dashboardLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 120,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Too many dashboard requests, please try again later' },

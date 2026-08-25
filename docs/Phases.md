@@ -124,7 +124,7 @@
 - [x] K2: Reliability — MemoryCache, gracefulShutdown, /health/info endpoint
 - [x] K3: Query optimization — 76 .lean() additions across 17 controllers
 - [x] K4: Database indexes — 15 compound indexes across 7 models
-- [x] K5: Rate limiting — search (30/min), dashboard (60/min), fleet (40/min) limiters
+- [x] K5: Rate limiting — search (30/min), dashboard (120/min), global (300/min), fleet (40/min) limiters
 - [x] K6: Cache integration — 19 cache operations across dashboard + seasonal + health
 - [x] K7: Frontend SEO — 17 meta tags, robots.txt, sitemap.xml, security.txt, JSON-LD
 - [x] K8: Error boundaries — ErrorBoundary rewrite, PageSpinner, lazy route loading
@@ -151,9 +151,9 @@
 - [x] All frontend pages returning 200
 
 ### Phase 11: Expanded Test Coverage
-- [x] Backend: 87 tests across 7 files (authMiddleware, authorize, tokenManager, passwordPolicy, invoiceNumber, refund, callbackGuard, seasonalPricing, safeAmount, pricing, sanitize)
+- [x] Backend: 87 tests across 7 files
 - [x] Frontend: 26 tests across 6 files (sanity, axios, ErrorBoundary, PageErrorBoundary, Toast, ProtectedRoute)
-- [x] Total: 113 tests (now 123 with analytics tests)
+- [x] Total: 123 tests (with analytics tests)
 
 ### Phase 12: TypeScript Migration
 - Skipped by user choice
@@ -209,6 +209,31 @@
 - [x] Admin Dashboard: "View Full Analytics" link in Finance tab
 - [x] Backend tests: analytics.test.mjs (10 export tests)
 - [x] Total: 123 tests (97 backend + 26 frontend)
+
+### Phase 20: Admin Dashboard Architecture Fix
+- [x] Fixed `fetchDashboard` caching — admin stats now update after bike/category/policy edits
+- [x] Created `TabErrorBoundary.jsx` — isolates tab crashes so one broken tab doesn't break the whole dashboard
+- [x] Converted admin tab content to scrollable (overflow-x-auto) — removed horizontal scrollbar on tab bar
+- [x] Fixed light theme contrast on Reports tab — ensured proper text colors in both themes
+
+### Phase 21: GPS Live Tracking
+- [x] `LocationHistory` model — bike GPS trail with GeoJSON Point, speed, heading, battery, accuracy, 7-day TTL
+- [x] `trackingController.js` — POST (IoT device auth via X-API-Key), GET (all live), GET stats, GET history, GET by bike
+- [x] `routes/tracking.js` — 5 endpoints with IoT and user authentication
+- [x] `LiveFleetMap.jsx` — advanced Leaflet map with category icons (Bike/Car/Jeep), movement trail polyline, smooth marker animation, marker clustering (leaflet.markercluster), speed/battery/heading info panel, legend overlay, auto-fit bounds, search/filter by model, connection status badge
+- [x] `seedTracking.js` — generates realistic GPS trail data for all demo bikes
+- [x] `IOT_API_KEY` env var — used by ESP32/GSM devices for POST auth
+- [x] Updated `Bike` model — added `currentLocation` (GeoJSON Point), `currentRenter`, `lastActive` fields
+
+### Phase 22: Reports Overhaul
+- [x] 18 report types (was 8): added `renter-earnings`, `vehicle-utilization`, `category-performance`, `zone-analytics`, `daily-summary`, `monthly-financial`, `tax-vat`, `customer-insights`, `peak-hours`, `refunds`
+- [x] 4 format handlers in `reportController.js`: CSV (text/csv), JSON (application/json), PDF (application/pdf), XLSX (application/vnd.openxmlformats)
+- [x] `pdfGenerator.js` — professional A4 PDF with company header, styled table (colored header, alternating rows), date range, page numbers, footer with generation metadata, dynamic row height with truncation for long text
+- [x] `xlsxGenerator.js` — Excel workbook via `xlsx` package with auto-width columns
+- [x] `ReportHistory.js` model — tracks report type, format, dateRange, fileSize, rowCount, generatedBy
+- [x] Report history API: GET `/admin/reports/history` (last 10), DELETE `/admin/reports/history/:id`
+- [x] `ReportsTab.jsx` complete rewrite — 18 reports in 4 colored category groups (Financial/Operations/User/Analytics), format dropdown (CSV/JSON/PDF/XLSX), preview modal with scrollable data table, report history section with delete, card hover effects (lift + shadow)
+- [x] All 157 tests pass (131 backend + 26 frontend), lint clean, production build succeeds
 
 ## Remaining / Future
 

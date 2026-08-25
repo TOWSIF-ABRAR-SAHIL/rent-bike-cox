@@ -31,17 +31,17 @@ rent-bike-cox/
 ├── backend/
 │   ├── server.js                    # Express app entry, middleware wiring, route mounts
 │   ├── .env / .env.example
-│   ├── controllers/                 # 18 controllers
+│   ├── controllers/                 # 37 controllers
 │   │   ├── authController.js
 │   │   ├── bookingController.js
 │   │   ├── paymentController.js
-│   │   ├── dashboardController.js   # settings, bikes, categories, admin ops
+│   │   ├── paymentAdminController.js
+│   │   ├── dashboardController.js   # settings, bikes, categories, branding
 │   │   ├── couponController.js
 │   │   ├── policyController.js
 │   │   ├── pricingController.js
 │   │   ├── maintenanceController.js
 │   │   ├── availabilityController.js
-│   │   ├── zoneController.js
 │   │   ├── fleetController.js
 │   │   ├── bulkController.js
 │   │   ├── vehicleHistoryController.js
@@ -51,13 +51,30 @@ rent-bike-cox/
 │   │   ├── reviewController.js
 │   │   ├── seasonalController.js
 │   │   ├── vehicleDocController.js
-│   │   └── notificationPrefController.js
-│   ├── models/                      # 20+ Mongoose models
+│   │   ├── notificationPrefController.js
+│   │   ├── trackingController.js      # GPS telemetry (IoT + query)
+│   │   ├── reportController.js        # 18 report types, 4 formats
+│   │   ├── financialController.js     # admin financial ops
+│   │   ├── auditController.js         # audit log queries
+│   │   ├── fraudController.js         # fraud event management
+│   │   ├── payoutController.js        # renter payouts
+│   │   ├── disputeController.js       # dispute lifecycle
+│   │   ├── siteContentController.js   # content key/value CRUD
+│   │   ├── announcementController.js  # banner/popup management
+│   │   ├── faqController.js           # FAQ CRUD + reorder
+│   │   ├── contactController.js       # contact form inbox
+│   │   ├── campaignController.js      # email campaigns
+│   │   ├── notificationTemplateController.js
+│   │   ├── systemHealthController.js  # server/DB health
+│   │   ├── cacheController.js         # in-memory cache ops
+│   │   ├── rateLimitController.js     # limiter configs
+│   │   └── logController.js           # log file tailing
+│   ├── models/                      # 39 Mongoose models
 │   │   ├── User.js                  # role enum, select:false password, NID/license
-│   │   ├── Bike.js                  # category ref, renter ref, tier pricing
-│   │   ├── Booking.js               # status machine, invoice number, buffers
+│   │   ├── Bike.js                  # category ref, renter ref, tier pricing, currentLocation (GeoJSON)
+│   │   ├── Booking.js               # status machine, invoice number, 30min buffer
 │   │   ├── Category.js              # slug, isActive
-│   │   ├── Settings.js              # singleton (basePricePerHour, packages)
+│   │   ├── Settings.js              # singleton (basePricePerHour, packages, businessRules)
 │   │   ├── Counter.js               # auto-increment RBC-YYYY-XXXXXX
 │   │   ├── Policy.js
 │   │   ├── Coupon.js
@@ -75,15 +92,25 @@ rent-bike-cox/
 │   │   ├── IdempotencyKey.js
 │   │   ├── MaintenanceLog.js        # Fleet: maintenance tracking
 │   │   ├── MaintenanceNotification.js
-│   │   ├── Zone.js                  # Fleet: service zones
 │   │   ├── Notification.js          # In-app notifications
 │   │   ├── NotificationPreference.js # Per-user email/push/inApp toggles
 │   │   ├── Review.js                # Bike reviews and ratings
 │   │   ├── SeasonalRate.js          # Peak/off-peak/holiday pricing
-│   │   └── VehicleDocument.js       # Registration/insurance/fitness docs
-│   ├── routes/                      # 20+ route files
+│   │   ├── VehicleDocument.js       # Registration/insurance/fitness docs
+│   │   ├── LocationHistory.js       # GPS trail history (7-day TTL), speed, heading, battery
+│   │   ├── ReportHistory.js         # Generated report log (type, format, fileSize)
+│   │   ├── SiteContent.js           # Key/value content management, page groups, history
+│   │   ├── PushSubscription.js      # Web push notification subscriptions
+│   │   ├── NotificationTemplate.js  # Email/push templates with variables
+│   │   ├── Announcement.js          # Banners/popups with scheduling, audience
+│   │   ├── FAQ.js                   # Categorized questions, helpful tracking
+│   │   ├── ContactMessage.js        # Contact form inbox, status workflow
+│   │   ├── EmailCampaign.js         # Email campaigns with audience targeting
+│   │   ├── AdminNotification.js     # Admin alerts (severity, read tracking)
+│   │   └── Dispute.js               # Reason enum, status workflow (open→resolved)
+│   ├── routes/                      # 40 route files
 │   │   ├── auth.js                  # /api/auth
-│   │   ├── dashboard.js             # /api/dashboard (public + auth)
+│   │   ├── dashboard.js             # /api/dashboard (public + auth + branding)
 │   │   ├── booking.js               # /api/booking
 │   │   ├── payment.js               # /api/payment
 │   │   ├── coupons.js               # /api/coupons
@@ -93,7 +120,6 @@ rent-bike-cox/
 │   │   ├── pricing.js               # /api/pricing
 │   │   ├── maintenance.js           # /api/maintenance
 │   │   ├── availability.js          # /api/availability
-│   │   ├── zone.js                  # /api/zones
 │   │   ├── fleet.js                 # /api/fleet
 │   │   ├── bulk.js                  # /api/bulk
 │   │   ├── vehicleHistory.js        # /api/vehicle-history
@@ -102,7 +128,27 @@ rent-bike-cox/
 │   │   ├── engagement.js            # /api/notifications, /api/reviews
 │   │   ├── seasonal.js              # /api/seasonal-rates, /api/admin/seasonal-rates
 │   │   ├── vehicleDoc.js            # /api/vehicle-docs
-│   │   └── notificationPref.js      # /api/notification-preferences
+│   │   ├── notificationPref.js      # /api/notification-preferences
+│   │   ├── tracking.js              # /api/tracking (IoT + query)
+│   │   ├── reports.js               # /api/admin/reports (generate + history)
+│   │   ├── content.js               # /api/content (public)
+│   │   ├── adminContent.js          # /api/admin/content (admin CRUD + rollback)
+│   │   ├── audit.js                 # /api/audit (admin)
+│   │   ├── fraud.js                 # /api/fraud (admin)
+│   │   ├── payout.js                # /api/payouts (admin)
+│   │   ├── dispute.js               # /api/disputes (auth + admin)
+│   │   ├── announcements.js         # /api/announcements + /api/admin/announcements
+│   │   ├── faqs.js                  # /api/faqs + /api/admin/faqs
+│   │   ├── contact.js               # /api/contact + /api/admin/messages
+│   │   ├── campaigns.js             # /api/admin/campaigns
+│   │   ├── notificationTemplates.js # /api/admin/notification-templates
+│   │   ├── adminNotifications.js    # /api/admin/notifications
+│   │   ├── systemHealth.js          # /api/admin/system-health
+│   │   ├── cache.js                 # /api/admin/cache
+│   │   ├── rateLimit.js             # /api/admin/rate-limits
+│   │   ├── logs.js                  # /api/admin/logs
+│   │   ├── health.js                # /api/health + /api/health/info
+│   │   └── push.js                  # /api/push-subscription
 │   ├── middleware/
 │   │   ├── authMiddleware.js        # JWT decode → req.user
 │   │   ├── uploadMiddleware.js      # multer → Cloudinary
@@ -183,7 +229,7 @@ rent-bike-cox/
 │   │   │   ├── useAuth.js           # useAuth hook
 │   │   │   ├── ThemeContext.jsx      # Light/Dark/System theme
 │   │   │   └── useTheme.js
-│   │   ├── pages/                   # 23 route pages
+│   │   ├── pages/                   # 30+ route pages
 │   │   │   ├── Home.jsx
 │   │   │   ├── BikeDetails.jsx
 │   │   │   ├── Checkout.jsx
@@ -202,7 +248,8 @@ rent-bike-cox/
 │   │   │   ├── SeasonalPricingManager.jsx
 │   │   │   ├── VehicleDocuments.jsx
 │   │   │   ├── PolicyList.jsx
-│   │   │   ├── ZoneExplorer.jsx
+│   │   │   ├── FAQ.jsx
+│   │   │   ├── Contact.jsx
 │   │   │   ├── CompareVehicles.jsx
 │   │   │   ├── Wishlist.jsx
 │   │   │   ├── RefundManagement.jsx
@@ -212,8 +259,9 @@ rent-bike-cox/
 │   │   │   ├── PaymentFailed.jsx
 │   │   │   ├── PaymentCancelled.jsx
 │   │   │   └── NotFound.jsx
-│   │   ├── components/              # 50+ reusable components
+│   │   ├── components/              # 60+ reusable components
 │   │   │   ├── ErrorBoundary.jsx    # User-friendly error UI
+│   │   │   ├── TabErrorBoundary.jsx # Per-tab error boundary (AdminDashboard)
 │   │   │   ├── PageSpinner.jsx      # Full-page loading for lazy routes
 │   │   │   ├── LoadingSkeleton.jsx
 │   │   │   ├── ProtectedRoute.jsx   # Role-based route gating
@@ -221,6 +269,7 @@ rent-bike-cox/
 │   │   │   ├── Footer.jsx
 │   │   │   ├── ThemeToggle.jsx
 │   │   │   ├── AvailabilityCalendar.jsx
+│   │   │   ├── LiveFleetMap.jsx     # Real-time GPS map with clustering, telemetry, trails
 │   │   │   ├── FleetOverview.jsx, FleetSummary.jsx, FleetFilter.jsx, FleetBikeRow.jsx
 │   │   │   ├── FleetHealthChart.jsx, FleetUtilizationChart.jsx
 │   │   │   ├── MaintenanceSchedule.jsx, MaintenanceLogForm.jsx, MaintenanceHistory.jsx
@@ -235,12 +284,27 @@ rent-bike-cox/
 │   │   │   ├── SeasonalBadge.jsx
 │   │   │   ├── DocumentUpload.jsx, DocumentViewer.jsx
 │   │   │   ├── BulkOperations.jsx
-│   │   │   ├── ZoneCard.jsx, ZoneMap.jsx
 │   │   │   ├── RoutePlanner.jsx
 │   │   │   ├── CompareBar.jsx
 │   │   │   ├── BottomNav.jsx
 │   │   │   ├── WhatsAppButton.jsx
 │   │   │   ├── Lightbox.jsx
+│   │   │   ├── RenterEarnings.jsx   # Renter earnings dashboard
+│   │   │   ├── admin/               # 13 admin sub-components
+│   │   │   │   ├── CommandCenter.jsx       # Default tab — quick actions, system status
+│   │   │   │   ├── ReportsTab.jsx          # 18 report types, 4 formats, preview, history
+│   │   │   │   ├── SystemHealthTab.jsx     # Server/DB health dashboard
+│   │   │   │   ├── ContentEditor.jsx       # Site content by page group
+│   │   │   │   ├── BrandingTab.jsx         # Business info, colors, social, SEO
+│   │   │   │   ├── AnnouncementManager.jsx # Banners/popups
+│   │   │   │   ├── TemplateManager.jsx     # Email/notification templates
+│   │   │   │   ├── FAQManager.jsx          # FAQ CRUD with categories
+│   │   │   │   ├── MessageInbox.jsx        # Contact form inbox
+│   │   │   │   ├── CampaignManager.jsx     # Email campaigns
+│   │   │   │   ├── LogsViewer.jsx          # App/error log viewer
+│   │   │   │   ├── CacheManager.jsx        # In-memory cache stats + flush
+│   │   │   │   ├── RateLimitManager.jsx    # Rate limiter config cards
+│   │   │   │   └── AdminNotificationBell.jsx # Navbar notification dropdown
 │   │   │   └── ui/ (EmptyState, Skeleton)
 │   │   └── assets/
 │   ├── index.html                   # SEO meta tags, OG, Twitter cards
@@ -272,30 +336,60 @@ rent-bike-cox/
 
 | Prefix | File | Access |
 |--------|------|--------|
-| `GET /api/health` | server.js (inline) | public |
+| `GET /api/health` | routes/health.js | public (status) |
+| `GET /api/health/info` | routes/health.js | public (memory, uptime, PID) |
+| `GET /api/seed-temp` | server.js (inline) | dev only (NODE_ENV guard) |
 | `/api/auth` | routes/auth.js | public (login, register) |
-| `/api/dashboard` | routes/dashboard.js | public (settings, bikes, categories) + renter + admin |
+| `/api/dashboard` | routes/dashboard.js | public (settings, bikes, categories) + renter + admin + branding |
 | `/api/booking` | routes/booking.js | authenticated (role-based per handler) |
 | `/api/payment` | routes/payment.js | init (auth), success/fail/cancel/ipn (SSLCommerz POSTs) |
 | `/api/coupons` | routes/coupons.js | admin CRUD |
 | `/api/policies` | routes/policy.js | public GET, admin CRUD |
-| `/api/financial` | routes/financial.js | admin only |
+| `/api/financial` | routes/financial.js | admin only (includes renter earnings) |
 | `/api/documents` | routes/documents.js | authenticated |
 | `/api/pricing` | routes/pricing.js | auth (preview) |
 | `/api/maintenance` | routes/maintenance.js | auth (Renter + Admin) |
 | `/api/availability` | routes/availability.js | public |
-| `/api/zones` | routes/zone.js | public GET, admin CRUD |
 | `/api/fleet` | routes/fleet.js | auth (Renter + Admin) |
 | `/api/bulk` | routes/bulk.js | auth (Renter + Admin) |
 | `/api/vehicle-history` | routes/vehicleHistory.js | auth (Renter + Admin) |
 | `/api/search` | routes/search.js | public |
-| `/api/analytics` | routes/analytics.js | admin only (9 endpoints: revenue, bookings, categories, top-bikes, customers, zones, duration, financial, export) |
+| `/api/analytics` | routes/analytics.js | admin only (revenue, bookings, categories, top-bikes, customers, zones, duration, financial, export) |
 | `/api/notifications` | routes/engagement.js | auth |
 | `/api/reviews` | routes/engagement.js | public GET, auth POST/PUT/DELETE |
+| `GET /api/reviews/stats` | routes/engagement.js | public bulk stats for multiple bikes (N+1 fix) |
 | `/api/seasonal-rates` | routes/seasonal.js | public GET (active) |
 | `/api/admin/seasonal-rates` | routes/seasonal.js | admin CRUD |
 | `/api/vehicle-docs` | routes/vehicleDoc.js | auth (Renter + Admin) |
 | `/api/notification-preferences` | routes/notificationPref.js | auth |
+| `/api/tracking` (POST) | routes/tracking.js | IoT device (X-API-Key) |
+| `/api/tracking` (GET) | routes/tracking.js | public (live locations) |
+| `/api/tracking/stats` | routes/tracking.js | auth (aggregated telemetry) |
+| `/api/tracking/history/:bikeId` | routes/tracking.js | auth (trail points) |
+| `/api/tracking/:bikeId` | routes/tracking.js | auth (single bike location) |
+| `/api/admin/reports` | routes/reports.js | admin (generate 18 types in CSV/JSON/PDF/XLSX) |
+| `/api/admin/reports/history` | routes/reports.js | admin (last 10, DELETE) |
+| `/api/admin/system-health` | routes/systemHealth.js | admin |
+| `/api/admin/cache` | routes/cache.js | admin (stats, flush, delete key) |
+| `/api/admin/rate-limits` | routes/rateLimit.js | admin (limiter configs) |
+| `/api/admin/logs` | routes/logs.js | admin (tail server logs) |
+| `/api/admin/notifications` | routes/adminNotifications.js | admin (alerts) |
+| `/api/admin/campaigns` | routes/campaigns.js | admin (CRUD + send) |
+| `/api/admin/notification-templates` | routes/notificationTemplates.js | admin |
+| `/api/admin/content` | routes/adminContent.js | admin (CRUD + rollback) |
+| `/api/admin/announcements` | routes/announcements.js | admin (CRUD + tracking) |
+| `/api/admin/faqs` | routes/faqs.js | admin (CRUD + reorder) |
+| `/api/admin/messages` | routes/contact.js | admin (inbox + reply) |
+| `/api/content` | routes/content.js | public (site content) |
+| `/api/announcements/active` | routes/announcements.js | public |
+| `/api/faqs` | routes/faqs.js | public |
+| `/api/contact` | routes/contact.js | public |
+| `/api/disputes` | routes/dispute.js | auth (create/my), admin (all/resolve/stats) |
+| `/api/audit` | routes/audit.js | admin |
+| `/api/fraud` | routes/fraud.js | admin |
+| `/api/payouts` | routes/payouts.js | admin |
+| `/api/push-subscription` | routes/push.js | auth |
+| `/api/dashboard/branding` | routes/dashboard.js | public GET, admin PUT |
 
 ## Rate Limiters
 
@@ -339,7 +433,7 @@ Advance: 50% for ≤24h, 30% for >24h. `BACKEND_URL` and `FRONTEND_URL` control 
 
 ### Backend (Render)
 - `render.yaml` blueprint: `cd backend && npm install` (build), `node server.js` (start)
-- Env vars: MONGODB_URI, JWT_SECRET, Cloudinary, SSLCommerz, BACKEND_URL, FRONTEND_URL
+- Env vars: MONGODB_URI, JWT_SECRET, Cloudinary, SSLCommerz, BACKEND_URL, FRONTEND_URL, IOT_API_KEY (ESP32/GSM auth)
 
 ### Frontend (Vercel)
 - `vercel.json` in `frontend/`: SPA catch-all rewrite + asset caching

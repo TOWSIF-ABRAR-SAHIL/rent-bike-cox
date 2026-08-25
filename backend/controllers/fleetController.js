@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 
 exports.getFleetSummary = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const bikeQuery = role === 'Admin' ? {} : { renter: ownerId };
 
     const totalBikes = await Bike.countDocuments(bikeQuery);
@@ -69,7 +69,7 @@ exports.getFleetSummary = async (req, res) => {
 
 exports.getFleetUtilization = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const bikeQuery = role === 'Admin' ? {} : { renter: ownerId };
 
     const bikes = await Bike.find(bikeQuery).select('model brand category').lean();
@@ -124,7 +124,7 @@ exports.getFleetUtilization = async (req, res) => {
 
 exports.getFleetBikes = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const bikeQuery = role === 'Admin' ? {} : { renter: ownerId };
 
     const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -222,7 +222,7 @@ exports.getFleetBikes = async (req, res) => {
 
 exports.exportFleet = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const bikeQuery = role === 'Admin' ? {} : { renter: ownerId };
 
     const bikes = await Bike.find(bikeQuery)

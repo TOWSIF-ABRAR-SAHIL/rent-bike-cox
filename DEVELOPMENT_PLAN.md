@@ -59,7 +59,7 @@ cd frontend && cp .env.example .env && npm run dev
 | QA Audit | 140 bugs | ✅ Fixed |
 | Quality Push (Vitest, Sentry, CI) | 54 tasks | ✅ Done |
 | Post-Deployment Enhancements | 19 phases | ✅ Done |
-| **Total Tests** | **123** | **97 backend + 26 frontend** |
+| **Total Tests** | **157** | **131 backend + 26 frontend** |
 
 ---
 
@@ -82,6 +82,9 @@ cd frontend && cp .env.example .env && npm run dev
 - Tier-based pricing with seasonal rates
 - Fleet management (zones, maintenance, availability, bulk ops)
 - Analytics dashboard (revenue, trends, top bikes, customers, zones, duration, financial, hourly)
+- GPS live tracking (Leaflet real-time map with clustering, trails, telemetry)
+- 18 report types in CSV/JSON/PDF/XLSX with preview and history
+- Admin dashboard with 22 tabs, TabErrorBoundary isolation
 - Maps & zones (Leaflet/OpenStreetMap, 8 Cox's Bazar zones, route planner)
 - Vehicle comparison (max 3 side-by-side)
 - Wishlist (localStorage-persisted)
@@ -91,7 +94,7 @@ cd frontend && cp .env.example .env && npm run dev
 - Hero carousel, photo lightbox, testimonials
 - Mobile bottom navigation + WhatsApp contact
 - Theme switcher (Light/Dark/System)
-- 123 tests (97 backend + 26 frontend)
+- 157 tests (131 backend + 26 frontend)
 
 ---
 
@@ -179,7 +182,6 @@ cd frontend && cp .env.example .env && npm run dev
 - Mobile app (React Native)
 - Payment gateway expansion (Stripe, bKash direct)
 - Advanced analytics (ML-based demand prediction)
-- Fleet GPS tracking
 - Multi-city support
 
 ---

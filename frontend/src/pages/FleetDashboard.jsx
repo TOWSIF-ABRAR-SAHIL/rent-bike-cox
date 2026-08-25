@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import FleetSummary from '../components/FleetSummary';
 import FleetHealthChart from '../components/FleetHealthChart';
 import FleetUtilizationChart from '../components/FleetUtilizationChart';
@@ -7,8 +7,6 @@ import FleetBikeRow from '../components/FleetBikeRow';
 import FleetFilter from '../components/FleetFilter';
 import BulkOperations from '../components/BulkOperations';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const FleetDashboard = () => {
   const [summary, setSummary] = useState(null);
@@ -22,7 +20,7 @@ const FleetDashboard = () => {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API}/fleet/summary`);
+      const { data } = await api.get('/fleet/summary');
       setSummary(data);
     } catch (err) {
       console.error('Fleet summary error:', err);
@@ -31,7 +29,7 @@ const FleetDashboard = () => {
 
   const fetchUtilization = useCallback(async () => {
     try {
-      const { data } = await axios.get(`${API}/fleet/utilization?days=30`);
+      const { data } = await api.get('/fleet/utilization?days=30');
       setUtilization(data);
     } catch (err) {
       console.error('Fleet utilization error:', err);
@@ -49,7 +47,7 @@ const FleetDashboard = () => {
         ...(filters.condition !== 'all' && { condition: filters.condition }),
         ...(filters.sort && { sort: filters.sort }),
       });
-      const { data } = await axios.get(`${API}/fleet/bikes?${params}`);
+      const { data } = await api.get(`/fleet/bikes?${params}`);
       setBikes(data.bikes);
       setPagination({ page: data.page, pages: data.pages, total: data.total });
     } catch (err) {
@@ -105,7 +103,7 @@ const FleetDashboard = () => {
 
   const handleExport = async () => {
     try {
-      const { data } = await axios.get(`${API}/fleet/export`, { responseType: 'blob' });
+      const { data } = await api.get('/fleet/export', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([data]));
       const link = document.createElement('a');
       link.href = url;

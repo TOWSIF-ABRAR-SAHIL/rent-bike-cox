@@ -142,7 +142,7 @@ Single source of truth for all work. Each task is a checkbox. All completed phas
 ## Phase 10 — QA Audit & Quality Push ✅
 
 - [x] **10.1** 140 QA audit bugs fixed
-- [x] **10.2** Vitest test suites (97 backend + 26 frontend = 123 total)
+- [x] **10.2** Vitest test suites (131 backend + 26 frontend = 157 total)
 - [x] **10.3** Sentry error tracking (lazy-loaded)
 - [x] **10.4** API retry with exponential backoff
 - [x] **10.5** PageErrorBoundary per-route
@@ -153,7 +153,7 @@ Single source of truth for all work. Each task is a checkbox. All completed phas
 ## Phase 11 — Post-Deployment Enhancements ✅
 
 ### Phase 11: Expanded Test Coverage
-- [x] Backend: 87 tests across 7 files (authMiddleware, authorize, tokenManager, passwordPolicy, invoiceNumber, refund, callbackGuard, seasonalPricing)
+- [x] Backend: 131 tests across 10 files
 - [x] Frontend: 26 tests (axios, Toast, ProtectedRoute, ErrorBoundary, PageErrorBoundary)
 
 ### Phase 13: Maps & Location Features
@@ -193,6 +193,30 @@ Single source of truth for all work. Each task is a checkbox. All completed phas
 - [x] Improved: RevenueChart, BookingTrendChart, CategoryPerformance, TopBikes, CustomerInsights
 - [x] AnalyticsDashboard rewrite (shared API, 9 components, refresh)
 - [x] Admin Dashboard "View Full Analytics" link
+
+### Phase 20: Admin Dashboard Architecture Fix
+- [x] Fixed `fetchDashboard` caching — admin stats update after bike/category/policy edits
+- [x] TabErrorBoundary — isolates tab crashes so one broken tab doesn't break whole dashboard
+- [x] Scrollable tab content (overflow-x-auto)
+- [x] Light theme contrast fix on Reports tab
+
+### Phase 21: GPS Live Tracking
+- [x] LocationHistory model (GeoJSON Point, speed, heading, battery, accuracy, 7-day TTL)
+- [x] trackingController (POST IoT, GET live, GET stats, GET history, GET by bike)
+- [x] LiveFleetMap (Leaflet map, category icons, trails, clustering, telemetry panel, filter)
+- [x] seedTracking.js — realistic GPS trail data for all demo bikes
+- [x] IOT_API_KEY env var for ESP32/GSM devices
+- [x] Bike model: added currentLocation (GeoJSON), currentRenter, lastActive
+
+### Phase 22: Reports Overhaul
+- [x] 18 report types (was 8) — renter-earnings, vehicle-utilization, category-performance, zone-analytics, daily-summary, monthly-financial, tax-vat, customer-insights, peak-hours, refunds
+- [x] 4 formats: CSV, JSON, PDF (pdfkit), XLSX (xlsx)
+- [x] pdfGenerator.js — A4 PDF with header, styled table, dynamic row height + truncation
+- [x] xlsxGenerator.js — Excel workbook with auto-width columns
+- [x] ReportHistory model (reportType, format, dateRange, fileSize, rowCount)
+- [x] Report history API (GET last 10, DELETE)
+- [x] ReportsTab rewrite — 18 reports in 4 color-coded categories, format dropdown, preview modal, history section
+- [x] Total: 157 tests (131 backend + 26 frontend)
 
 ---
 

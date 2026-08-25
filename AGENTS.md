@@ -28,7 +28,7 @@ cd frontend && npm run build       # prod build
 docker-compose up --build          # Docker (backend + mongo)
 ```
 
-Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with `npx vitest run` in either package.
+Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with `npx vitest run` in either package.
 
 ## Architecture
 
@@ -63,6 +63,7 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | `/api/analytics` | `routes/analytics.js` | admin only (revenue, bookings, categories, top-bikes, customers, duration, financial, export) |
 | `/api/notifications` | `routes/engagement.js` | auth |
 | `/api/reviews` | `routes/engagement.js` | public GET, auth POST/PUT/DELETE |
+| `GET /api/reviews/stats` | `routes/engagement.js` | public — bulk review stats for multiple bikes (1 request for all bikes on Home) |
 | `/api/seasonal-rates` | `routes/seasonal.js` | public GET (active) |
 | `/api/admin/seasonal-rates` | `routes/seasonal.js` | admin CRUD |
 | `/api/vehicle-docs` | `routes/vehicleDoc.js` | auth (Renter + Admin) |
@@ -90,7 +91,7 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | `DELETE /api/admin/cache/key/:key` | `routes/cache.js` | admin (delete single key) |
 | `GET /api/admin/rate-limits` | `routes/rateLimit.js` | admin (limiter configs) |
 | `POST /api/tracking` | `routes/tracking.js` | IoT device (X-API-Key auth) — accepts lat, lng, speed, heading, battery, accuracy |
-| `GET /api/tracking` | `routes/tracking.js` | auth (all live locations with speed/battery/heading) |
+| `GET /api/tracking` | `routes/tracking.js` | public (all live locations with speed/battery/heading) |
 | `GET /api/tracking/stats` | `routes/tracking.js` | auth (aggregated stats per bike: avg/max speed, total points) |
 | `GET /api/tracking/history/:bikeId` | `routes/tracking.js` | auth (last N trail points for path polyline) |
 | `GET /api/tracking/:bikeId` | `routes/tracking.js` | auth (single bike location + latest telemetry) |
@@ -136,6 +137,7 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | EmailCampaign | email campaigns with audience targeting |
 | AdminNotification | admin alerts with severity and read tracking |
 | Dispute | reason enum, status workflow (open→under_review→resolved→dismissed) |
+| ReportHistory | generated report log (type, format, dateRange, fileSize, rowCount) |
 
 ### Frontend Components
 | Component | Location | Purpose |
@@ -148,7 +150,7 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | MessageInbox | `components/admin/` | Contact form inbox |
 | CampaignManager | `components/admin/` | Email campaign management |
 | SystemHealthTab | `components/admin/` | Server/DB health dashboard |
-| ReportsTab | `components/admin/` | CSV/JSON report generation |
+| ReportsTab | `components/admin/` | 18 report types, 4 formats (CSV/JSON/PDF/XLSX), preview modal, history |
 | CommandCenter | `components/admin/` | Quick actions, system status, platform overview (default tab) |
 | LogsViewer | `components/admin/` | App/error log viewer with search, expand, export |
 | CacheManager | `components/admin/` | In-memory cache stats, key browser, flush/delete |
@@ -160,6 +162,7 @@ Test suites: Vitest. Backend 132 tests, frontend 26 tests (158 total). Run with 
 | WhatsAppButton | `components/` | Floating WhatsApp contact |
 | LiveFleetMap | `components/` | Advanced real-time Leaflet map with Socket.IO: category icons (Bike/Car/Jeep), movement trail polyline, smooth marker animation, marker clustering (leaflet.markercluster), speed/battery/heading telemetry, legend overlay, auto-fit bounds, search/filter by model, connection status badge, info panel |
 | Lightbox | `components/` | Image gallery lightbox |
+| TabErrorBoundary | `components/` | Isolates AdminDashboard tab crashes |
 
 ### Hooks
 | Hook | Purpose |
@@ -213,9 +216,9 @@ express.urlencoded({ extended: true, limit: '1mb' })
 | payment | 15 min | 20 |
 | financial | 15 min | 60 |
 | upload | 60 min | 10 |
-| global | 1 min | 100 |
+| global | 1 min | 300 |
 | search | 1 min | 30 |
-| dashboard | 1 min | 60 |
+| dashboard | 1 min | 120 |
 | fleet | 1 min | 40 |
 
 ### CORS whitelist
@@ -294,7 +297,7 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - `/my-bookings` — My Bookings (search, status filter, sort, pagination, cancel with reason)
 - `/renter-dashboard` — Renter (roles: Renter, Admin; stats cards: total/available/maintenance)
 - `/my-disputes` — My Disputes (create dispute, expand/collapse, status filter, pagination)
-- `/admin-dashboard` — Admin only (21 tabs: Command Center, Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Logs, Cache, Rate Limits, Reports)
+- `/admin-dashboard` — Admin only (22 tabs: Command Center, Settings, Bikes, Users, Coupons, Categories, Walk-in, Finance, Maintenance, Content, Branding, Announcements, Templates, FAQ, Messages, Campaigns, System, Logs, Cache, Rate Limits, Reports, Disputes)
 - `/admin/notifications` — Admin notifications full page (Admin only)
 - `/fleet` — Fleet dashboard (roles: Renter, Admin)
 - `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, duration, financial, hourly, customers)
@@ -355,9 +358,14 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - **`vercel.json`** — must be in `frontend/` directory (not repo root) for SPA rewrites
 - **`SSLCOMMERZ_STORE_PASS`** — code reads both `SSLCOMMERZ_STORE_PASS` and `SSLCOMMERZ_STORE_PASSWORD` (fallback)
 - **`leaflet.markercluster`** — installed; MarkerCluster CSS imported in LiveFleetMap; cluster icons colored by count (gold <5, purple 5-10, red >10)
+- **`pdfkit`** — installed for PDF report generation; fonts embedded in document (Helvetica only, no custom fonts)
+- **`xlsx`** — installed for XLSX report generation; simple `aoa_to_sheet` with auto-width columns
 - **`express-mongo-sanitize`** — replaced with custom `middleware/sanitize.js` (Express 5 incompatible)
 - **`Date.now()` in render** — React 19 ESLint `set-state-in-effect` rule; keep side effects out of render
 - **`context` hooks** — must be in separate files from providers (ESLint enforced)
+- **N+1 review requests** — Home.jsx uses `GET /reviews/stats?bikeIds=a,b,c` (bulk) instead of one request per bike; never add per-bike loops for review stats
+- **`res.headersSent`** — controllers must check `if (!res.headersSent)` before responding; rate-limit middleware can already send a response, causing ERR_HTTP_HEADERS_SENT
+- **Rate limits** — global 300/min, dashboard 120/min per IP; keep generous for real usage, tighten only for auth/booking routes
 
 ## Business rules
 See `RULES.md` for full pricing, fine policies, and operational constraints. Base: 200 TK/hr minimum. Tier-based pricing per vehicle. Seasonal rates. 30-minute buffer between bookings. 10-minute start time minimum. 5-minute checkout timeout. Advance: 50% ≤24h, 30% >24h. Cancellation: 24h+ full refund, 12-24h 50%, <12h none, no-show none. Business rules editable live via Settings model (businessRules JSON in admin Settings tab).

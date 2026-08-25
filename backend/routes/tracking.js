@@ -4,7 +4,7 @@ const { updateLocation, getLocations, getBikeLocation, getHistory, getStats } = 
 const authMiddleware = require('../middleware/authMiddleware');
 
 router.post('/', updateLocation);
-router.get('/', authMiddleware, getLocations);
+router.get('/', getLocations);
 router.get('/stats', authMiddleware, getStats);
 router.get('/history/:bikeId', authMiddleware, getHistory);
 router.get('/:bikeId', authMiddleware, getBikeLocation);

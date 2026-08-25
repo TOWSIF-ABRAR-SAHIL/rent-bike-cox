@@ -110,7 +110,7 @@ const demoBikes = [
   {
     model: 'Toyota HiAce Commuter',
     brand: 'Toyota',
-    categorySlug: 'microbus',
+    categorySlug: 'jeep',
     description: 'Spacious 12-seater microbus for group tours and corporate outings. Perfect for 8-12 person groups visiting Cox\'s Bazar attractions. AC and music system included.',
     pricePerHour: 1500,
     images: [
@@ -124,7 +124,7 @@ const demoBikes = [
   {
     model: 'Hyundai H1 Premium',
     brand: 'Hyundai',
-    categorySlug: 'microbus',
+    categorySlug: 'jeep',
     description: 'Luxury microbus with 9 comfortable seats. Push-button start, rear AC vents, and premium audio system. Great for VIP group transfers and tours.',
     pricePerHour: 1800,
     images: [
@@ -221,7 +221,7 @@ async function seedDemoData() {
     await Category.insertMany([
       { name: 'Bike', slug: 'bike' },
       { name: 'Car', slug: 'car' },
-      { name: 'Microbus', slug: 'microbus' }
+      { name: 'Jeep', slug: 'jeep' }
     ]);
     console.log('Default categories seeded');
   }

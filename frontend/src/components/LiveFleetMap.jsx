@@ -7,7 +7,6 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import api from '../api/axios';
-import { useAuth } from '../context/useAuth';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const WS_URL = API.replace('/api', '');
@@ -153,7 +152,6 @@ function ConnectionStatus({ connected }) {
 const categoryIcons = { Bike: '🏍', Car: '🚗', Jeep: '🛻' };
 
 const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } = {}) => {
-  const { token } = useAuth();
   const [markers, setMarkers] = useState([]);
   const [trailData, setTrailData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -167,17 +165,14 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } =
   const clusterRef = useRef(null);
 
   useEffect(() => {
-    if (!token) return;
-    api.get('/tracking', {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(res => {
+    api.get('/tracking').then(res => {
       const data = filterBikeIds
         ? res.data.filter(b => filterBikeIds.includes(b._id))
         : res.data;
       setMarkers(data);
     }).catch(() => setError('Failed to load live locations'))
       .finally(() => setLoading(false));
-  }, [token, filterBikeIds]);
+  }, [filterBikeIds]);
 
   useEffect(() => {
     const ws = socketIO(WS_URL, {

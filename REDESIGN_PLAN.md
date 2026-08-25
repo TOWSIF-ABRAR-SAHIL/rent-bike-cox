@@ -92,7 +92,7 @@
 
 ---
 
-## Pages (18 total)
+## Pages (30+ total)
 
 | Page | Route | Access |
 |------|-------|--------|
@@ -114,10 +114,25 @@
 | Seasonal Pricing | `/seasonal-pricing` | Admin |
 | Vehicle Documents | `/vehicle-docs` | Renter/Admin |
 | Policies | `/policies` | Public |
+| Vehicle History | `/vehicle-history/:bikeId` | Renter/Admin |
+| Notifications | `/notifications` | Auth |
+| Notification Settings | `/notification-settings` | Auth |
+| Seasonal Pricing | `/seasonal-pricing` | Admin |
+| Vehicle Documents | `/vehicle-docs` | Renter/Admin |
+| FAQ | `/faq` | Public |
+| Contact | `/contact` | Public |
+| My Disputes | `/my-disputes` | Auth |
+| Compare | `/compare` | Public |
+| Wishlist | `/wishlist` | Public |
+| Refunds | `/refunds` | Admin |
+| Profile | `/profile` | Auth |
+| My Bookings | `/my-bookings` | Auth |
+| Payment Failed | `/payment-failed` | Public |
+| Payment Cancelled | `/payment-cancelled` | Public |
 
 ---
 
-## Components (50+)
+## Components (60+)
 
 ### Layout & Navigation
 Navbar, Footer, ThemeToggle, ProtectedRoute, ErrorBoundary, PageSpinner, LoadingSkeleton, BottomNav, WhatsAppButton
@@ -137,14 +152,17 @@ RevenueChart, BookingTrendChart, CategoryPerformance, TopBikes, CustomerInsights
 ### Engagement
 NotificationBell, ReviewForm, ReviewList, SeasonalBadge, Testimonials
 
+### Admin Components
+CommandCenter, ReportsTab, SystemHealthTab, ContentEditor, BrandingTab, AnnouncementManager, TemplateManager, FAQManager, MessageInbox, CampaignManager, LogsViewer, CacheManager, RateLimitManager, AdminNotificationBell
+
 ### Documents
-DocumentUpload, DocumentViewer, BulkOperations, ZoneCard
+DocumentUpload, DocumentViewer, BulkOperations
 
 ### Availability
 AvailabilityCalendar
 
 ### Maps & Location
-ZoneMap (Leaflet), RoutePlanner
+ZoneMap (Leaflet), RoutePlanner, LiveFleetMap (clustering, trails, telemetry), LiveFleetMap (real-time GPS tracking)
 
 ### Comparison & Wishlist
 CompareBar, CompareVehicles
@@ -189,6 +207,10 @@ RefundManagement
 25. **WhatsApp floating button**
 26. **Photo lightbox** (fullscreen gallery, keyboard nav, zoom)
 27. **Quick rebook** (completed bookings)
-28. **Swagger API docs** (/api/docs)
-29. **Vitest test suites** (123 tests)
+28. **Fleet management dashboard** (11 fleet components, vehicle health)
+29. **Vitest test suites** (157 tests — 131 backend + 26 frontend)
 30. **Sentry error tracking** (lazy-loaded)
+31. **GPS live tracking** (Leaflet real-time map with clustering, trails, telemetry, IoT API)
+32. **18 report types** in CSV/JSON/PDF/XLSX with preview modal and history
+33. **TabErrorBoundary** — per-tab error isolation in Admin Dashboard
+34. **157 tests** (131 backend + 26 frontend)
