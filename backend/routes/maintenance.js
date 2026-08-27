@@ -8,6 +8,7 @@ const {
   updateMaintenanceLog,
   deleteMaintenanceLog,
   getMaintenanceStats,
+  getRenterMaintenanceOverview,
   getNotifications,
   acknowledgeNotification,
 } = require('../controllers/maintenanceController');
@@ -19,6 +20,8 @@ const {
 
 router.get('/notifications', auth, getNotifications);
 router.put('/notifications/:id/acknowledge', auth, acknowledgeNotification);
+
+router.get('/renter/overview', auth, getRenterMaintenanceOverview);
 
 router.get('/bike/:bikeId', auth, maintenanceBikeParamRules, getMaintenanceLogs);
 router.get('/bike/:bikeId/stats', auth, maintenanceBikeParamRules, getMaintenanceStats);

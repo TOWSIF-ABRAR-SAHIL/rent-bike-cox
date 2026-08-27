@@ -110,7 +110,9 @@ exports.getRenterEarnings = async (req, res) => {
     const bikeIds = renterBikes.map(b => b._id);
 
     if (bikeIds.length === 0) {
-      return res.json({ totalEarnings: 0, completedBookings: 0, avgPerBooking: 0, pendingPayout: 0, byVehicle: [] });
+      return res.json({
+        totalEarnings: 0, completedBookings: 0, avgPerBooking: 0, pendingPayout: 0, byVehicle: [], revenueSeries: [], recentTransactions: [],
+      });
     }
 
     const completed = await Booking.find({
@@ -140,7 +142,71 @@ exports.getRenterEarnings = async (req, res) => {
       { $sort: { earnings: -1 } },
     ]);
 
-    res.json({ totalEarnings, completedBookings, avgPerBooking, pendingPayout, byVehicle });
+    const byDay = await Booking.aggregate([
+      { $match: { bike: { $in: bikeIds }, status: 'Completed', createdAt: { $gte: since } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' },
+          },
+          revenue: { $sum: '$totalPrice' },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+    ]);
+
+    const byDayMap = new Map();
+    byDay.forEach(d => {
+      const key = `${d._id.year}-${String(d._id.month).padStart(2, '0')}-${String(d._id.day).padStart(2, '0')}`;
+      byDayMap.set(key, d.revenue);
+    });
+
+    const useMonthly = days > 90;
+    const revenueSeries = [];
+    if (useMonthly) {
+      const monthMap = new Map();
+      byDay.forEach(d => {
+        const key = `${d._id.year}-${String(d._id.month).padStart(2, '0')}`;
+        monthMap.set(key, (monthMap.get(key) || 0) + d.revenue);
+      });
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        revenueSeries.push({ date: key, revenue: monthMap.get(key) || 0 });
+      }
+    } else {
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        revenueSeries.push({ date: key, revenue: byDayMap.get(key) || 0 });
+      }
+    }
+
+    const recentTransactions = await Booking.find({
+      bike: { $in: bikeIds },
+      status: 'Completed',
+      createdAt: { $gte: since },
+    })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .populate('user', 'name email')
+      .populate('bike', 'model brand')
+      .lean();
+
+    const transactions = recentTransactions.map(t => ({
+      bookingId: t.invoiceNumber || t._id,
+      vehicle: t.bike ? `${t.bike.brand} ${t.bike.model}` : 'Vehicle',
+      renterName: t.user ? t.user.name : 'Customer',
+      duration: t.startTime && t.endTime ? Math.max(1, Math.round((new Date(t.endTime) - new Date(t.startTime)) / 3600000)) : '—',
+      totalAmount: t.totalPrice || 0,
+      payoutStatus: t.paymentStatus || 'Paid',
+    }));
+
+    res.json({
+      totalEarnings, completedBookings, avgPerBooking, pendingPayout, byVehicle, revenueSeries, recentTransactions: transactions,
+    });
   } catch (error) {
     logger.error('getRenterEarnings error', { tag: 'Financial', message: error.message });
     res.status(500).json({ message: 'Failed to fetch earnings' });

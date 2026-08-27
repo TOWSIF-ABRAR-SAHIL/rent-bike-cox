@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import api from '../api/axios';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -107,6 +108,20 @@ function FitBounds({ markers }) {
   return null;
 }
 
+function CenterOnMarker({ target }) {
+  const map = useMap();
+  const lastTargetRef = useRef(null);
+
+  useEffect(() => {
+    if (!target) return;
+    if (lastTargetRef.current === target.coordinates[0] + ',' + target.coordinates[1]) return;
+    lastTargetRef.current = target.coordinates[0] + ',' + target.coordinates[1];
+    map.flyTo([target.coordinates[1], target.coordinates[0]], Math.max(map.getZoom(), 15), { duration: 0.7 });
+  }, [target, map]);
+
+  return null;
+}
+
 function LegendOverlay() {
   const map = useMap();
   const legendRef = useRef(null);
@@ -151,12 +166,14 @@ function ConnectionStatus({ connected }) {
 
 const categoryIcons = { Bike: '🏍', Car: '🚗', Jeep: '🛻' };
 
-const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } = {}) => {
+const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fullHeight = false, sidePanel = false } = {}) => {
   const [markers, setMarkers] = useState([]);
   const [trailData, setTrailData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedBike, setSelectedBike] = useState(null);
+  const [centeredBike, setCenteredBike] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [connected, setConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -221,6 +238,12 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } =
 
   const handleMarkerClick = useCallback((bike) => {
     setSelectedBike(bike);
+    setCenteredBike(bike);
+  }, []);
+
+  const handlePanelSelect = useCallback((bike) => {
+    setSelectedBike(bike);
+    setCenteredBike(bike);
   }, []);
 
   const filteredMarkers = useMemo(() => {
@@ -245,7 +268,7 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } =
     : COX_BAZAR;
 
   return (
-    <div className="rounded-2xl overflow-hidden glass" style={{ border: '1px solid var(--border-base)' }}>
+    <div className={fullHeight ? "rounded-2xl overflow-hidden glass flex flex-col" : "rounded-2xl overflow-hidden glass"} style={{ border: '1px solid var(--border-base)', height: fullHeight ? '100%' : undefined }}>
       <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-2" style={{ borderBottom: '1px solid var(--border-base)' }}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Live Fleet</span>
@@ -284,7 +307,7 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } =
         </div>
       )}
 
-      <div style={{ height, width: '100%', position: 'relative' }}>
+      <div style={{ height: fullHeight ? undefined : height, width: '100%', position: 'relative', flex: fullHeight ? 1 : undefined }}>
         {!loading && (
           <MapContainer center={center} zoom={12} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
             <TileLayer
@@ -302,7 +325,18 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds } =
               onMarkerClick={handleMarkerClick}
             />
             {showRecenter && <RecenterButton />}
+            {centeredBike && <CenterOnMarker target={centeredBike} />}
           </MapContainer>
+        )}
+
+        {sidePanel && (
+          <SidePanel
+            open={panelOpen}
+            onToggle={() => setPanelOpen(o => !o)}
+            markers={markers}
+            selectedId={selectedBike?._id}
+            onSelect={handlePanelSelect}
+          />
         )}
       </div>
 
@@ -425,6 +459,70 @@ function MarkerCluster({ markers, markerMapRef, clusterRef, onMarkerClick }) {
   }, [markers, map, onMarkerClick, markerMapRef, clusterRef]);
 
   return null;
+}
+
+const batteryTone = (battery) => battery > 50 ? '#22c55e' : battery > 20 ? '#f59e0b' : '#ef4444';
+
+function SidePanel({ open, onToggle, markers, selectedId, onSelect }) {
+  return (
+    <>
+      <button
+        onClick={onToggle}
+        aria-label={open ? 'Collapse vehicle panel' : 'Expand vehicle panel'}
+        className="leaflet-top leaflet-left"
+        style={{ marginTop: '10px', marginLeft: '10px', zIndex: 1000, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, background: 'white', border: '2px solid rgba(0,0,0,0.2)', color: '#333', cursor: 'pointer' }}
+      >
+        {open ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+      </button>
+
+      {open && (
+        <div
+          className="animate-slide-in"
+          style={{
+            position: 'absolute', top: 54, left: 10, bottom: 10, width: 240, zIndex: 900,
+            background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)',
+            borderRadius: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          }}
+        >
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+            <p style={{ fontSize: 12, fontWeight: 600, margin: 0 }}>Active Vehicles</p>
+            <p style={{ fontSize: 11, color: '#666', margin: '2px 0 0' }}>{markers.length} online now</p>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: 6 }}>
+            {markers.length === 0 && (
+              <p style={{ fontSize: 12, color: '#999', padding: 8, textAlign: 'center' }}>No active vehicles</p>
+            )}
+            {markers.map(m => {
+              const active = selectedId === m._id;
+              return (
+                <button
+                  key={m._id}
+                  onClick={() => onSelect(m)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px',
+                    borderRadius: 8, border: active ? '1px solid #f59e0b' : '1px solid transparent',
+                    background: active ? '#f59e0b14' : 'transparent', cursor: 'pointer', textAlign: 'left',
+                  }}
+                >
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{categoryIcons[m.category] || '📍'}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#111' }}>
+                      {m.brand} {m.model}
+                    </p>
+                    <p style={{ fontSize: 11, margin: '2px 0 0', color: '#666' }}>
+                      🔋 <span style={{ color: batteryTone(m.battery ?? 0) }}>{m.battery ?? 0}%</span>
+                      {m.speed ? ` · ${(m.speed * 3.6).toFixed(0)} km/h` : ''}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: 11, flexShrink: 0 }}>🟢</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 function RecenterButton() {

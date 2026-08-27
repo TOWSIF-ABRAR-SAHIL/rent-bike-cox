@@ -172,6 +172,55 @@ exports.getMaintenanceStats = async (req, res) => {
   }
 };
 
+exports.getRenterMaintenanceOverview = async (req, res) => {
+  try {
+    if (req.user.role !== 'Renter' && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const renterBikes = await Bike.find({ renter: req.user.id }).select('_id').lean();
+    const bikeIds = renterBikes.map(b => b._id);
+
+    if (bikeIds.length === 0) {
+      return res.json({ stats: { scheduled: 0, inProgress: 0, completed: 0 }, logs: [] });
+    }
+
+    const [statsRow, logs] = await Promise.all([
+      MaintenanceLog.aggregate([
+        { $match: { bike: { $in: bikeIds } } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      MaintenanceLog.find({ bike: { $in: bikeIds } })
+        .sort({ performedAt: -1 })
+        .limit(50)
+        .populate('bike', 'model brand')
+        .lean(),
+    ]);
+
+    const stats = { scheduled: 0, inProgress: 0, completed: 0 };
+    statsRow.forEach(r => {
+      if (r._id === 'scheduled') stats.scheduled = r.count;
+      else if (r._id === 'in_progress') stats.inProgress = r.count;
+      else if (r._id === 'completed') stats.completed = r.count;
+    });
+
+    const history = logs.map(l => ({
+      _id: l._id,
+      vehicle: l.bike ? `${l.bike.brand} ${l.bike.model}` : 'Vehicle',
+      serviceDate: l.performedAt,
+      issueDescription: l.title || l.description || l.type,
+      cost: l.cost || 0,
+      status: l.status,
+      type: l.type,
+    }));
+
+    res.json({ stats, logs: history });
+  } catch (error) {
+    logger.error('getRenterMaintenanceOverview error', { message: error.message });
+    res.status(500).json({ message: 'Failed to fetch maintenance overview' });
+  }
+};
+
 exports.getNotifications = async (req, res) => {
   try {
     const notifications = await MaintenanceNotification.find({
