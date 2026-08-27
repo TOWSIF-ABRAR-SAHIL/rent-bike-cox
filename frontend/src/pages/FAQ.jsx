@@ -15,10 +15,18 @@ const FAQPage = () => {
     setError('');
     try {
       const res = await api.get('/faqs');
-      setFaqs(res.data);
-      const cats = {};
-      res.data.forEach(f => { cats[f.category] = true; });
-      setExpanded(cats);
+      const data = res.data || {};
+      const cats = Array.isArray(data.categories) ? data.categories : [];
+      const faqMap = (data.faqs && !Array.isArray(data.faqs)) ? data.faqs : {};
+      const flat = [];
+      cats.forEach(cat => {
+        const items = Array.isArray(faqMap[cat]) ? faqMap[cat] : [];
+        items.forEach(f => flat.push({ ...f, category: cat }));
+      });
+      setFaqs(flat);
+      const catsObj = {};
+      cats.forEach(c => { catsObj[c] = true; });
+      setExpanded(catsObj);
     } catch {
       setError('Failed to load FAQs');
     } finally {

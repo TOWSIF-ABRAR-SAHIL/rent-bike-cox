@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { Clock, CheckCircle, AlertTriangle, Minus, Plus, Loader2, Star, Shield, Phone, Flame } from 'lucide-react';
+import { Clock, CheckCircle, AlertTriangle, Minus, Plus, Loader2, Star, Shield, Phone, ShieldCheck } from 'lucide-react';
 import api from '../api/axios';
 
 const formatDateTime = (date) => {
@@ -22,7 +22,7 @@ const getDefaultStartTime = () => {
 
 const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
 
-const BookingWidget = ({ bike, token, onProceed }) => {
+const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
   const [duration, setDuration] = useState(1);
   const [startTime, setStartTime] = useState(() => getDefaultStartTime());
   const [previewData, setPreviewData] = useState(null);
@@ -36,7 +36,7 @@ const BookingWidget = ({ bike, token, onProceed }) => {
   })() : '';
 
   useEffect(() => {
-    if (!startTime || !endTime || !bike?._id) return;
+    if (!token || !startTime || !endTime || !bike?._id) return;
     if (controllerRef.current) controllerRef.current.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -58,7 +58,7 @@ const BookingWidget = ({ bike, token, onProceed }) => {
       }
     }, 500);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [startTime, endTime, bike?._id]);
+  }, [startTime, endTime, bike?._id, token]);
 
   const incrementDuration = useCallback(() => {
     setDuration(prev => Math.min(prev + 1, 720));
@@ -93,10 +93,15 @@ const BookingWidget = ({ bike, token, onProceed }) => {
   ].filter(Boolean);
 
   return (
-    <div className="glass rounded-3xl p-6 space-y-5 sticky top-5" style={{ border: '1px solid var(--border-base)' }}>
+    <div className="glass rounded-3xl p-6 space-y-5" style={{ border: '1px solid var(--border-base)' }}>
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
+          {headerActions && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">{headerActions}</div>
+          )}
+        </div>
         <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{bike.brand} &bull; {bike.category?.name || 'Vehicle'}</p>
         <div className="mt-2">
           {bike.isUnderMaintenance ? (
@@ -265,14 +270,23 @@ const BookingWidget = ({ bike, token, onProceed }) => {
       </button>
 
       {/* Trust Signals */}
-      <div className="text-center space-y-1.5 pt-1">
-        <div className="flex items-center justify-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-          <span className="flex items-center gap-1"><Shield size={12} /> Secure booking</span>
-          <span className="flex items-center gap-1"><Phone size={12} /> 01891-154443</span>
+      <div className="rounded-xl p-4 space-y-2" style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)' }}>
+        <div className="flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+            <Shield size={13} style={{ color: 'var(--success-text)' }} /> Secure payment
+          </span>
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+            <Phone size={13} style={{ color: 'var(--accent-text)' }} /> 01891-154443
+          </span>
         </div>
-        <p className="text-[11px] flex items-center justify-center gap-1" style={{ color: 'var(--text-muted)' }}>
-          <Flame size={11} /> 3 people viewed this in the last hour
-        </p>
+        <div className="flex items-center justify-between text-xs">
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+            <Star size={13} fill="var(--accent-text)" style={{ color: 'var(--accent-text)' }} /> {avgRating ? avgRating.toFixed(1) : '0.0'} rating
+          </span>
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+            <ShieldCheck size={13} style={{ color: 'var(--info-text)' }} /> NID + License required
+          </span>
+        </div>
       </div>
     </div>
   );

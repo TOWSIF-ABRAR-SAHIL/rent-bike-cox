@@ -14,6 +14,7 @@ import { WishlistProvider } from './context/WishlistContext';
 import CompareBar from './components/CompareBar';
 import BottomNav from './components/BottomNav';
 import WhatsAppButton from './components/WhatsAppButton';
+import ScrollToTop from './components/ScrollToTop';
 
 const Home = lazy(() => import('./pages/Home'));
 const BikeDetails = lazy(() => import('./pages/BikeDetails'));
@@ -51,6 +52,7 @@ const AdminNotificationsPage = lazy(() => import('./pages/AdminNotificationsPage
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <ThemeProvider>
         <AuthProvider>
           <ToastProvider>
