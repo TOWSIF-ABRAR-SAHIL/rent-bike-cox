@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { useParams, useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import api from '../api/axios';
-import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Timer, Minus, Plus, RefreshCw } from 'lucide-react';
+import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, ChevronRight, FileText } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import { useToast } from '../components/useToast';
+import { useAuth } from '../context/useAuth';
 
 const POLL_INTERVAL_MS = 20000;
-
 const START_TIME_MIN_MINUTES = 10;
-const PAST_TOLERANCE_MINUTES = 5;
 
 const formatDateTime = (date) => {
   const d = new Date(date);
@@ -17,98 +16,57 @@ const formatDateTime = (date) => {
   return local.toISOString().slice(0, 16);
 };
 
-const getDefaultStartTime = () => {
-  const now = new Date();
-  const target = new Date(now.getTime() + 30 * 60 * 1000);
-  const mins = target.getMinutes();
-  const remainder = mins % 15;
-  if (remainder > 0) target.setMinutes(mins + (15 - remainder));
-  else target.setMinutes(mins);
-  target.setSeconds(0);
-  target.setMilliseconds(0);
-  return formatDateTime(target);
-};
-
-const addHoursToDate = (dateStr, hours) => {
-  const d = new Date(dateStr);
-  d.setHours(d.getHours() + hours);
-  return formatDateTime(d);
-};
+const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
 
 const Checkout = () => {
   const { bikeId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const packageState = location.state;
-  const [searchParams] = useSearchParams();
-  const stateHours = packageState?.durationHours;
-  const urlHours = parseInt(searchParams.get('hours'), 10);
-  const initialHours = stateHours || urlHours || 4;
-  const [bike, setBike] = useState(null);
-  const [startTime, setStartTime] = useState('');
-  const [hours, setHours] = useState(Math.min(720, Math.max(1, initialHours)));
+  const state = location.state;
+  const { user } = useAuth();
+  const { addToast } = useToast();
+  const errorRef = useRef(null);
+  const pollRef = useRef(null);
+
+  const bookingData = useMemo(() => state ? {
+    duration: state.duration || 4,
+    startTime: state.startTime,
+    endTime: state.endTime,
+    pricing: state.pricing,
+    bike: state.bike,
+  } : null, [state]);
+
   const [couponCode, setCouponCode] = useState('');
-  const [previewData, setPreviewData] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(bookingData?.pricing ? { pricing: bookingData.pricing, available: true } : null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [destination, setDestination] = useState('');
-  const [fetchError, setFetchError] = useState('');
+  const [specialRequests, setSpecialRequests] = useState('');
+  const [fetchError, setFetchError] = useState(bookingData ? '' : 'No booking data found. Please go back and select your booking details.');
   const [createdBookingId, setCreatedBookingId] = useState(null);
-  const [timeAdjusted, setTimeAdjusted] = useState('');
-  const errorRef = useRef(null);
-  const pollRef = useRef(null);
-  const { addToast } = useToast();
-  const [isStartTooSoon, setIsStartTooSoon] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState(
-    packageState ? { label: packageState.packageName, hourlyRate: packageState.packageHourlyRate } : null
-  );
+  const [bike, setBike] = useState(bookingData?.bike || null);
 
   useEffect(() => {
-    if (!startTime) return;
-    const check = () => {
-      const startMs = new Date(startTime).getTime();
-      const nowMs = Date.now();
-      const pastThreshold = nowMs - PAST_TOLERANCE_MINUTES * 60 * 1000;
-      setIsStartTooSoon(startMs < nowMs + START_TIME_MIN_MINUTES * 60 * 1000);
-      if (startMs < pastThreshold) {
-        addToast('Start time is in the past. Please select a future time.', 'error');
-      }
-    };
-    const id = setTimeout(() => { check(); }, 0);
-    const interval = setInterval(check, 15000);
-    return () => { clearTimeout(id); clearInterval(interval); };
-  }, [startTime, addToast]);
-
-  const endTime = startTime && hours >= 1 ? addHoursToDate(startTime, hours) : '';
-
-  const fetchBike = useCallback(() => {
-    setFetchError('');
+    if (bookingData || bike) return;
     api.get(`/dashboard/bikes/${bikeId}`).then(res => {
       setBike(res.data);
-      setStartTime(getDefaultStartTime());
     }).catch(() => {
-      setFetchError('Failed to load booking details. Please try again.');
+      setFetchError('Failed to load vehicle details. Please try again.');
     });
-  }, [bikeId]);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchBike(); }, [fetchBike]);
+  }, [bikeId, bookingData, bike]);
 
   useEffect(() => {
-    if (!startTime || !endTime || !bike) return;
+    if (!bookingData || !bookingData.startTime || !bookingData.endTime) return;
+    if (couponCode === '' && previewData) return;
     const controller = new AbortController();
     const timer = setTimeout(async () => {
-      setError('');
-      setPreviewData(null);
-      setPreviewLoading(true);
       try {
         const res = await api.post('/pricing/preview', {
           bikeId,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          couponCode,
+          startTime: bookingData.startTime,
+          endTime: bookingData.endTime,
+          couponCode: couponCode || undefined,
         }, { signal: controller.signal });
         setPreviewData(res.data);
       } catch (err) {
@@ -116,166 +74,36 @@ const Checkout = () => {
           setError(err.response?.data?.message || 'Failed to calculate pricing');
           setPreviewData(null);
         }
-      } finally {
-        if (!controller.signal.aborted) setPreviewLoading(false);
       }
     }, 500);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [startTime, endTime, couponCode, bikeId, bike]);
+  }, [bikeId, bookingData, couponCode, previewData]);
+
+  useEffect(() => {
+    if (!bookingData || createdBookingId) return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await api.post('/pricing/preview', {
+          bikeId,
+          startTime: bookingData.startTime,
+          endTime: bookingData.endTime,
+          couponCode: couponCode || undefined,
+        });
+        setPreviewData(prev => {
+          if (!prev) return res.data;
+          if (prev.available !== res.data.available) return res.data;
+          return { ...prev, pricing: res.data.pricing };
+        });
+      } catch { /* poll is best-effort */ }
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(pollRef.current);
+  }, [bikeId, bookingData, couponCode, createdBookingId]);
 
   useEffect(() => {
     if (error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, [error]);
-
-  useEffect(() => {
-    if (!startTime || !endTime || !bike || createdBookingId) return;
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await api.post('/pricing/preview', {
-          bikeId,
-          startTime: new Date(startTime),
-          endTime: new Date(endTime),
-          couponCode,
-        });
-        setPreviewData(prev => {
-          if (!prev) return res.data;
-          if (prev.available !== res.data.available) {
-            return res.data;
-          }
-          return { ...prev, pricing: res.data.pricing };
-        });
-      } catch { /* poll is best-effort */ }
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(pollRef.current);
-  }, [startTime, endTime, couponCode, bikeId, bike, createdBookingId]);
-
-  const incrementHours = useCallback(() => {
-    setHours(prev => Math.min(prev + 1, 720));
-  }, []);
-
-  const decrementHours = useCallback(() => {
-    setHours(prev => Math.max(prev - 1, 1));
-  }, []);
-
-  const createBookingAndPay = async (confirmDirectly = false) => {
-    if (!agreedToTerms) {
-      const msg = 'Please agree to the terms and conditions before proceeding.';
-      setError(msg);
-      addToast(msg, 'error');
-      return;
-    }
-
-    if (!pricing) {
-      const msg = 'Pricing is still loading. Please wait a moment and try again.';
-      setError(msg);
-      addToast(msg, 'error');
-      return;
-    }
-
-    if (!isAvailable) {
-      const msg = previewData?.conflictMessage || 'This time slot is no longer available. Please change your start time or duration.';
-      setError(msg);
-      addToast(msg, 'error');
-      return;
-    }
-
-    let effectiveStartTime = startTime;
-    const now = new Date();
-    const startMs = new Date(startTime).getTime();
-    if (startMs < now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000) {
-      const target = new Date(now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000);
-      const mins = target.getMinutes();
-      const remainder = mins % 15;
-      if (remainder > 0) target.setMinutes(mins + (15 - remainder));
-      else target.setMinutes(mins);
-      target.setSeconds(0);
-      effectiveStartTime = formatDateTime(target);
-      setStartTime(effectiveStartTime);
-      setTimeAdjusted(formatDisplayDate(effectiveStartTime));
-    }
-
-    try {
-      setCreating(true);
-      setError('');
-      setTimeAdjusted('');
-      clearInterval(pollRef.current);
-      const body = {
-        bikeId,
-        startTime: new Date(effectiveStartTime),
-        endTime: new Date(addHoursToDate(effectiveStartTime, hours)),
-      };
-      if (couponCode) body.couponCode = couponCode;
-      if (destination) body.destination = destination;
-      const res = await api.post('/booking', body);
-      const booking = res.data.booking;
-      if (!booking || !booking._id) {
-        throw new Error('Invalid response from server — booking not created');
-      }
-      setCreatedBookingId(booking._id);
-      addToast('Booking created successfully!', 'success');
-
-      if (confirmDirectly) {
-        const confirmRes = await api.post('/booking/confirm', {
-          bookingId: booking._id,
-          amountPaid: res.data.minAdvance,
-        });
-        addToast('Booking confirmed!', 'success');
-        navigate(`/invoice/${confirmRes.data.booking._id}`);
-      } else {
-        const payRes = await api.post('/payment/init', { bookingId: booking._id });
-        if (payRes.data.url) {
-          addToast('Redirecting to payment gateway...', 'info');
-          window.location.replace(payRes.data.url);
-        } else {
-          const msg = 'Payment gateway unavailable. Use "Confirm Booking" for direct confirmation.';
-          setError(msg);
-          addToast(msg, 'error');
-          setCreating(false);
-        }
-      }
-    } catch (err) {
-      const status = err.response?.status;
-      const serverMsg = err.response?.data?.message || '';
-
-      let userMsg;
-      if (status === 401) {
-        userMsg = 'Session expired, please login again.';
-        setTimeout(() => navigate('/login'), 1500);
-      } else if (status === 403) {
-        userMsg = 'Please complete identity verification first.';
-      } else if (status === 409 || serverMsg.includes('not available') || serverMsg.includes('conflict')) {
-        userMsg = 'This time slot was just booked by someone else. Please try a different start time or check other bikes.';
-      } else if (serverMsg.includes('10 minutes') || serverMsg.includes('start time')) {
-        userMsg = 'Start time is too soon. It has been adjusted — please try again.';
-      } else if (status === 500) {
-        userMsg = 'Payment gateway error, try again.';
-      } else {
-        const errors = err.response?.data?.errors;
-        if (errors && errors.length > 0) {
-          userMsg = errors.map(e => `${e.field}: ${e.message}`).join('; ');
-        } else {
-          userMsg = serverMsg || 'Failed to create booking. Please try again.';
-        }
-      }
-
-      setError(userMsg);
-      addToast(userMsg, 'error');
-      setCreating(false);
-      pollRef.current = setInterval(async () => {
-        try {
-          const res = await api.post('/pricing/preview', {
-            bikeId,
-            startTime: new Date(startTime),
-            endTime: new Date(endTime),
-            couponCode,
-          });
-          setPreviewData(res.data);
-        } catch { /* poll is best-effort */ }
-      }, POLL_INTERVAL_MS);
-    }
-  };
 
   useEffect(() => {
     if (!createdBookingId) return;
@@ -287,41 +115,141 @@ const Checkout = () => {
     return () => clearInterval(interval);
   }, [createdBookingId]);
 
-  const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
   const pricing = previewData?.pricing;
   const isAvailable = previewData?.available !== false;
 
   const disabledReason = !agreedToTerms
-    ? 'Please agree to the terms and conditions below to continue.'
+    ? 'Please agree to the terms and conditions to continue.'
     : !isAvailable
-      ? (previewData?.conflictMessage || 'This bike was just booked by someone else for your selected time. Try a different time or check other bikes.')
+      ? (previewData?.conflictMessage || 'This bike is no longer available for your selected time.')
       : null;
-  const isDisabled = creating || !agreedToTerms || !isAvailable;
+  const isDisabled = creating || !agreedToTerms || !isAvailable || !pricing;
 
-  if (fetchError) return (
+  const createBookingAndPay = async () => {
+    if (!agreedToTerms) {
+      setError('Please agree to the terms and conditions.');
+      return;
+    }
+    if (!pricing) {
+      setError('Pricing is still loading.');
+      return;
+    }
+    if (!isAvailable) {
+      setError(previewData?.conflictMessage || 'Time slot no longer available.');
+      return;
+    }
+
+    let effectiveStartTime = bookingData.startTime;
+    const now = new Date();
+    if (new Date(effectiveStartTime).getTime() < now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000) {
+      const target = new Date(now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000);
+      const mins = target.getMinutes();
+      const remainder = mins % 15;
+      if (remainder > 0) target.setMinutes(mins + (15 - remainder));
+      target.setSeconds(0);
+      target.setMilliseconds(0);
+      effectiveStartTime = formatDateTime(target);
+    }
+
+    try {
+      setCreating(true);
+      setError('');
+      clearInterval(pollRef.current);
+      const body = {
+        bikeId,
+        startTime: new Date(effectiveStartTime),
+        endTime: new Date(bookingData.endTime),
+      };
+      if (couponCode) body.couponCode = couponCode;
+      if (destination) body.destination = destination;
+      const res = await api.post('/booking', body);
+      const booking = res.data.booking;
+      if (!booking || !booking._id) {
+        throw new Error('Invalid response from server');
+      }
+      setCreatedBookingId(booking._id);
+      addToast('Booking created! Redirecting to payment...', 'success');
+      const payRes = await api.post('/payment/init', { bookingId: booking._id });
+      if (payRes.data.url) {
+        window.location.replace(payRes.data.url);
+      } else {
+        setError('Payment gateway unavailable. Please try again.');
+        setCreating(false);
+      }
+    } catch (err) {
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.message || '';
+      let userMsg;
+      if (status === 401) {
+        userMsg = 'Session expired, please login again.';
+        setTimeout(() => navigate('/login'), 1500);
+      } else if (status === 403) {
+        userMsg = 'Please complete identity verification first.';
+      } else if (status === 409 || serverMsg.includes('not available') || serverMsg.includes('conflict')) {
+        userMsg = 'This time slot was just booked. Please go back and try a different time.';
+      } else {
+        userMsg = serverMsg || 'Failed to create booking. Please try again.';
+      }
+      setError(userMsg);
+      addToast(userMsg, 'error');
+      setCreating(false);
+    }
+  };
+
+  if (!bookingData && fetchError) return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
       <div className="text-center glass rounded-2xl p-8 max-w-md">
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
-        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Failed to Load</h2>
+        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>No Booking Data</h2>
         <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
-        <button onClick={() => fetchBike()} className="btn-primary" aria-label="Reload page">Try Again</button>
+        <button onClick={() => navigate(`/bike/${bikeId}`)} className="btn-primary" aria-label="Go to vehicle page">Select Booking Details</button>
       </div>
     </div>
   );
-  if (!bike) return <SkeletonPage />;
+  if (!bookingData) return <SkeletonPage />;
+
+  const displayBike = bike || bookingData.bike;
+  const duration = bookingData.duration;
+  const startTime = bookingData.startTime;
+  const endTime = bookingData.endTime;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 animate-fade-in">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Checkout</h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+      {/* Header */}
+      <div className="mb-8">
+        <nav className="flex items-center gap-1.5 text-xs mb-4 flex-wrap" style={{ color: 'var(--text-muted)' }}>
+          <Link to="/" className="hover:underline" style={{ color: 'var(--accent-text)' }}>Home</Link>
+          <ChevronRight size={12} />
+          <Link to="/search" className="hover:underline" style={{ color: 'var(--accent-text)' }}>Vehicles</Link>
+          <ChevronRight size={12} />
+          <span style={{ color: 'var(--text-secondary)' }}>{displayBike?.model || 'Vehicle'}</span>
+          <ChevronRight size={12} />
+          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>Checkout</span>
+        </nav>
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Complete Your Booking</h1>
+        <div className="flex items-center gap-3 mt-3">
+          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--success-text)' }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success-text)' }} /> Select
+          </span>
+          <span className="h-px flex-1 max-w-8" style={{ background: 'var(--border-base)' }} />
+          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-text)' }} /> Details
+          </span>
+          <span className="h-px flex-1 max-w-8" style={{ background: 'var(--border-base)' }} />
+          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+            <span className="w-2 h-2 rounded-full border-2" style={{ borderColor: 'var(--border-base)' }} /> Payment
+          </span>
+        </div>
+      </div>
 
       {error && (
         <div ref={errorRef} className="border p-4 rounded-2xl mb-6 text-sm flex items-start gap-2" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
           <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <span>{error}</span>
-            {error.includes('someone else') && (
-              <Link to="/" className="block mt-2 font-semibold underline text-xs" style={{ color: 'var(--accent-text)' }}>
-                Browse other bikes &rarr;
+            {error.includes('go back') && (
+              <Link to={`/bike/${bikeId}`} className="block mt-2 font-semibold underline text-xs" style={{ color: 'var(--accent-text)' }}>
+                Go back to vehicle &rarr;
               </Link>
             )}
           </div>
@@ -329,244 +257,236 @@ const Checkout = () => {
         </div>
       )}
 
-      {timeAdjusted && !error && (
-        <div className="border p-3 rounded-2xl mb-6 text-sm flex items-center gap-2" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)', color: 'var(--warning-text)' }}>
-          <Clock size={14} className="flex-shrink-0" />
-          <span>Start time adjusted to <strong>{timeAdjusted}</strong> (nearest available slot)</span>
-        </div>
-      )}
-
-      <div className="glass rounded-3xl p-6 sm:p-8 space-y-6">
-        {/* Bike Info */}
-        <div className="flex items-center gap-4 pb-5 border-b min-w-0" style={{ borderColor: 'var(--border-base)' }}>
-          {bike.images?.[0] && <img src={bike.images[0]} alt={bike.model || 'Unknown'} className="w-16 h-16 rounded-xl object-cover" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />}
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model || 'Unknown'}</h2>
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand || 'Unknown'} - {bike.category?.name || 'N/A'}</p>
-            <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour || 0} TK / Hour</p>
-          </div>
-        </div>
-
-        {/* Selected Package Indicator */}
-        {selectedPackage && (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border" style={{ background: 'var(--accent-bg)', borderColor: 'var(--accent-border)' }}>
-            <CheckCircle size={14} style={{ color: 'var(--accent-text)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
-              Selected: {selectedPackage.label} ({selectedPackage.hourlyRate} TK/hr)
-            </span>
-            <button onClick={() => setSelectedPackage(null)} className="ml-auto text-xs font-bold px-2 py-0.5 rounded" style={{ color: 'var(--text-muted)' }} aria-label="Close">&times;</button>
-          </div>
-        )}
-
-        {/* Live Availability Badge */}
-        {previewData && (
-          <div className="flex items-center justify-between">
-            <div className={`rounded-xl px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 ${isAvailable ? 'border' : ''}`}
-              style={isAvailable
-                ? { background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }
-                : { background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }
-              }>
-              {isAvailable ? <CheckCircle size={12} /> : <AlertTriangle size={12} />}
-              {isAvailable ? 'Available now' : 'No longer available'}
-            </div>
-            <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <RefreshCw size={10} className="animate-spin" style={{ animationDuration: '3s' }} />
-              <span>Live</span>
+      <div className="grid grid-cols-1 lg:grid-cols-11 gap-8">
+        {/* LEFT COLUMN — Form */}
+        <div className="lg:col-span-6 space-y-6">
+          {/* Customer Information */}
+          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
+            <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <FileText size={16} style={{ color: 'var(--accent-text)' }} /> Customer Information
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Full Name</label>
+                <input type="text" value={user?.name || ''} readOnly className="input-dark text-sm opacity-70 cursor-not-allowed" aria-label="Full name" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Email</label>
+                  <input type="email" value={user?.email || ''} readOnly className="input-dark text-sm opacity-70 cursor-not-allowed" aria-label="Email" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Identity</label>
+                  <div className="input-dark text-sm flex items-center gap-1.5" style={{ color: 'var(--success-text)' }}>
+                    <CheckCircle size={14} /> Verified
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* Pricing Tiers Info */}
-        {bike.packages?.length > 0 && (
-          <div className="glass rounded-2xl p-4">
-            <h3 className="font-bold mb-2 flex items-center text-sm" style={{ color: 'var(--text-primary)' }}>
-              <Timer size={14} className="mr-2" style={{ color: 'var(--accent-text)' }} /> Pricing Tiers
-            </h3>
+          {/* Trip Details */}
+          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
+            <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <MapPin size={16} style={{ color: 'var(--accent-text)' }} /> Trip Details
+            </h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Destination / Trip Plan</label>
+                <textarea value={destination} onChange={(e) => setDestination(e.target.value)}
+                  placeholder="e.g., Cox's Bazar Beach, Inani, Himchari"
+                  rows={2}
+                  className="input-dark text-sm resize-none" aria-label="Destination or trip plan" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Special Requests (optional)</label>
+                <textarea value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)}
+                  placeholder="Any special requirements..."
+                  rows={2}
+                  className="input-dark text-sm resize-none" aria-label="Special requests" />
+              </div>
+            </div>
+          </div>
+
+          {/* Coupon */}
+          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
+            <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <Tag size={16} style={{ color: 'var(--accent-text)' }} /> Coupon Code
+            </h2>
+            <div className="flex gap-2">
+              <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="Enter coupon code" className="input-dark text-sm flex-1" aria-label="Coupon code" />
+              <button onClick={() => setPreviewData(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
+                aria-label="Apply coupon">
+                Apply
+              </button>
+            </div>
+            {pricing?.couponApplied && (
+              <p className="text-xs mt-2 flex items-center gap-1" style={{ color: 'var(--success-text)' }}>
+                <CheckCircle size={12} /> Coupon {pricing.couponApplied.code} applied (-{pricing.couponApplied.discount}%)
+              </p>
+            )}
+          </div>
+
+          {/* Terms */}
+          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
+            <label className="flex items-start cursor-pointer min-h-12 py-2 rounded-lg transition-colors" style={{ background: agreedToTerms ? 'var(--success-bg)' : 'transparent' }}>
+              <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 mr-3 h-5 w-5 rounded flex-shrink-0"
+                style={{ accentColor: 'var(--accent-text)', borderColor: 'var(--border-strong)' }} />
+              <span className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                I have read and agree to the{' '}
+                <Link to="/policies" target="_blank" className="font-medium underline" style={{ color: 'var(--accent-text)' }}>Terms &amp; Conditions</Link>
+                {' '}and{' '}
+                <Link to="/policies" target="_blank" className="font-medium underline" style={{ color: 'var(--accent-text)' }}>Rental Policy</Link>
+              </span>
+            </label>
+          </div>
+
+          {/* Payment Methods (informational) */}
+          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
+            <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <CreditCard size={16} style={{ color: 'var(--accent-text)' }} /> Payment Methods
+            </h2>
             <div className="flex flex-wrap gap-2">
-              {bike.packages.map((tier, i) => (
-                <span key={i} className="px-3 py-1.5 rounded-lg text-xs font-medium border"
-                  style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)', background: 'var(--card-bg)' }}>
-                  {tier.label}: <span style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</span>
+              {['bKash', 'Nagad', 'Bank Transfer', 'Visa', 'Mastercard'].map(method => (
+                <span key={method} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-base)' }}>
+                  {method}
                 </span>
               ))}
             </div>
-            <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Best tier auto-applied &bull; Min 150 TK/hr</p>
+            <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>All payments processed securely via SSLCommerz</p>
           </div>
-        )}
 
-        {/* Duration Selection */}
-        <div>
-          <label className="block text-xs font-medium mb-2 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
-            <Clock size={12} className="inline mr-1" /> How many hours do you need?
-          </label>
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={decrementHours}
-              className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all active:scale-95"
-              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} aria-label="Decrease hours">
-              <Minus size={18} />
-            </button>
-            <div className="flex-1">
-              <input type="number" min="1" max="720" value={hours}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (!isNaN(v) && v >= 1 && v <= 720) setHours(v);
-                }}
-                className="input-dark text-center text-2xl font-bold !py-3"  aria-label="Enter number"/>
+          {/* Disabled Reason */}
+          {isDisabled && !creating && disabledReason && (
+            <div ref={errorRef} className="rounded-xl p-3 text-sm font-medium flex items-center gap-2" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', color: 'var(--warning-text)' }}>
+              <AlertTriangle size={16} className="flex-shrink-0" />
+              <span>{disabledReason}</span>
             </div>
-            <button type="button" onClick={incrementHours}
-              className="w-12 h-12 rounded-xl flex items-center justify-center border transition-all active:scale-95"
-              style={{ borderColor: 'var(--border-base)', background: 'var(--card-bg)', color: 'var(--text-primary)' }} aria-label="Increase hours">
-              <Plus size={18} />
-            </button>
-          </div>
-          <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>Minimum 1 hour &bull; Maximum 720 hours (30 days)</p>
-        </div>
-
-        {/* Start Time */}
-        <div>
-          <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
-            <Clock size={12} className="inline mr-1" /> Start Time
-          </label>
-          <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="input-dark text-sm" aria-label="Enter name" />
-          {isStartTooSoon && (
-            <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'var(--warning-text)' }}>
-              <AlertTriangle size={11} />
-              Too soon — will be auto-adjusted to the nearest available slot on submit.
-            </p>
           )}
+
+          {/* Pay Button */}
+          <button onClick={createBookingAndPay} disabled={isDisabled}
+            className={`w-full py-4 min-h-12 rounded-xl font-bold text-white text-lg transition-all duration-300 flex items-center justify-center ${
+              isDisabled
+                ? 'cursor-not-allowed'
+                : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
+            }`}
+            style={isDisabled ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}
+            aria-label="Pay via SSLCommerz">
+            {creating ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
+            {creating ? 'Processing...' : `Pay ${pricing?.minAdvance || '...'} TK via SSLCommerz`}
+          </button>
         </div>
 
-        {/* Auto End Time Display */}
-        <div className="glass rounded-xl p-4 flex items-center justify-between border" style={{ borderColor: 'var(--accent-border)' }}>
-          <div className="flex items-center">
-            <Clock size={16} className="mr-2" style={{ color: 'var(--accent-text)' }} />
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Return Time (auto-calculated)</p>
-              <p className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{endTime ? formatDisplayDate(endTime) : '—'}</p>
-            </div>
-          </div>
-          <span className="px-3 py-1 rounded-lg text-xs font-bold" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-            {hours}h
-          </span>
-        </div>
-
-        {/* Availability Status */}
-        {previewData && (
-          <div className={`rounded-xl p-3 text-sm font-medium flex items-center gap-2 ${isAvailable ? 'border' : ''}`}
-            style={isAvailable
-              ? { background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success-text)' }
-              : { background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }
-            }>
-            {isAvailable ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
-            {isAvailable ? 'Bike available for selected time' : (previewData.conflictMessage || 'This time slot was just booked by someone else. Try different hours or start time.')}
-          </div>
-        )}
-
-        {/* Preview Loading */}
-        {previewLoading && (
-          <div className="rounded-xl p-3 text-sm font-medium flex items-center gap-2" style={{ background: 'var(--card-bg)', color: 'var(--text-muted)' }}>
-            <Loader2 size={16} className="animate-spin" />
-            Checking availability &amp; pricing...
-          </div>
-        )}
-
-        {/* Coupon */}
-        <div>
-          <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
-            <Tag size={12} className="inline mr-1" /> Coupon Code (optional)
-          </label>
-          <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Enter coupon code" className="input-dark text-sm" aria-label="Enter coupon code" />
-        </div>
-
-        {/* Destination */}
-        <div>
-          <label className="block text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>
-            <MapPin size={12} className="inline mr-1" /> Destination / Trip Plan
-          </label>
-          <input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g. Cox's Bazar Beach, Inani, Himchari" className="input-dark text-sm" aria-label="e.g. Cox's Bazar Beach, Inani, Himchari" />
-        </div>
-
-        {/* Price Breakdown */}
-        {pricing && (
-          <>
-            <div className="glass rounded-2xl p-5 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span style={{ color: 'var(--text-secondary)' }}>Total Price</span>
-                <span className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
+        {/* RIGHT COLUMN — Sticky Summary */}
+        <div className="lg:col-span-5">
+          <div className="glass rounded-3xl p-6 space-y-5 sticky top-5" style={{ border: '1px solid var(--border-base)' }}>
+            {/* Vehicle Preview */}
+            <div className="flex items-center gap-4 pb-4 border-b" style={{ borderColor: 'var(--border-base)' }}>
+              {displayBike?.images?.[0] && (
+                <img src={displayBike.images[0]} alt={displayBike.model} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
+              )}
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{displayBike?.model || 'Vehicle'}</h3>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{displayBike?.brand || ''} &bull; {displayBike?.category?.name || 'Vehicle'}</p>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Advance Required</span>
-                <span className="font-bold text-xl" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</span>
-              </div>
-              <div className="text-xs space-y-0.5 pt-2 border-t" style={{ color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}>
-                <p className="flex items-center"><Clock size={12} className="mr-1" /> {pricing.hours} hours &bull; {formatDisplayDate(startTime)} &rarr; {endTime ? formatDisplayDate(endTime) : '—'}</p>
-                {pricing.couponApplied && <p style={{ color: 'var(--success-text)' }}>Coupon: {pricing.couponApplied.code} ({pricing.couponApplied.discount}% off)</p>}
-              </div>
-            </div>
-
-            {/* Terms */}
-            <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--warning-border)' }}>
-              <h3 className="font-bold flex items-center mb-3 text-sm" style={{ color: 'var(--warning-text)' }}>
-                <AlertTriangle size={16} className="mr-2" /> Terms &amp; Conditions
-              </h3>
-              <ul className="text-xs space-y-1.5 mb-4" style={{ color: 'var(--text-secondary)' }}>
-                <li>&bull; Petrol cost borne by the customer</li>
-                <li>&bull; Beach sand: <strong style={{ color: 'var(--warning-text)' }}>1,000 TK fine</strong></li>
-                <li>&bull; Lost helmet: <strong style={{ color: 'var(--warning-text)' }}>2,000 TK fine</strong></li>
-                <li>&bull; Beyond Teknaf: <strong style={{ color: 'var(--warning-text)' }}>5,000 TK fine</strong></li>
-                <li>&bull; Renter liable for all accidents/damage</li>
-              </ul>
-              <Link to="/policies" target="_blank" className="text-xs font-medium underline block mb-3" style={{ color: 'var(--accent-text)' }}>
-                Read full Policies &amp; Terms
+              <Link to={`/bike/${bikeId}`} className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--accent-text)' }}>
+                Change
               </Link>
-              <label className="flex items-start cursor-pointer min-h-12 py-2 rounded-lg transition-colors" style={{ background: agreedToTerms ? 'var(--success-bg)' : 'transparent' }}>
-                <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 mr-3 h-5 w-5 rounded flex-shrink-0"
-                  style={{ accentColor: 'var(--accent-text)', borderColor: 'var(--border-strong)' }} />
-                <span className="text-sm font-medium leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                  I have read and agree to all terms and conditions.
-                </span>
-              </label>
             </div>
 
-            {/* Disabled Reason Banner */}
-            {isDisabled && !creating && disabledReason && (
-              <div className="rounded-xl p-3 text-sm font-medium flex items-center gap-2" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', color: 'var(--warning-text)' }}>
-                <AlertTriangle size={16} className="flex-shrink-0" />
-                <span>{disabledReason}</span>
+            {/* Booking Details — READ ONLY */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
+                  <Clock size={14} style={{ color: 'var(--accent-text)' }} />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Pickup</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(startTime)}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
+                  <Clock size={14} style={{ color: 'var(--accent-text)' }} />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Return</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(endTime)}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
+                  <span className="text-xs font-bold" style={{ color: 'var(--accent-text)' }}>{duration}h</span>
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Duration</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{duration} Hours</p>
+                </div>
+              </div>
+              {destination && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
+                    <MapPin size={14} style={{ color: 'var(--accent-text)' }} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Destination</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{destination}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Price Breakdown */}
+            {pricing && (
+              <div className="pt-4 border-t space-y-2" style={{ borderColor: 'var(--border-base)' }}>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--text-secondary)' }}>Rental ({duration}h &times; {pricing.hourlyRate} TK)</span>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
+                </div>
+                {pricing.couponApplied && (
+                  <div className="flex justify-between text-sm" style={{ color: 'var(--success-text)' }}>
+                    <span>Coupon Discount</span>
+                    <span>-{pricing.couponApplied.discount}% off</span>
+                  </div>
+                )}
+                <div className="border-t pt-2 mt-2" style={{ borderColor: 'var(--border-base)' }}>
+                  <div className="flex justify-between">
+                    <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Total Price</span>
+                    <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
+                  </div>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--text-secondary)' }}>Advance Required ({pricing.advancePercent}%)</span>
+                  <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--text-secondary)' }}>Pay on Pickup</span>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice - pricing.minAdvance} TK</span>
+                </div>
               </div>
             )}
 
-            {/* Payment */}
-            <div className="space-y-3">
-              <button onClick={() => createBookingAndPay(false)} disabled={isDisabled}
-                className={`w-full py-4 min-h-11 rounded-xl font-bold text-white transition-all duration-300 flex items-center justify-center ${
-                  isDisabled
-                    ? 'cursor-not-allowed'
-                    : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
-                }`}
-                style={isDisabled ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined} aria-label="Pay via SSLCommerz">
-                {creating ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
-                {creating ? 'Processing...' : `Pay ${pricing.minAdvance} TK via SSLCommerz`}
-              </button>
-              <button onClick={() => createBookingAndPay(true)} disabled={isDisabled}
-                className={`w-full py-3 min-h-11 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 flex items-center justify-center border-2 ${
-                  isDisabled
-                    ? 'cursor-not-allowed'
-                    : ''
-                }`}
-                style={isDisabled ? { borderColor: 'var(--border-base)', color: 'var(--text-muted)' } : { borderColor: 'var(--success-border)', color: 'var(--success-text)', background: 'var(--success-bg)' }} aria-label="Confirm booking directly">
-                <CheckCircle size={20} className="mr-2" />
-                {creating ? 'Processing...' : `Confirm Booking (${pricing.minAdvance} TK Advance)`}
-              </button>
-              <p className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>bKash / Nagad / Bank Transfer via secure SSLCommerz gateway</p>
-            </div>
-          </>
-        )}
+            {/* Pay Now Highlight */}
+            {pricing && (
+              <div className="rounded-xl p-4 text-center" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
+                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Pay Now</p>
+                <p className="text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</p>
+              </div>
+            )}
 
-        <p className="text-center text-xs pt-2" style={{ color: 'var(--text-muted)' }}>
-          Booking confirmed only after successful advance payment
-        </p>
+            {/* Support */}
+            <div className="text-center pt-2">
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Need help? Call <a href="tel:01891154443" className="font-medium" style={{ color: 'var(--accent-text)' }}>01891-154443</a> (24/7)
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
