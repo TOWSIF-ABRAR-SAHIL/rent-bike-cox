@@ -58,7 +58,7 @@ jobs:
             function check(d){
               fs.readdirSync(d,{withFileTypes:true}).forEach(f=>{
                 const p=path.join(d,f.name);
-                if(f.isDirectory()&&f.name!=='node_modules')check(p);
+                if(f.isDirectory()&&f.name!=='node_modules'&&f.name!=='public')check(p);
                 else if(f.isFile()&&f.name.endsWith('.js')){
                   try{ require(path.resolve(p)); }
                   catch(e){

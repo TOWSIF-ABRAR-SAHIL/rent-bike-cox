@@ -3,14 +3,22 @@ const PushSubscription = require('../models/PushSubscription');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEtuiJZrW1f7Z4LkzYJhGLhR3pKJNzFGvXQ3jF3SfBfQkCQfGpZ8T6YgG0ZbHdW1Mk';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'YOUR_VAPID_PRIVATE_KEY';
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
 
-webpush.setVapidDetails(
-  'mailto:support@rentbikecox.com',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY,
-);
+// Only configure web-push when real VAPID keys are provided. Calling
+// setVapidDetails with placeholder/invalid keys makes web-push throw ("Vapid
+// public key should be 65 bytes long") at import time, breaking CI and any
+// environment that loads this module without the keys configured.
+const pushConfigured = VAPID_PUBLIC_KEY.length > 0 && VAPID_PRIVATE_KEY.length > 0;
+
+if (pushConfigured) {
+  webpush.setVapidDetails(
+    'mailto:support@rentbikecox.com',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY,
+  );
+}
 
 class PushService {
   async subscribe(userId, subscription, userAgent) {
@@ -40,6 +48,8 @@ class PushService {
   }
 
   async sendPushToUser(userId, { title, body, icon, url }) {
+    if (!pushConfigured) return { sent: 0, failed: 0 };
+
     const subscriptions = await PushSubscription.find({ user: userId, active: true }).lean();
     let sent = 0;
     let failed = 0;
