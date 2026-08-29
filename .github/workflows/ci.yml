@@ -69,6 +69,7 @@ jobs:
             }
             check('./');
             console.log('All backend JS files parse OK');
+            process.exit(0);
           "
       - name: Check server.js loads (no crash)
         run: cd backend && timeout 5 node -e "process.env.MONGODB_URI='mongodb://localhost:27017/test';process.env.JWT_SECRET='test';process.env.NODE_ENV='test';const m=require('mongoose');m.connect=()=>Promise.resolve();require('./server.js');setTimeout(()=>{console.log('Backend loads OK');process.exit(0)},500)" 2>&1 || true
