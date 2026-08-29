@@ -50,6 +50,25 @@ jobs:
       - name: Install backend deps
         run: cd backend && npm ci
       - name: Check syntax (all JS files parse)
-        run: cd backend && node -e "const fs=require('fs');const path=require('path');const dir='./';function check(d){fs.readdirSync(d,{withFileTypes:true}).forEach(f=>{const p=path.join(d,f.name);if(f.isDirectory()&&f.name!=='node_modules')check(p);else if(f.isFile()&&f.name.endsWith('.js')){try{require(path.resolve(p))}catch(e){if(e.code!=='MODULE_NOT_FOUND'){console.error('SYNTAX ERROR: '+p+' - '+e.message);process.exit(1)}}}})}check(dir);console.log('All backend JS files parse OK')"
+        run: |
+          cd backend
+          node -e "
+            const fs=require('fs');
+            const path=require('path');
+            function check(d){
+              fs.readdirSync(d,{withFileTypes:true}).forEach(f=>{
+                const p=path.join(d,f.name);
+                if(f.isDirectory()&&f.name!=='node_modules')check(p);
+                else if(f.isFile()&&f.name.endsWith('.js')){
+                  try{ require(path.resolve(p)); }
+                  catch(e){
+                    if(e.code!=='MODULE_NOT_FOUND'){ console.error('SYNTAX ERROR in '+p+' - '+e.message); process.exit(1); }
+                  }
+                }
+              });
+            }
+            check('./');
+            console.log('All backend JS files parse OK');
+          "
       - name: Check server.js loads (no crash)
         run: cd backend && timeout 5 node -e "process.env.MONGODB_URI='mongodb://localhost:27017/test';process.env.JWT_SECRET='test';process.env.NODE_ENV='test';const m=require('mongoose');m.connect=()=>Promise.resolve();require('./server.js');setTimeout(()=>{console.log('Backend loads OK');process.exit(0)},500)" 2>&1 || true
