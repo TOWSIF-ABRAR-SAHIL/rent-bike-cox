@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -199,7 +200,7 @@ const BikeDetails = () => {
           {/* Image Gallery */}
           <div className="space-y-3">
             <div className="rounded-2xl overflow-hidden glass aspect-[4/3] relative group">
-              <img src={mainImage} alt={bike.model} className="w-full h-full object-cover transition-transform duration-300" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }} />
+              <Image src={mainImage} alt={bike.model ?? ''} fill sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover transition-transform duration-300" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }} />
               <button onClick={() => { setLightboxIndex(selectedImage); setLightboxOpen(true); }}
                 className="absolute top-3 right-3 w-10 h-10 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                 style={{ color: 'white' }} aria-label="Open fullscreen gallery">
@@ -229,7 +230,7 @@ const BikeDetails = () => {
                     aria-label={`View image ${i + 1}`}
                     className={`rounded-xl overflow-hidden aspect-square border-2 transition-all ${selectedImage === i ? 'border-amber-500 shadow-lg shadow-amber-500/20' : 'hover:border-amber-500/50'}`}
                     style={selectedImage !== i ? { borderColor: 'var(--border-base)' } : undefined}>
-                    <img src={src} alt={`${bike.model} image ${i + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
+                    <Image src={src} alt={`${bike.model ?? 'Vehicle'} image ${i + 1}`} fill sizes="200px" className="object-cover" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
                   </button>
                 ))}
               </div>
@@ -379,9 +380,9 @@ const BikeDetails = () => {
               return (
               <Link key={rec._id} href={`/bike/${rec._id}`}
                 className="glass rounded-2xl overflow-hidden card-hover group block" style={{ border: '1px solid var(--border-base)' }}>
-                <div className="relative overflow-hidden">
-                  <img src={resolveImages(rec)[0]} alt={rec.model}
-                    className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy"
+                <div className="relative overflow-hidden h-40">
+                  <Image src={resolveImages(rec)[0]} alt={rec.model ?? ''}
+                    fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-110"
                     onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/1a1a2e/666?text=No+Image'; }} />
                   <div className="absolute top-3 right-3">
                     <span className="px-3 py-1 gradient-primary rounded-lg text-xs font-bold text-white shadow-lg">

@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -451,7 +452,7 @@ const Checkout = () => {
             {/* Vehicle Preview */}
             <div className="flex items-center gap-4 pb-4 border-b" style={{ borderColor: 'var(--border-base)' }}>
               {displayBike?.images?.[0] && (
-                <img src={displayBike.images[0]} alt={displayBike.model} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
+                <Image src={displayBike.images[0]} alt={displayBike.model ?? ''} width={64} height={64} className="rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
               )}
               <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{displayBike?.model || 'Vehicle'}</h3>

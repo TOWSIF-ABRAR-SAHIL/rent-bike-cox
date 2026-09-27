@@ -1,7 +1,6 @@
 "use client";
 import { useState } from 'react';
 import api, { type ApiError } from '../api/axios';
-import type { Bike } from '@/types';
 import { X } from 'lucide-react';
 
 interface BulkMessage { type: string; text: string; }

@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -200,7 +201,7 @@ const MyBookings = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3 min-w-0">
                       {booking.bike?.images?.[0] && (
-                        <img src={booking.bike.images[0]} alt={booking.bike?.model} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
+                        <Image src={booking.bike.images[0]} alt={booking.bike?.model ?? ''} width={56} height={56} className="rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
                       )}
                       <div className="min-w-0">
                         <h3 className="font-bold truncate" style={{ color: 'var(--text-primary)' }}>{booking.bike?.model || 'Unknown Bike'}</h3>

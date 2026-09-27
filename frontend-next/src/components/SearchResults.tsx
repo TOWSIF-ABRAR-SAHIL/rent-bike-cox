@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -35,7 +36,7 @@ const SearchResults = ({ bikes }: { bikes: Bike[] }) => {
             <Link key={bike._id} href={`/bike/${bike._id}`} className="flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.01]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} aria-label={`View ${bike.brand} ${bike.model} details`}>
               <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'var(--border-base)' }}>
                 {bike.images?.[0] ? (
-                  <img src={bike.images[0]} alt={bike.model} className="w-full h-full object-cover" />
+                  <Image src={bike.images[0]} alt={bike.model ?? ""} width={64} height={64} className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-muted)' }}>N/A</div>
                 )}
@@ -77,7 +78,7 @@ const SearchResults = ({ bikes }: { bikes: Bike[] }) => {
           <Link key={bike._id} href={`/bike/${bike._id}`} className="group rounded-xl overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} aria-label={`View ${bike.brand} ${bike.model} details`}>
             <div className="aspect-video relative overflow-hidden" style={{ background: 'var(--border-base)' }}>
               {bike.images?.[0] ? (
-                <img src={bike.images[0]} alt={bike.model} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <Image src={bike.images[0]} alt={bike.model ?? ""} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-105 transition-transform duration-300" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>No Image</div>
               )}

@@ -2,7 +2,6 @@
 import { Users, UserPlus, Repeat, DollarSign, ShoppingCart } from 'lucide-react';
 
 import type { CustomerInsightsData, TopSpender } from '@/types';
-import type { LucideIcon } from 'lucide-react';
 
 const CustomerInsights = ({ data }: { data: CustomerInsightsData }) => {
   const activeCustomers = data.activeCustomers ?? 0;

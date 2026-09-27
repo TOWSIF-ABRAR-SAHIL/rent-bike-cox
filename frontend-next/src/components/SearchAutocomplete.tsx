@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { MapPin, Tag } from 'lucide-react';
 
 import type { Suggestion } from '@/types';
@@ -18,7 +19,7 @@ const SearchAutocomplete = ({ suggestions, onSelect }: { suggestions: Suggestion
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             {s.type === 'vehicle' && s.image ? (
-              <img src={s.image} alt="" className="w-8 h-8 rounded-md object-cover" />
+              <Image src={s.image} alt="" width={32} height={32} className="rounded-md object-cover" />
             ) : (
               <div className="w-8 h-8 rounded-md flex items-center justify-center" style={{ background: 'var(--input-bg)' }}>
                 {s.type === 'category' ? <Tag size={14} style={{ color: 'var(--accent-text)' }} /> : <MapPin size={14} style={{ color: 'var(--text-muted)' }} />}

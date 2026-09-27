@@ -26,12 +26,16 @@ export const metadata: Metadata = {
   authors: [{ name: "Rent Bike Cox's Bazar" }],
   robots: "index, follow",
   metadataBase: new URL("https://rent-bike-cox.vercel.app"),
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/icons/icon-192.png",
+  },
   openGraph: {
     type: "website",
     title: "Rent Bike Cox's Bazar — Bike, Car & Jeep Rental",
     description:
       "Rent bikes, cars, and jeeps in Cox's Bazar. Affordable hourly rates starting at 200 TK/hr.",
-    images: [{ url: "/og-image.png" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630 }],
     url: "https://rent-bike-cox.vercel.app",
     siteName: "Rent Bike Cox's Bazar",
   },
@@ -39,6 +43,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Rent Bike Cox's Bazar",
     description: "Affordable bike, car & jeep rental in Cox's Bazar",
+    images: ["/opengraph-image"],
   },
   appleWebApp: {
     capable: true,

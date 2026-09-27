@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import api, { type ApiError } from '../api/axios';
 import type { Dispute } from '@/types';
@@ -146,7 +147,7 @@ const MyDisputes = () => {
                   aria-label="Toggle dispute details">
                   <div className="flex items-center gap-3 min-w-0">
                     {d.bike?.images?.[0] && (
-                      <img src={d.bike.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <Image src={d.bike.images[0]} alt="" width={40} height={40} className="rounded-lg object-cover flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>

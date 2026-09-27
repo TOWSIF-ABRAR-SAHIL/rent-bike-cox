@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, memo } from 'react';
 
@@ -70,7 +71,7 @@ const CompareVehicles = () => {
                   <button onClick={() => remove(bike._id)} className="absolute top-3 right-3 z-10 p-1.5 rounded-full glass" style={{ color: 'var(--danger-text)' }} aria-label={`Remove ${bike.model}`}>
                     <X size={14} />
                   </button>
-                  <img src={bike.images?.[0] || 'https://placehold.co/400x250/1a1a2e/666?text=No+Image'} alt={bike.model} className="w-full h-48 object-cover" />
+                  <div className="relative h-48"><Image src={bike.images?.[0] || 'https://placehold.co/400x250/1a1a2e/666?text=No+Image'} alt={bike.model ?? ''} fill sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover" /></div>
                   <div className="p-4">
                     <h3 className="font-bold text-lg truncate" style={{ color: 'var(--text-primary)' }}>{bike.model}</h3>
                     <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.brand}</p>
@@ -132,7 +133,7 @@ const CompareVehicles = () => {
               {availableToAdd.map(bike => (
                 <button key={bike._id} onClick={() => { add(bike); setShowPicker(false); }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:bg-amber-500/10" style={{ border: '1px solid var(--border-base)' }}>
-                  <img src={bike.images?.[0] || 'https://placehold.co/48x48/1a1a2e/666?text=No'} alt={bike.model} className="w-12 h-12 rounded-lg object-cover" />
+                  <Image src={bike.images?.[0] || 'https://placehold.co/48x48/1a1a2e/666?text=No'} alt={bike.model ?? ''} width={48} height={48} className="rounded-lg object-cover" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{bike.model}</p>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.brand} • {bike.pricePerHour} TK/hr</p>

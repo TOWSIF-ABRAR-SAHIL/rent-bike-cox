@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
 import {
@@ -422,7 +423,7 @@ const RenterDashboard = () => {
                 const image = bike.images?.[0] || 'https://placehold.co/600x400/1a1a2e/666?text=No+Image';
                 return (
                   <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover">
-                    <img src={image} alt={title(bike)} width="400" height="300" loading="lazy"
+                    <Image src={image} alt={title(bike)} width={400} height={300}
                       className="w-full h-48 object-cover"
                       onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
                     <div className="p-5">

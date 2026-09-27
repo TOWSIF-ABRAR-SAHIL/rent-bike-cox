@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import api, { type ApiError } from '../api/axios';
 import type { ProfileFormState, StoredUser } from '@/types';
@@ -163,7 +164,7 @@ const Profile = () => {
           </h2>
           <div className="flex items-center gap-4">
             {avatarPreview && (
-              <img src={avatarPreview} alt="Avatar" className="w-20 h-20 rounded-full object-cover border flex-shrink-0"
+              <Image src={avatarPreview} alt="Avatar" width={80} height={80} className="rounded-full object-cover border flex-shrink-0"
                 style={{ borderColor: 'var(--border-color)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             )}
             {!avatarPreview && (
@@ -304,7 +305,7 @@ const Profile = () => {
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>NID Image</label>
             <div className="flex items-center gap-4">
               {nidPreview && (
-                <img src={nidPreview} alt="NID preview" className="w-24 h-24 rounded-xl object-cover border flex-shrink-0"
+                <Image src={nidPreview} alt="NID preview" width={96} height={96} className="rounded-xl object-cover border flex-shrink-0"
                   style={{ borderColor: 'var(--border-color)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               )}
               <div className="flex-1">
@@ -320,7 +321,7 @@ const Profile = () => {
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>License Image</label>
             <div className="flex items-center gap-4">
               {licensePreview && (
-                <img src={licensePreview} alt="License preview" className="w-24 h-24 rounded-xl object-cover border flex-shrink-0"
+                <Image src={licensePreview} alt="License preview" width={96} height={96} className="rounded-xl object-cover border flex-shrink-0"
                   style={{ borderColor: 'var(--border-color)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               )}
               <div className="flex-1">

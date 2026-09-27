@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, memo } from 'react';
 
@@ -68,9 +69,9 @@ const Wishlist = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {bikes.map(bike => (
               <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover group" style={{ border: '1px solid var(--border-base)' }}>
-                <div className="relative overflow-hidden">
+                <div className="relative overflow-hidden h-52">
                   <Link href={`/bike/${bike._id}`} className="block">
-                    <img src={bike.images?.[0] || 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'} alt={bike.model} className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <Image src={bike.images?.[0] || 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'} alt={bike.model ?? ''} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-110" />
                   </Link>
                   <button onClick={() => toggle(bike._id)} className="absolute top-3 right-3 p-2.5 rounded-full glass" aria-label="Remove from favorites">
                     <Heart size={16} fill="#ef4444" color="#ef4444" />

@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useCallback, memo } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 
@@ -51,11 +52,12 @@ const Lightbox = ({ images, initialIndex = 0, onClose }: { images: string[]; ini
       </button>
 
       {/* Image */}
-      <div className="flex items-center justify-center w-full h-full px-16 py-16" onClick={e => e.stopPropagation()}>
-        <img
+      <div className="relative flex items-center justify-center w-full h-full px-16 py-16" onClick={e => e.stopPropagation()}>
+        <Image
           src={images[index]}
           alt={`Photo ${index + 1}`}
-          className="max-w-full max-h-full object-contain transition-transform duration-300 rounded-lg"
+          fill sizes="90vw"
+          className="object-contain transition-transform duration-300 rounded-lg"
           style={{ transform: `scale(${zoom})` }}
           onClick={() => setZoom(z => z === 1 ? 2 : 1)}
         />
@@ -82,7 +84,7 @@ const Lightbox = ({ images, initialIndex = 0, onClose }: { images: string[]; ini
             <button key={i} onClick={(e) => { e.stopPropagation(); setIndex(i); setZoom(1); }}
               className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${i === index ? 'border-amber-400 scale-110' : 'opacity-60 hover:opacity-100'}`}
               aria-label={`View photo ${i + 1}`}>
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <Image src={img} alt="" width={48} height={48} className="object-cover" />
             </button>
           ))}
         </div>

@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Trophy } from 'lucide-react';
 
@@ -34,7 +35,7 @@ const TopBikes = ({ data }: { data: TopBikeItem[] }) => {
               </span>
               <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'var(--border-base)' }}>
                 {item.bike?.images?.[0] ? (
-                  <img src={item.bike.images[0]} alt="" className="w-full h-full object-cover" />
+                  <Image src={item.bike.images[0]} alt="" width={40} height={40} className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-muted)' }}>N/A</div>
                 )}

@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback, useMemo, type MutableRefObject } from 'react';
 import { io as socketIO, type Socket } from 'socket.io-client';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
@@ -381,7 +382,7 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
         <div className="px-4 py-3 flex items-center gap-3 animate-slide-up"
           style={{ borderTop: '1px solid var(--border-base)', background: 'var(--accent-bg)' }}>
           {selectedBike.image && (
-            <img src={selectedBike.image} alt="" className="w-10 h-10 rounded-lg object-cover" />
+            <Image src={selectedBike.image} alt="" width={40} height={40} className="rounded-lg object-cover" />
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>

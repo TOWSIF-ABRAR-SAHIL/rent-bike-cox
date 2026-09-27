@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, Suspense } from 'react';
 
@@ -61,7 +62,7 @@ const FleetBikeRow = ({ bike, selected, onToggle }: { bike: Bike; selected?: boo
       >
         <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'var(--border-base)' }}>
           {bike.images?.[0] ? (
-            <img src={bike.images[0]} alt={bike.model} className="w-full h-full object-cover" />
+            <Image src={bike.images[0]} alt={bike.model ?? ""} width={40} height={40} className="object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-muted)' }}>N/A</div>
           )}

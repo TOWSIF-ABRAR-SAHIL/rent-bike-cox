@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 
@@ -258,10 +259,10 @@ const Home = () => {
             </div>
             <div className="relative hidden lg:block">
               <div className="absolute inset-6 rounded-[2rem] bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 rotate-3" aria-hidden="true" />
-              <div className="relative rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl bg-slate-100 -rotate-1">
+              <div className="relative rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl bg-slate-100 -rotate-1 h-[380px]">
                 {heroBike?.images?.[0] ? (
-                  <img key={heroBike._id} src={heroBike.images[0]} alt={heroBike.model}
-                    className="w-full h-[380px] object-cover animate-fade-in"
+                  <Image key={heroBike._id} src={heroBike.images[0]} alt={heroBike.model ?? ''}
+                    fill sizes="(max-width: 1024px) 100vw, 50vw" priority className="object-cover animate-fade-in"
                     onError={(e) => { const img = e.target as HTMLImageElement; img.onerror = null; img.src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
                 ) : (
                   <div className="w-full h-[380px] flex items-center justify-center">
@@ -448,8 +449,8 @@ const Home = () => {
                   <div key={bike._id} className="bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-[0_16px_40px_rgba(0,0,0,0.10)] hover:-translate-y-1 transition-all duration-300 flex flex-col">
                     <div className="relative overflow-hidden group">
                       <Link href={`/bike/${bike._id}`} aria-label={`View ${bike.model}`}>
-                        <img src={bike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={bike.model}
-                          width="400" height="300" loading="lazy"
+                        <Image src={bike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={bike.model ?? ''}
+                          width={400} height={300}
                           className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
                       </Link>
@@ -596,8 +597,8 @@ const Home = () => {
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden grid grid-cols-1 lg:grid-cols-2 max-w-5xl mx-auto">
               <div className="relative min-h-[280px]">
-                <img src={topRatedBike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={topRatedBike.model}
-                  className="absolute inset-0 w-full h-full object-cover"
+                <Image src={topRatedBike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={topRatedBike.model ?? ''}
+                  fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
                   onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
                 <span className="absolute top-4 left-4 px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wide bg-orange-500 text-white shadow">Top Rated</span>
               </div>
@@ -667,8 +668,8 @@ const Home = () => {
                 <Link key={spot.name} href="/search"
                   className="relative rounded-xl overflow-hidden h-44 group border border-slate-200 bg-slate-200 block">
                   {img ? (
-                    <img src={img} alt={spot.name} loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    <Image src={img} alt={spot.name}
+                      fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" className="object-cover transition-transform duration-500 group-hover:scale-110"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />

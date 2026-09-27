@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import Link from 'next/link';
 import { memo } from 'react';
 
@@ -18,7 +19,7 @@ const CompareBar = () => {
             <GitCompareArrows size={18} style={{ color: 'var(--accent-text)' }} className="flex-shrink-0" />
             {items.map(bike => (
               <div key={bike._id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0" style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)' }}>
-                <img src={bike.images?.[0] || 'https://placehold.co/40x40/1a1a2e/666?text=No'} alt={bike.model} className="w-8 h-8 rounded object-cover" />
+                <Image src={bike.images?.[0] || 'https://placehold.co/40x40/1a1a2e/666?text=No'} alt={bike.model ?? ''} width={32} height={32} className="rounded object-cover" />
                 <span className="text-xs font-medium truncate max-w-[100px]" style={{ color: 'var(--text-primary)' }}>{bike.model}</span>
                 <button onClick={() => remove(bike._id)} className="p-0.5 rounded hover:bg-red-500/20" style={{ color: 'var(--danger-text)' }} aria-label={`Remove ${bike.model} from comparison`}>
                   <X size={12} />
