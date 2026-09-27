@@ -130,6 +130,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://rent-bike-cox.vercel.app',
   process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : null,
+  // Next.js parallel app dev server (frontend-next/)
+  process.env.NODE_ENV !== 'production' ? 'http://localhost:3000' : null,
   'https://sandbox.sslcommerz.com',
   'https://sslcommerz.com',
 ].filter(Boolean);
