@@ -130,16 +130,16 @@ rent-bike-cox/
 │   ├── jobs/             # Background jobs (cleanup, state transition, retention)
 │   ├── utils/            # cache, logger, gracefulShutdown, pricing, etc
 │   └── server.js         # Express app entry
-├── frontend/
+├── frontend-next/
 │   └── src/
-│   ├── pages/        # 30+ route pages
-│   ├── components/   # 60+ reusable components
+│       ├── app/          # App Router routes (32)
+│       ├── views/        # Route view components (client)
+│       ├── components/   # 60+ reusable components
 │       ├── context/      # AuthContext, ThemeContext
 │       └── api/          # Axios instance
 ├── docs/                 # Architecture, Security, Phases, etc
 ├── .github/workflows/    # CI/CD pipelines
 ├── render.yaml           # Render blueprint
-├── vercel.json           # Vercel SPA rewrites
 ├── docker-compose.yml    # Local Docker dev
 └── CREDENTIALS.md        # All secrets (gitignored)
 ```

@@ -44,7 +44,7 @@ jobs:
           vercel-token: ${{ env.VERCEL_TOKEN }}
           vercel-org-id: ${{ env.VERCEL_ORG_ID }}
           vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
-          working-directory: frontend
+          working-directory: frontend-next
           vercel-args: '--prod'
       - name: No Vercel token configured
         if: env.VERCEL_TOKEN == ''

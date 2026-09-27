@@ -7,7 +7,7 @@ Two independent packages, same repo — no workspace:
 | Path | Module | Node | Dev command | Port |
 |---|---|---|---|---|
 | `backend/` | CommonJS | Express 5, Mongoose 9 | `npm run dev` (nodemon) | 5000 |
-| `frontend/` | ESM | React 19, Vite 8, Tailwind 4 | `npm run dev` (vite) | 5173 |
+| `frontend-next/` | ESM+TS | Next.js 16, React 19, Tailwind 4 | `npm run dev` (next) | 3000 |
 
 Each has own `node_modules/`, `.env`, `package.json`. Lockfiles committed.
 
@@ -34,7 +34,7 @@ Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with 
 
 ### Entrypoints
 - Backend: `backend/server.js` — mounts all routes, middleware, error handler, MongoDB connect
-- Frontend: `frontend/src/main.jsx` → `App.jsx` (React.lazy code splitting on all pages)
+- Frontend: `frontend-next/src/app/` (App Router; views in `src/views/` as client components)
 
 ### Routes (backend)
 | Prefix | File | Access |
@@ -177,7 +177,7 @@ Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with 
 Three roles on `User` model: `Admin`, `Renter`, `User`. Authorization via middleware: `security/middleware/authorize.js` and `security/middleware/checkOwnership.js`. `ProtectedRoute` component on frontend takes a `roles` prop for route gating.
 
 ### Auth
-JWT in `Authorization: Bearer <token>` header. Token decoded in `middleware/authMiddleware.js` — sets `req.user = { id, role }`. Expires in 1d. Stored in `localStorage` on frontend, injected by Axios interceptor (`frontend/src/api/axios.js`). Refresh tokens supported.
+JWT in `Authorization: Bearer <token>` header. Token decoded in `middleware/authMiddleware.js` — sets `req.user = { id, role }`. Expires in 1d. Stored in `localStorage` on frontend, injected by Axios interceptor (`frontend-next/src/api/axios.ts`). Refresh tokens supported.
 
 ### Context hook pattern (ESLint enforced)
 `AuthContext` (provider) in `AuthContext.jsx`, `useAuth()` hook in separate `useAuth.js` file. Same for `ThemeContext`/`useTheme`. ESLint React Hooks rules require hooks and providers in different files.
@@ -331,8 +331,9 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - Free tier: cold starts ~30s after idle
 
 ### Frontend (Vercel)
-- `vercel.json` in `frontend/`: SPA catch-all rewrite + asset caching
-- Env var: `VITE_API_URL=https://rent-bike-backend.onrender.com/api`
+- Next.js App Router in `frontend-next/` (root directory); security headers + image hosts in `next.config.ts`
+- Env var: `NEXT_PUBLIC_API_URL=https://rent-bike-backend.onrender.com/api`
+- Preview project `rent-bike-next` tracks `main` (staging); `PREVIEW_URLS` on backend allows its origin through CORS
 
 ### Docker
 - `backend/Dockerfile`: node:20-alpine, non-root user, healthcheck
@@ -348,14 +349,14 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - **Express 5** — route errors propagate differently than Express 4
 - **Tailwind 4** — no `@tailwind` directives, no `tailwind.config.js` `theme.extend` (use `@theme` in CSS)
 - `.env` files are gitignored — collaborator must create from `.env.example`
-- Frontend env vars must be prefixed `VITE_` (Vite rule)
+- Frontend env vars must be prefixed `NEXT_PUBLIC_` to reach the browser (Next.js rule)
 - `seedAdmin.js` uses `process.env.config({ path: '../.env' })` — always run from `backend/`
-- Frontend no typecheck — only `npm run lint`
+- Frontend strict TypeScript — `npm run typecheck` must pass; `npm test` (vitest) in CI
 - CORS errors return 403, not 500
 - **CORS localhost** — only in dev mode (`NODE_ENV !== 'production'`)
 - **`req.query`** — Express 5 makes it read-only; custom `sanitize.js` handles this
 - **MongoDB Atlas M0** — no transactions; booking lock uses CAS fallback
-- **`vercel.json`** — must be in `frontend/` directory (not repo root) for SPA rewrites
+- **No `vercel.json`** — Next.js handles routing/headers via `next.config.ts`; SPA rewrites retired with the Vite app
 - **`SSLCOMMERZ_STORE_PASS`** — code reads both `SSLCOMMERZ_STORE_PASS` and `SSLCOMMERZ_STORE_PASSWORD` (fallback)
 - **`leaflet.markercluster`** — installed; MarkerCluster CSS imported in LiveFleetMap; cluster icons colored by count (gold <5, purple 5-10, red >10)
 - **`pdfkit`** — installed for PDF report generation; fonts embedded in document (Helvetica only, no custom fonts)
