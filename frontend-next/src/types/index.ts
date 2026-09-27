@@ -54,6 +54,45 @@ export interface Bike {
   condition?: string;
   totalKm?: number;
   location?: string;
+  videoUrl?: string;
+  zone?: string | { name?: string };
+  packages?: { minHours?: number }[];
+  currentMileage?: number;
+  isVerified?: boolean;
+}
+
+export interface Review {
+  _id: string;
+  rating?: number;
+  title?: string;
+  comment?: string;
+  user?: { name?: string };
+  createdAt?: string;
+}
+
+export interface ReviewStats {
+  avgRating?: number;
+  total?: number;
+}
+
+export interface CouponApplied {
+  code?: string;
+  discount?: number;
+}
+
+export interface Faq {
+  _id?: string;
+  question?: string;
+  answer?: string;
+  category?: string;
+}
+
+export interface PricingInfo {
+  hourlyRate?: number;
+  totalPrice?: number;
+  minAdvance?: number;
+  advancePercent?: number;
+  couponApplied?: CouponApplied;
 }
 
 export type BookingStatus =
@@ -61,14 +100,21 @@ export type BookingStatus =
   | 'Confirmed'
   | 'Active'
   | 'Completed'
-  | 'Cancelled';
+  | 'Cancelled'
+  | 'Expired';
 
 export interface Booking {
   _id: string;
-  status?: BookingStatus;
+  status?: string;
   pickupLocation?: string;
+  destination?: string;
   invoiceNumber?: string;
   totalAmount?: number;
+  totalPrice?: number;
+  startTime?: string;
+  endTime?: string;
+  packageName?: string;
+  bike?: Bike & { images?: string[] };
 }
 
 export interface SiteContentItem {

@@ -1,30 +1,47 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { Component } from 'react';
+
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-class PageErrorBoundary extends Component {
-  constructor(props) {
+interface SentryWindow extends Window {
+  __SENTRY__?: {
+    captureException: (error: Error, context?: Record<string, unknown>) => void;
+  };
+}
+
+export interface PageErrorBoundaryProps {
+  children: ReactNode;
+  fallbackMessage?: string;
+}
+
+interface PageErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class PageErrorBoundary extends Component<PageErrorBoundaryProps, PageErrorBoundaryState> {
+  constructor(props: PageErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): PageErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('[PageErrorBoundary]', error.message, errorInfo.componentStack);
-    if (window.__SENTRY__) {
-      window.__SENTRY__.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+    const sentry = (window as unknown as SentryWindow).__SENTRY__;
+    if (sentry) {
+      sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
     }
   }
 
-  handleRetry = () => {
+  handleRetry = (): void => {
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="min-h-[40vh] flex items-center justify-center p-4">

@@ -1,9 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import api from '../api/axios';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import api, { type ApiError } from '../api/axios';
 
 import { useAuth } from '../context/useAuth';
 import { UserPlus, User, Mail, Lock, Phone, CreditCard, MapPin } from 'lucide-react';
@@ -13,42 +12,45 @@ const Signup = () => {
     name: '', email: '', password: '', role: 'User',
     nid: '', license: '', phoneNumber: '', address: ''
   });
-  const [nidFile, setNidFile] = useState(null);
-  const [licenseFile, setLicenseFile] = useState(null);
+  const [nidFile, setNidFile] = useState<File | null>(null);
+  const [licenseFile, setLicenseFile] = useState<File | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
 
-  const handleNidFile = (e) => {
-    const file = e.target.files[0];
+  const handleNidFile = (e: ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
     if (file && file.size > 5 * 1024 * 1024) {
       setError('File too large. Maximum 5MB allowed.');
       e.target.value = '';
       return;
     }
-    setNidFile(file);
+    setNidFile(file ?? null);
   };
 
-  const handleLicenseFile = (e) => {
-    const file = e.target.files[0];
+  const handleLicenseFile = (e: ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
     if (file && file.size > 5 * 1024 * 1024) {
       setError('File too large. Maximum 5MB allowed.');
       e.target.value = '';
       return;
     }
-    setLicenseFile(file);
+    setLicenseFile(file ?? null);
   };
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>): void =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     const formDataToSend = new FormData();
-    Object.keys(formData).forEach(key => formDataToSend.append(key, formData[key]));
+    (Object.keys(formData) as (keyof typeof formData)[]).forEach(key =>
+      formDataToSend.append(key, formData[key])
+    );
     if (nidFile) formDataToSend.append('nidImage', nidFile);
     if (licenseFile) formDataToSend.append('licenseImage', licenseFile);
 
@@ -59,7 +61,9 @@ const Signup = () => {
       login(response.data.accessToken, response.data.refreshToken, response.data.user);
       router.push('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
+      const apiErr = err as ApiError;
+      const data = apiErr.response?.data as { message?: string } | undefined;
+      setError(data?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }

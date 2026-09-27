@@ -1,8 +1,18 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { memo } from 'react';
 
-const EmptyState = ({ icon: Icon, title, description, action, className = '' }) => (
+import { memo } from 'react';
+import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
+
+export interface EmptyStateProps {
+  icon?: LucideIcon;
+  title: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  className?: string;
+}
+
+const EmptyState = ({ icon: Icon, title, description, action, className = '' }: EmptyStateProps) => (
   <div className={`text-center py-16 ${className}`}>
     {Icon && (
       <div className="w-20 h-20 glass rounded-2xl flex items-center justify-center mx-auto mb-4">

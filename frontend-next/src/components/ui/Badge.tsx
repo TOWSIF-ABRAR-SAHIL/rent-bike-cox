@@ -1,6 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-const badgeStyles = {
+
+import type { CSSProperties, ReactNode } from 'react';
+
+export type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'purple' | 'default';
+
+const badgeStyles: Record<BadgeVariant, CSSProperties> = {
   success: { background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' },
   warning: { background: 'var(--warning-bg)', color: 'var(--warning-text)', borderColor: 'var(--warning-border)' },
   danger: { background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' },
@@ -9,7 +13,14 @@ const badgeStyles = {
   default: { background: 'var(--hover-bg)', color: 'var(--text-secondary)', borderColor: 'var(--border-base)' },
 };
 
-const Badge = ({ children, variant = 'default', glow, className = '' }) => (
+export interface BadgeProps {
+  children: ReactNode;
+  variant?: BadgeVariant;
+  glow?: boolean;
+  className?: string;
+}
+
+const Badge = ({ children, variant = 'default', glow, className = '' }: BadgeProps) => (
   <span
     className={`inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full border ${glow ? 'shadow-lg' : ''} ${className}`}
     style={badgeStyles[variant] || badgeStyles.default}

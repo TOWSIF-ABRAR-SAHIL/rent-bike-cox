@@ -1,9 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import api from '../api/axios';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import api, { type ApiError } from '../api/axios';
 
 import { useAuth } from '../context/useAuth';
 import { Mail, Lock, LogIn } from 'lucide-react';
@@ -15,9 +14,10 @@ const Login = () => {
   const router = useRouter();
   const { login } = useAuth();
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -26,12 +26,15 @@ const Login = () => {
       login(response.data.accessToken, response.data.refreshToken, response.data.user);
       router.push('/');
     } catch (err) {
-      if (err.response?.status === 423) {
-        const retryAfter = err.response.data?.retryAfter || 900;
+      const apiErr = err as ApiError;
+      if (apiErr.response?.status === 423) {
+        const data = apiErr.response.data as { retryAfter?: number } | undefined;
+        const retryAfter = data?.retryAfter || 900;
         const minutes = Math.ceil(retryAfter / 60);
         setError(`Account temporarily locked. Try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`);
       } else {
-        setError(err.response?.data?.message || 'Login failed');
+        const data = apiErr.response?.data as { message?: string } | undefined;
+        setError(data?.message || 'Login failed');
       }
     } finally {
       setLoading(false);

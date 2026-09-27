@@ -1,9 +1,12 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useState } from 'react';
+
+import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
-const variants = {
+export type ButtonVariant = 'primary' | 'ghost' | 'danger' | 'outline' | 'success';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+
+const variants: Record<ButtonVariant, string> = {
   primary: 'gradient-primary text-white shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-0.5 active:translate-y-0',
   ghost: 'border',
   danger: 'gradient-danger text-white shadow-lg shadow-red-500/25 hover:shadow-xl hover:-translate-y-0.5',
@@ -11,7 +14,7 @@ const variants = {
   success: 'gradient-success text-white shadow-lg shadow-green-500/25 hover:shadow-xl hover:-translate-y-0.5',
 };
 
-const sizes = {
+const sizes: Record<ButtonSize, string> = {
   sm: 'px-3 py-2 text-xs rounded-lg min-h-9',
   md: 'px-5 py-2.5 text-sm rounded-xl min-h-11',
   lg: 'px-6 py-3 text-sm rounded-xl min-h-11',
@@ -29,7 +32,22 @@ const ghostHoverStyle = {
   borderColor: 'var(--border-strong)',
 };
 
-const Button = ({ children, variant = 'primary', size = 'md', loading, disabled, className = '', ...props }) => {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+}
+
+const Button = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  loading,
+  disabled,
+  className = '',
+  ...props
+}: ButtonProps) => {
   const isGhost = variant === 'ghost';
   const [hovered, setHovered] = useState(false);
 

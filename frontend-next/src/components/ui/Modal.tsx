@@ -1,9 +1,17 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
-const Modal = ({ open, onClose, title, children, className = '' }) => {
+export interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  className?: string;
+}
+
+const Modal = ({ open, onClose, title, children, className = '' }: ModalProps) => {
   const [closeHovered, setCloseHovered] = useState(false);
 
   useEffect(() => {
@@ -15,7 +23,7 @@ const Modal = ({ open, onClose, title, children, className = '' }) => {
 
   useEffect(() => {
     if (!open) return;
-    const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
+    const handleEscape = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onClose]);

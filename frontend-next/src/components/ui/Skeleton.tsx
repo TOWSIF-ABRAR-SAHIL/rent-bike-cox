@@ -1,6 +1,6 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-export const SkeletonCard = ({ className = '' }) => (
+
+export const SkeletonCard = ({ className = '' }: { className?: string }) => (
   <div className={`glass rounded-2xl overflow-hidden ${className}`}>
     <div className="skeleton h-56 w-full" />
     <div className="p-5 flex flex-col flex-1 space-y-3">
@@ -14,7 +14,7 @@ export const SkeletonCard = ({ className = '' }) => (
 
 const widths = [85, 72, 91, 78, 67];
 
-export const SkeletonText = ({ lines = 3, className = '' }) => (
+export const SkeletonText = ({ lines = 3, className = '' }: { lines?: number; className?: string }) => (
   <div className={`space-y-2.5 ${className}`}>
     {Array.from({ length: lines }).map((_, i) => (
       <div key={i} className="skeleton h-4 rounded-lg" style={{ width: `${widths[i % widths.length]}%` }} />
@@ -22,7 +22,7 @@ export const SkeletonText = ({ lines = 3, className = '' }) => (
   </div>
 );
 
-export const SkeletonTable = ({ rows = 5, cols = 4, className = '' }) => (
+export const SkeletonTable = ({ rows = 5, cols = 4, className = '' }: { rows?: number; cols?: number; className?: string }) => (
   <div className={`space-y-3 ${className}`}>
     {Array.from({ length: rows }).map((_, i) => (
       <div key={i} className="flex gap-4">

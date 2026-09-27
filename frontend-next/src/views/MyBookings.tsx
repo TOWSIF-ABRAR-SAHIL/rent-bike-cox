@@ -1,15 +1,15 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { Booking } from '@/types';
 import { Clock, MapPin, Loader2, AlertTriangle, Plus, Download, Trash2, RotateCcw, Search, X } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
-const STATUS_STYLES = {
+const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
   Pending: { bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)' },
   Confirmed: { bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' },
   Completed: { bg: 'var(--info-bg)', color: 'var(--info-text)', border: 'var(--info-border)' },
@@ -37,10 +37,10 @@ const CANCEL_REASONS = [
 
 const MyBookings = () => {
   const { addToast } = useToast();
-  const [bookings, setBookings] = useState([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
-  const [extendingId, setExtendingId] = useState(null);
+  const [extendingId, setExtendingId] = useState<string | null>(null);
   const [newEndTime, setNewEndTime] = useState('');
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -49,13 +49,13 @@ const MyBookings = () => {
   const [sortBy, setSortBy] = useState('newest');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [cancelModal, setCancelModal] = useState(null);
+  const [cancelModal, setCancelModal] = useState<string | null>(null);
   const [cancelReason, setCancelReason] = useState('Changed my mind');
 
   const fetchBookings = useCallback(() => {
     setLoading(true);
     setFetchError('');
-    const params = new URLSearchParams({ page, limit: '10', sort: sortBy });
+    const params = new URLSearchParams({ page: String(page), limit: '10', sort: sortBy });
     if (statusFilter) params.set('status', statusFilter);
     if (search) params.set('search', search);
     api.get(`/booking/my-bookings?${params}`)
@@ -75,7 +75,7 @@ const MyBookings = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
 
-  const handleExtend = useCallback(async (bookingId) => {
+  const handleExtend = useCallback(async (bookingId: string) => {
     if (!newEndTime) { addToast('Please select a new end time', 'error'); return; }
     setExtendingId(bookingId);
     try {
@@ -84,13 +84,14 @@ const MyBookings = () => {
       addToast(`Extended! +${res.data.additionalHours}h — ${res.data.additionalPrice} TK`, 'success');
       setNewEndTime('');
     } catch (err) {
-      addToast(err.response?.data?.message || 'Extension failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Extension failed', 'error');
     } finally {
       setExtendingId(null);
     }
   }, [newEndTime, addToast]);
 
-  const handleCancel = useCallback(async (bookingId) => {
+  const handleCancel = useCallback(async (bookingId: string) => {
     try {
       const res = await api.put(`/booking/${bookingId}/cancel`, { reason: cancelReason });
       setBookings(prev => prev.map(b => b._id === bookingId ? res.data.booking : b));
@@ -99,7 +100,8 @@ const MyBookings = () => {
       setCancelModal(null);
       setCancelReason('Changed my mind');
     } catch (err) {
-      addToast(err.response?.data?.message || 'Cancellation failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Cancellation failed', 'error');
     }
   }, [cancelReason, addToast]);
 
@@ -131,7 +133,8 @@ const MyBookings = () => {
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';
     } catch (err) {
-      addToast(err.response?.data?.message || 'Account deletion failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Account deletion failed', 'error');
     } finally {
       setDeleting(false);
     }
@@ -188,16 +191,16 @@ const MyBookings = () => {
         <>
           <div className="space-y-4">
             {bookings.map(booking => {
-              const statusStyle = STATUS_STYLES[booking.status] || STATUS_STYLES.Pending;
-              const canExtend = booking.status === 'Confirmed' && new Date(booking.endTime) > new Date();
-              const canCancel = ['Pending', 'Confirmed'].includes(booking.status);
+              const statusStyle = STATUS_STYLES[booking.status ?? 'Pending'] || STATUS_STYLES.Pending;
+              const canExtend = booking.status === 'Confirmed' && new Date(booking.endTime ?? 0) > new Date();
+              const canCancel = ['Pending', 'Confirmed'].includes(booking.status ?? '');
 
               return (
                 <div key={booking._id} className="glass rounded-2xl p-5 sm:p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3 min-w-0">
                       {booking.bike?.images?.[0] && (
-                        <img src={booking.bike.images[0]} alt={booking.bike?.model} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
+                        <img src={booking.bike.images[0]} alt={booking.bike?.model} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
                       )}
                       <div className="min-w-0">
                         <h3 className="font-bold truncate" style={{ color: 'var(--text-primary)' }}>{booking.bike?.model || 'Unknown Bike'}</h3>
@@ -212,11 +215,11 @@ const MyBookings = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm mb-4">
                     <div>
                       <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--text-muted)' }}>Start</p>
-                      <p style={{ color: 'var(--text-primary)' }}>{new Date(booking.startTime).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                      <p style={{ color: 'var(--text-primary)' }}>{new Date(booking.startTime ?? 0).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--text-muted)' }}>End</p>
-                      <p style={{ color: 'var(--text-primary)' }}>{new Date(booking.endTime).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                      <p style={{ color: 'var(--text-primary)' }}>{new Date(booking.endTime ?? 0).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' })}</p>
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--text-muted)' }}>Total</p>

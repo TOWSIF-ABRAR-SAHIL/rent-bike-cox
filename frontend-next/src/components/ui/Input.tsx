@@ -1,6 +1,15 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-const Input = ({ label, icon: Icon, error, className = '', ...props }) => (
+
+import type { InputHTMLAttributes, ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
+
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: ReactNode;
+  icon?: LucideIcon;
+  error?: string;
+}
+
+const Input = ({ label, icon: Icon, error, className = '', ...props }: InputProps) => (
   <div className="space-y-1.5">
     {label && <label className="block text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{label}</label>}
     <div className="relative">

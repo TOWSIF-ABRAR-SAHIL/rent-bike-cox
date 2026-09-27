@@ -1,9 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { setNavState } from '../lib/navState';
+import type { Bike, Review, ReviewStats } from '@/types';
+import type { LucideIcon } from 'lucide-react';
 import { ArrowLeft, ChevronLeft, ChevronRight, AlertTriangle, Heart, GitCompareArrows, Expand, PenLine, Star, Users, Zap, Fuel, Gauge, ShieldCheck, AlertCircle } from 'lucide-react';
 import Lightbox from '../components/Lightbox';
 import BookingWidget from '../components/BookingWidget';
@@ -17,7 +18,7 @@ import ReviewList from '../components/ReviewList';
 import { resolveImages, getBikeSpecs } from '../lib/bikeMedia';
 import { getSavedPickupLocation } from '../lib/pickupSpots';
 
-const SPEC_ICON = {
+const SPEC_ICON: Record<string, LucideIcon> = {
   Capacity: Users,
   Type: Zap,
   Fuel: Fuel,
@@ -28,20 +29,20 @@ const BikeDetails = () => {
   const { id } = useParams();
   const router = useRouter();
   const { token } = useAuth();
-  const [bike, setBike] = useState(null);
+  const [bike, setBike] = useState<Bike | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [fetchError, setFetchError] = useState('');
-  const [reviews, setReviews] = useState([]);
-  const [reviewStats, setReviewStats] = useState(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
   const [reviewPage, setReviewPage] = useState(1);
   const [reviewPages, setReviewPages] = useState(1);
   const [reviewSort, setReviewSort] = useState('newest');
   const [reviewLoading, setReviewLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  const [recommended, setRecommended] = useState([]);
+  const [recommended, setRecommended] = useState<Bike[]>([]);
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
@@ -67,7 +68,7 @@ const BikeDetails = () => {
     fetchReviews(1);
   }, [fetchReviews]);
 
-  const handleReviewSubmit = async ({ rating, title, comment }) => {
+  const handleReviewSubmit = async ({ rating, title, comment }: { rating: number; title: string; comment: string }): Promise<void> => {
     try {
       await api.post(`/reviews/${id}`, { rating, title, comment });
       fetchReviews(1);
@@ -92,17 +93,23 @@ const BikeDetails = () => {
 
   useEffect(() => {
     if (!bike) return;
-    const params = {};
-    if (bike.category?._id) params.category = bike.category._id;
+    const params: Record<string, string> = {};
+    const category = bike.category;
+    if (category && typeof category !== 'string' && category._id) {
+      params.category = category._id;
+    }
     api.get('/dashboard/bikes/available', { params })
       .then(res => {
-        const recs = res.data.filter(b => b._id !== bike._id).slice(0, 3);
+        const recs = (res.data as Bike[]).filter((b: Bike) => b._id !== bike._id).slice(0, 3);
         setRecommended(recs);
       })
       .catch(() => {});
   }, [bike]);
 
-  const handleProceed = ({ duration, startTime, endTime, pricing }) => {
+  const handleProceed = ({ duration, startTime, endTime, pricing }: {
+    duration: number; startTime: string; endTime: string; pricing: unknown;
+  }): void => {
+    if (!bike) return;
     if (!token) { router.push('/login'); return; }
     setNavState('checkout', {
       duration,
@@ -192,7 +199,7 @@ const BikeDetails = () => {
           {/* Image Gallery */}
           <div className="space-y-3">
             <div className="rounded-2xl overflow-hidden glass aspect-[4/3] relative group">
-              <img src={mainImage} alt={bike.model} className="w-full h-full object-cover transition-transform duration-300" onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }} />
+              <img src={mainImage} alt={bike.model} className="w-full h-full object-cover transition-transform duration-300" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }} />
               <button onClick={() => { setLightboxIndex(selectedImage); setLightboxOpen(true); }}
                 className="absolute top-3 right-3 w-10 h-10 glass rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                 style={{ color: 'white' }} aria-label="Open fullscreen gallery">
@@ -222,7 +229,7 @@ const BikeDetails = () => {
                     aria-label={`View image ${i + 1}`}
                     className={`rounded-xl overflow-hidden aspect-square border-2 transition-all ${selectedImage === i ? 'border-amber-500 shadow-lg shadow-amber-500/20' : 'hover:border-amber-500/50'}`}
                     style={selectedImage !== i ? { borderColor: 'var(--border-base)' } : undefined}>
-                    <img src={src} alt={`${bike.model} image ${i + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => { e.target.src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
+                    <img src={src} alt={`${bike.model} image ${i + 1}`} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/200x200/1a1a2e/666?text=No+Image'; }} />
                   </button>
                 ))}
               </div>
@@ -364,13 +371,18 @@ const BikeDetails = () => {
             You Might Also Like
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {recommended.map(rec => (
+            {recommended.map(rec => {
+              // category/zone may be populated objects or plain strings —
+              // normalize for display while preserving original render output.
+              const catName = typeof rec.category === 'string' ? undefined : rec.category?.name;
+              const zoneName = typeof rec.zone === 'string' ? undefined : rec.zone?.name;
+              return (
               <Link key={rec._id} href={`/bike/${rec._id}`}
                 className="glass rounded-2xl overflow-hidden card-hover group block" style={{ border: '1px solid var(--border-base)' }}>
                 <div className="relative overflow-hidden">
                   <img src={resolveImages(rec)[0]} alt={rec.model}
                     className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy"
-                    onError={(e) => { e.target.src = 'https://placehold.co/400x300/1a1a2e/666?text=No+Image'; }} />
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/1a1a2e/666?text=No+Image'; }} />
                   <div className="absolute top-3 right-3">
                     <span className="px-3 py-1 gradient-primary rounded-lg text-xs font-bold text-white shadow-lg">
                       {rec.pricePerHour} TK/hr
@@ -379,15 +391,16 @@ const BikeDetails = () => {
                 </div>
                 <div className="p-4">
                   <h3 className="font-bold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{rec.model}</h3>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{rec.brand} &bull; {rec.category?.name || 'Vehicle'}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{rec.brand} &bull; {catName || 'Vehicle'}</p>
                   {rec.zone && (
                     <div className="flex items-center gap-1 mt-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {rec.zone.name}
+                      {zoneName}
                     </div>
                   )}
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

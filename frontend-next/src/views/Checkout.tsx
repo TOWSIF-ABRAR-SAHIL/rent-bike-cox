@@ -1,10 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { takeNavState } from '../lib/navState';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { Bike, PricingInfo } from '@/types';
 import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, ChevronRight, FileText } from 'lucide-react';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import { useToast } from '../components/useToast';
@@ -14,27 +14,51 @@ import { PICKUP_SPOTS, getSavedPickupLocation, savePickupLocation } from '../lib
 const POLL_INTERVAL_MS = 20000;
 const START_TIME_MIN_MINUTES = 10;
 
-const formatDateTime = (date) => {
+interface CheckoutRouteState {
+  duration?: number;
+  startTime?: string;
+  endTime?: string;
+  pricing?: PricingInfo;
+  pickupLocation?: string;
+  bike?: Bike | null;
+}
+
+interface BookingData {
+  duration: number;
+  startTime?: string;
+  endTime?: string;
+  pricing?: PricingInfo;
+  pickupLocation: string;
+  bike?: Bike | null;
+}
+
+interface PreviewData {
+  pricing?: PricingInfo;
+  available?: boolean;
+  conflictMessage?: string;
+}
+
+const formatDateTime = (date: string | Date) => {
   const d = new Date(date);
   const offset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - offset * 60 * 1000);
   return local.toISOString().slice(0, 16);
 };
 
-const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
+const formatDisplayDate = (dateStr: string) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
 
 const Checkout = () => {
   const { bikeId } = useParams();
   const router = useRouter();
   // One-shot navigation state (replaces react-router location.state).
-  const [routeState] = useState(() => takeNavState('checkout'));
+  const [routeState] = useState(() => takeNavState<CheckoutRouteState>('checkout'));
   const state = routeState;
   const { user } = useAuth();
   const { addToast } = useToast();
-  const errorRef = useRef(null);
-  const pollRef = useRef(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const bookingData = useMemo(() => state ? {
+  const bookingData: BookingData | null = useMemo(() => state ? {
     duration: state.duration || 4,
     startTime: state.startTime,
     endTime: state.endTime,
@@ -44,7 +68,7 @@ const Checkout = () => {
   } : null, [state]);
 
   const [couponCode, setCouponCode] = useState('');
-  const [previewData, setPreviewData] = useState(bookingData?.pricing ? { pricing: bookingData.pricing, available: true } : null);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(bookingData?.pricing ? { pricing: bookingData.pricing, available: true } : null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -52,8 +76,8 @@ const Checkout = () => {
   const [pickupLocation, setPickupLocation] = useState(() => bookingData?.pickupLocation || getSavedPickupLocation());
   const [specialRequests, setSpecialRequests] = useState('');
   const [fetchError, setFetchError] = useState(bookingData ? '' : 'No booking data found. Please go back and select your booking details.');
-  const [createdBookingId, setCreatedBookingId] = useState(null);
-  const [bike, setBike] = useState(bookingData?.bike || null);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [bike, setBike] = useState<Bike | null>(bookingData?.bike || null);
 
   useEffect(() => {
     if (bookingData || bike) return;
@@ -78,8 +102,10 @@ const Checkout = () => {
         }, { signal: controller.signal });
         setPreviewData(res.data);
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          setError(err.response?.data?.message || 'Failed to calculate pricing');
+        const apiErr = err as ApiError;
+        if (apiErr.name !== 'AbortError') {
+          const data = apiErr.response?.data as { message?: string } | undefined;
+          setError(data?.message || 'Failed to calculate pricing');
           setPreviewData(null);
         }
       }
@@ -104,7 +130,7 @@ const Checkout = () => {
         });
       } catch { /* poll is best-effort */ }
     }, POLL_INTERVAL_MS);
-    return () => clearInterval(pollRef.current);
+    return () => { if (pollRef.current) if (pollRef.current) clearInterval(pollRef.current); };
   }, [bikeId, bookingData, couponCode, createdBookingId]);
 
   useEffect(() => {
@@ -133,7 +159,11 @@ const Checkout = () => {
       : null;
   const isDisabled = creating || !agreedToTerms || !isAvailable || !pricing;
 
-  const createBookingAndPay = async () => {
+  const createBookingAndPay = async (): Promise<void> => {
+    if (!bookingData) {
+      setError('No booking data found. Please go back and select your booking details.');
+      return;
+    }
     if (!agreedToTerms) {
       setError('Please agree to the terms and conditions.');
       return;
@@ -147,7 +177,7 @@ const Checkout = () => {
       return;
     }
 
-    let effectiveStartTime = bookingData.startTime;
+    let effectiveStartTime: string = bookingData.startTime ?? '';
     const now = new Date();
     if (new Date(effectiveStartTime).getTime() < now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000) {
       const target = new Date(now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000);
@@ -162,11 +192,18 @@ const Checkout = () => {
     try {
       setCreating(true);
       setError('');
-      clearInterval(pollRef.current);
-      const body = {
+      if (pollRef.current) clearInterval(pollRef.current);
+      const body: {
+        bikeId: string | string[] | undefined;
+        startTime: Date;
+        endTime: Date;
+        couponCode?: string;
+        destination?: string;
+        pickupLocation?: string;
+      } = {
         bikeId,
         startTime: new Date(effectiveStartTime),
-        endTime: new Date(bookingData.endTime),
+        endTime: new Date(bookingData.endTime ?? ''),
       };
       if (couponCode) body.couponCode = couponCode;
       if (destination) body.destination = destination;
@@ -189,8 +226,10 @@ const Checkout = () => {
         setCreating(false);
       }
     } catch (err) {
-      const status = err.response?.status;
-      const serverMsg = err.response?.data?.message || '';
+      const apiErr = err as ApiError;
+      const status = apiErr.response?.status;
+      const data = apiErr.response?.data as { message?: string } | undefined;
+      const serverMsg = data?.message || '';
       let userMsg;
       if (status === 401) {
         userMsg = 'Session expired, please login again.';
@@ -410,11 +449,11 @@ const Checkout = () => {
             {/* Vehicle Preview */}
             <div className="flex items-center gap-4 pb-4 border-b" style={{ borderColor: 'var(--border-base)' }}>
               {displayBike?.images?.[0] && (
-                <img src={displayBike.images[0]} alt={displayBike.model} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" onError={(e) => { e.target.src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
+                <img src={displayBike.images[0]} alt={displayBike.model} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
               )}
               <div className="min-w-0 flex-1">
                 <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{displayBike?.model || 'Vehicle'}</h3>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{displayBike?.brand || ''} &bull; {displayBike?.category?.name || 'Vehicle'}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{displayBike?.brand || ''} &bull; {(typeof displayBike?.category === 'string' ? undefined : displayBike?.category?.name) || 'Vehicle'}</p>
               </div>
               <Link href={`/bike/${bikeId}`} className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--accent-text)' }}>
                 Change
@@ -429,7 +468,7 @@ const Checkout = () => {
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Pickup</p>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(startTime)}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(startTime ?? '')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -438,7 +477,7 @@ const Checkout = () => {
                 </div>
                 <div>
                   <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Return</p>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(endTime)}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(endTime ?? '')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -499,7 +538,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span style={{ color: 'var(--text-secondary)' }}>Pay on Pickup</span>
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice - pricing.minAdvance} TK</span>
+                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{(pricing.totalPrice ?? 0) - (pricing.minAdvance ?? 0)} TK</span>
                 </div>
               </div>
             )}

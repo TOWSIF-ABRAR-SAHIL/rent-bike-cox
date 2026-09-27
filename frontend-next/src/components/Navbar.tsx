@@ -1,8 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MouseEvent as ReactMouseEvent, type TouchEvent as ReactTouchEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 
 import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, Heart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
@@ -25,9 +24,9 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
-  const userDropdownRef = useRef(null);
-  const moreDropdownRef = useRef(null);
-  const mobileMenuRef = useRef(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
 
@@ -40,8 +39,8 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!userDropdownOpen) return;
-    const handler = (e) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) setUserDropdownOpen(false);
+    const handler = (e: MouseEvent | TouchEvent): void => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) setUserDropdownOpen(false);
     };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
@@ -50,8 +49,8 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!moreDropdownOpen) return;
-    const handler = (e) => {
-      if (moreDropdownRef.current && !moreDropdownRef.current.contains(e.target)) setMoreDropdownOpen(false);
+    const handler = (e: MouseEvent | TouchEvent): void => {
+      if (moreDropdownRef.current && !moreDropdownRef.current.contains(e.target as Node)) setMoreDropdownOpen(false);
     };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
@@ -60,8 +59,9 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!mobileOpen) return;
-    const handler = (e) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target) && !e.target.closest('button[aria-label]')) setMobileOpen(false);
+    const handler = (e: MouseEvent | TouchEvent): void => {
+      const target = e.target as Element;
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(target) && !target.closest('button[aria-label]')) setMobileOpen(false);
     };
     document.addEventListener('mousedown', handler);
     document.addEventListener('touchstart', handler);
@@ -71,7 +71,7 @@ const Navbar = () => {
 
   useEffect(() => {
     if (!userDropdownOpen && !moreDropdownOpen && !mobileOpen) return;
-    const handler = (e) => { if (e.key === 'Escape') closeMenus(); };
+    const handler = (e: KeyboardEvent): void => { if (e.key === 'Escape') closeMenus(); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [userDropdownOpen, moreDropdownOpen, mobileOpen]);
@@ -84,7 +84,7 @@ const Navbar = () => {
     setMoreDropdownOpen(false);
   };
 
-  const isActive = (to, exact = false) =>
+  const isActive = (to: string, exact = false): boolean =>
     exact ? pathname === to : pathname === to || pathname.startsWith(to + '/');
 
   const moreItems = [

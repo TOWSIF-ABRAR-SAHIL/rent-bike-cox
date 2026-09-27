@@ -1,27 +1,39 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { Component } from 'react';
+
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-class TabErrorBoundary extends Component {
-  constructor(props) {
+export interface TabErrorBoundaryProps {
+  children: ReactNode;
+  name?: string;
+  fallbackTitle?: string;
+  fallbackMessage?: string;
+}
+
+interface TabErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class TabErrorBoundary extends Component<TabErrorBoundaryProps, TabErrorBoundaryState> {
+  constructor(props: TabErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): TabErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error) {
+  componentDidCatch(error: Error): void {
     console.error(`[TabErrorBoundary:${this.props.name || 'unknown'}]`, error.message);
   }
 
-  handleRetry = () => {
+  handleRetry = (): void => {
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className="glass rounded-2xl p-6 border text-center" style={{ borderColor: 'var(--border-base)' }}>

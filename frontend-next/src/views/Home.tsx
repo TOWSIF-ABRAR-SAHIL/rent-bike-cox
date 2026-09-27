@@ -1,10 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 
 import api from '../api/axios';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Heart, GitCompareArrows, Calendar, Navigation, BadgeCheck, Gauge, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
@@ -16,9 +16,10 @@ const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
   ssr: false,
   loading: () => <div className="skeleton rounded-2xl" style={{ height: 400 }} />,
 });
+import type { Bike as BikeType, BikeCategory, Faq, ReviewStats } from '@/types';
 import { PICKUP_SPOTS, getSavedPickupLocation, savePickupLocation, clearPickupLocation } from '../lib/pickupSpots';
 
-const categoryIcons = { Bike, Car, Jeep: Truck };
+const categoryIcons: Record<string, LucideIcon> = { Bike, Car, Jeep: Truck };
 
 const features = [
   { icon: Shield, title: 'Verified Vehicles', desc: 'Every vehicle is inspected and verified before listing', bg: 'bg-neutral-900' },
@@ -44,8 +45,8 @@ const hotspots = [
 
 const Home = () => {
   const { get } = useSiteContent();
-  const [bikes, setBikes] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [bikes, setBikes] = useState<BikeType[]>([]);
+  const [categories, setCategories] = useState<BikeCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
@@ -53,8 +54,8 @@ const Home = () => {
   const [fetchError, setFetchError] = useState('');
   const [slowNetwork, setSlowNetwork] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
-  const [bikeRatings, setBikeRatings] = useState({});
-  const [faqs, setFaqs] = useState([]);
+  const [bikeRatings, setBikeRatings] = useState<Record<string, ReviewStats>>({});
+  const [faqs, setFaqs] = useState<Faq[]>([]);
   const [openFaq, setOpenFaq] = useState(0);
   const [heroLocation, setHeroLocation] = useState(() => getSavedPickupLocation());
 
@@ -83,7 +84,7 @@ const Home = () => {
     api.get('/faqs')
       .then(res => {
         if (res.data && res.data.faqs) {
-          const all = Object.values(res.data.faqs).flat();
+          const all = (Object.values(res.data.faqs) as Faq[][]).flat();
           setFaqs(all.slice(0, 6));
         }
       })
@@ -94,7 +95,7 @@ const Home = () => {
     setLoading(true);
     setFetchError('');
     try {
-      const params = {};
+      const params: Record<string, string> = {};
       if (debouncedSearch) params.search = debouncedSearch;
       if (activeCategory) params.category = activeCategory;
       const res = await api.get('/dashboard/bikes/available', { params });
@@ -119,7 +120,7 @@ const Home = () => {
 
   useEffect(() => {
     if (bikes.length === 0) return;
-    const ids = bikes.map(b => b._id).join(',');
+    const ids = bikes.map((b: BikeType) => b._id).join(',');
     api.get(`/reviews/stats?bikeIds=${encodeURIComponent(ids)}`)
       .then(res => {
         if (res.data && typeof res.data === 'object') {
@@ -129,7 +130,7 @@ const Home = () => {
       .catch(() => {});
   }, [bikes]);
 
-  const handleCategoryClick = (slug) => {
+  const handleCategoryClick = (slug: string): void => {
     setActiveCategory(prev => prev === slug ? '' : slug);
   };
 
@@ -146,13 +147,13 @@ const Home = () => {
   const categoryCounts = useMemo(() =>
     categories.map(cat => ({
       ...cat,
-      count: bikes.filter(b => b.category?.slug === cat.slug).length
+      count: bikes.filter((b: BikeType) => (typeof b.category === 'string' ? undefined : b.category?.slug) === cat.slug).length
     })),
     [categories, bikes]
   );
 
   const brands = useMemo(() => {
-    const counts = {};
+    const counts: Record<string, number> = {};
     bikes.forEach(b => {
       if (b.brand) counts[b.brand] = (counts[b.brand] || 0) + 1;
     });
@@ -168,12 +169,12 @@ const Home = () => {
   }, [bikes]);
 
   const topRatedBike = useMemo(() => {
-    let best = null;
+    let best: BikeType | null = null;
     let bestScore = -1;
     bikes.forEach(b => {
       const r = bikeRatings[b._id];
       if (r && (r.total || 0) > 0) {
-        const score = (r.avgRating || 0) * 100 + Math.min(r.total, 50);
+        const score = (r.avgRating || 0) * 100 + Math.min(r.total ?? 0, 50);
         if (score > bestScore) { bestScore = score; best = b; }
       }
     });
@@ -261,7 +262,7 @@ const Home = () => {
                 {heroBike?.images?.[0] ? (
                   <img key={heroBike._id} src={heroBike.images[0]} alt={heroBike.model}
                     className="w-full h-[380px] object-cover animate-fade-in"
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
+                    onError={(e) => { const img = e.target as HTMLImageElement; img.onerror = null; img.src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
                 ) : (
                   <div className="w-full h-[380px] flex items-center justify-center">
                     <Bike size={72} className="text-slate-300" />
@@ -396,7 +397,7 @@ const Home = () => {
                   All
                 </button>
                 {categories.map(cat => (
-                  <button key={cat._id} onClick={() => handleCategoryClick(cat.slug)}
+                  <button key={cat._id} onClick={() => handleCategoryClick(cat.slug ?? '')}
                     className={`px-5 py-2.5 rounded-lg text-[13px] font-bold transition-all ${activeCategory === cat.slug ? 'bg-neutral-900 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-900'}`}>
                     {cat.name}s
                   </button>
@@ -450,7 +451,7 @@ const Home = () => {
                         <img src={bike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={bike.model}
                           width="400" height="300" loading="lazy"
                           className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => { e.target.src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
+                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
                       </Link>
                       {(isFeatured || isTopRated) && (
                         <div className="absolute top-5 -left-10 rotate-[-35deg] px-10 py-1 text-[11px] font-black uppercase tracking-wide text-white shadow-md"
@@ -470,9 +471,9 @@ const Home = () => {
                           <GitCompareArrows size={14} color={hasCompare(bike._id) ? '#f97316' : '#64748b'} />
                         </button>
                       </div>
-                      {bike.category?.name && (
+                      {(typeof bike.category === 'string' ? undefined : bike.category?.name) && (
                         <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/95 text-slate-800 shadow">
-                          {bike.category.name}
+                          {(typeof bike.category === 'string' ? undefined : bike.category?.name)}
                         </span>
                       )}
                     </div>
@@ -500,8 +501,8 @@ const Home = () => {
                       </div>
                       <div className="grid grid-cols-3 gap-y-2.5 gap-x-2 mt-4 text-[12px] text-slate-600">
                         <span className="inline-flex items-center gap-1.5"><Gauge size={13} className="text-slate-400" />{conditionLabel}</span>
-                        <span className="inline-flex items-center gap-1.5"><Navigation size={13} className="text-slate-400" />{bike.currentMileage > 0 ? `${bike.currentMileage} KM` : 'Low KM'}</span>
-                        <span className="inline-flex items-center gap-1.5"><Bike size={13} className="text-slate-400" />{bike.category?.name || 'Vehicle'}</span>
+                        <span className="inline-flex items-center gap-1.5"><Navigation size={13} className="text-slate-400" />{(bike.currentMileage ?? 0) > 0 ? `${bike.currentMileage} KM` : 'Low KM'}</span>
+                        <span className="inline-flex items-center gap-1.5"><Bike size={13} className="text-slate-400" />{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'Vehicle'}</span>
                         <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-slate-400" />From {packageStart ? `${packageStart}h` : '1h'}</span>
                         <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-slate-400" />Cox&apos;s Bazar</span>
                         <span className="inline-flex items-center gap-1.5"><Shield size={13} className="text-slate-400" />Inspected</span>
@@ -534,11 +535,11 @@ const Home = () => {
         {categories.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {categoryCounts.map(cat => {
-              const Icon = categoryIcons[cat.name] || Bike;
+              const Icon = categoryIcons[cat.name ?? ''] || Bike;
               const isZero = cat.count === 0;
               return (
                 <button key={cat._id}
-                  onClick={() => { if (isZero) return; handleCategoryClick(cat.slug); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  onClick={() => { if (isZero) return; handleCategoryClick(cat.slug ?? ''); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
                   disabled={isZero}
                   className={`rounded-2xl p-6 flex flex-col items-center gap-2 text-center border transition-all duration-300 ${isZero ? 'opacity-50 border-slate-200 bg-slate-50' : activeCategory === cat.slug ? 'border-orange-500 bg-orange-50 shadow-lg shadow-orange-500/10' : 'border-slate-200 bg-white hover:border-slate-900 hover:shadow-lg'}`}
                   aria-label={isZero ? `${cat.name} — coming soon` : `Filter by ${cat.name}`}>
@@ -597,12 +598,12 @@ const Home = () => {
               <div className="relative min-h-[280px]">
                 <img src={topRatedBike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={topRatedBike.model}
                   className="absolute inset-0 w-full h-full object-cover"
-                  onError={(e) => { e.target.src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
+                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
                 <span className="absolute top-4 left-4 px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wide bg-orange-500 text-white shadow">Top Rated</span>
               </div>
               <div className="p-8 sm:p-10 flex flex-col justify-center">
                 {(() => {
-                  const r = bikeRatings[topRatedBike._id];
+                  const r = bikeRatings[topRatedBike?._id ?? ''];
                   return (
                     <>
                       <div className="flex items-center gap-1.5 mb-3">
@@ -614,7 +615,7 @@ const Home = () => {
                         <span className="text-sm text-slate-500">{r ? `${(r.avgRating || 0).toFixed(1)} (${r.total || 0} Reviews)` : 'New listing'}</span>
                       </div>
                       <h3 className="text-2xl sm:text-3xl font-black text-slate-900 mb-1">{topRatedBike.model}</h3>
-                      <p className="text-slate-500 mb-5">{topRatedBike.brand} • {topRatedBike.category?.name || 'Vehicle'}</p>
+                      <p className="text-slate-500 mb-5">{topRatedBike.brand} • {(typeof topRatedBike.category === 'string' ? undefined : topRatedBike.category?.name) || 'Vehicle'}</p>
                       <p className="text-3xl font-black text-red-600 mb-6">{topRatedBike.pricePerHour} <span className="text-sm font-bold text-slate-500">TK/hr</span></p>
                       <div className="flex flex-wrap gap-3">
                         <Link href={`/bike/${topRatedBike._id}`} className="inline-flex items-center gap-2 bg-neutral-900 hover:bg-black text-white font-bold px-7 py-3 rounded-lg text-sm transition-all">
@@ -668,7 +669,7 @@ const Home = () => {
                   {img ? (
                     <img src={img} alt={spot.name} loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => { e.target.style.display = 'none'; }} />
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-3">

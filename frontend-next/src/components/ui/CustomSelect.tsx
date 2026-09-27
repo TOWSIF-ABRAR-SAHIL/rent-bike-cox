@@ -1,12 +1,29 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useState, useRef, useEffect, useCallback } from 'react';
+
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const INDICATOR_COLORS = {
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+type IndicatorColor = 'green' | 'red';
+
+const INDICATOR_COLORS: Record<IndicatorColor, { bg: string }> = {
   green: { bg: 'var(--success-text)' },
   red: { bg: 'var(--danger-text)' },
 };
+
+export interface CustomSelectProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options?: SelectOption[];
+  placeholder?: string;
+  indicatorColor?: IndicatorColor;
+  disabled?: boolean;
+}
 
 const CustomSelect = ({
   label,
@@ -16,11 +33,11 @@ const CustomSelect = ({
   placeholder = 'Select...',
   indicatorColor,
   disabled = false,
-}) => {
+}: CustomSelectProps) => {
   const [open, setOpen] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(-1);
-  const containerRef = useRef(null);
-  const listRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const selected = options.find(o => o.value === value);
   const indicator = indicatorColor ? INDICATOR_COLORS[indicatorColor] : null;
@@ -30,7 +47,7 @@ const CustomSelect = ({
     setFocusedIdx(-1);
   }, []);
 
-  const openDropdown = () => {
+  const openDropdown = (): void => {
     setOpen(true);
     const idx = value ? options.findIndex(o => o.value === value) : 0;
     setFocusedIdx(idx >= 0 ? idx : 0);
@@ -38,8 +55,8 @@ const CustomSelect = ({
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+    const handler = (e: MouseEvent): void => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         close();
       }
     };
@@ -49,12 +66,12 @@ const CustomSelect = ({
 
   useEffect(() => {
     if (open && listRef.current && focusedIdx >= 0) {
-      const item = listRef.current.children[focusedIdx];
+      const item = listRef.current.children[focusedIdx] as HTMLElement | undefined;
       if (item) item.scrollIntoView({ block: 'nearest' });
     }
   }, [open, focusedIdx]);
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: ReactKeyboardEvent): void => {
     if (!open) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
         e.preventDefault();
