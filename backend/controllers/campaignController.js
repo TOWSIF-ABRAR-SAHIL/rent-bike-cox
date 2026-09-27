@@ -101,53 +101,19 @@ exports.send = async (req, res) => {
       return res.status(400).json({ message: 'Campaign already sent or sending' });
     }
 
+    // Queue the campaign for the emailCampaignSender job instead of sending the
+    // whole audience inside this request. The old loop slept 100ms per recipient,
+    // so a few thousand recipients blew past the upstream request timeout after
+    // already having sent part of the list, and it skipped the job's batching,
+    // progress persistence and high-bounce-rate pause entirely.
     campaign.status = 'sending';
+    if (campaign.progress) campaign.progress.total = campaign.progress.total || 0;
     await campaign.save();
 
-    let query = {};
-    if (campaign.audience.filter === 'users') query = { role: 'User' };
-    else if (campaign.audience.filter === 'renters') query = { role: 'Renter' };
-    else if (campaign.audience.filter === 'admins') query = { role: 'Admin' };
-    else if (campaign.audience.filter === 'custom' && campaign.audience.customUserIds?.length) {
-      query = { _id: { $in: campaign.audience.customUserIds } };
-    }
-
-    const users = await User.find(query).select('email name').lean();
-    let sentCount = 0;
-    let failedCount = 0;
-
-    const emailService = require('../services/emailService');
-    for (const user of users) {
-      try {
-        let body = campaign.body;
-        body = body.replace(/{{userName}}/g, user.name || '');
-        body = body.replace(/{{userEmail}}/g, user.email || '');
-
-        const result = await emailService.sendEmail({
-          to: user.email,
-          subject: campaign.subject,
-          html: body
-        });
-        if (result.sent) sentCount++;
-        else failedCount++;
-      } catch {
-        failedCount++;
-      }
-      await new Promise(r => setTimeout(r, 100));
-    }
-
-    campaign.status = 'sent';
-    campaign.sentAt = new Date();
-    campaign.sentCount = sentCount;
-    campaign.failedCount = failedCount;
-    await campaign.save();
-
-    res.json({ message: 'Campaign sent', sentCount, failedCount, total: users.length });
+    res.json({ message: 'Campaign queued for sending', queued: true, campaignId: campaign._id });
   } catch (error) {
     logger.error('send campaign error:', error.message);
-    const campaign = await EmailCampaign.findById(req.params.id);
-    if (campaign) { campaign.status = 'failed'; await campaign.save(); }
-    res.status(500).json({ message: 'Failed to send campaign' });
+    res.status(500).json({ message: 'Failed to queue campaign' });
   }
 };
 

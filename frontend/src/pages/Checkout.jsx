@@ -151,6 +151,17 @@ const Checkout = () => {
       effectiveStartTime = formatDateTime(target);
     }
 
+    let pendingBookingId = null;
+    // If the booking is created but payment cannot start, release it so it does
+    // not keep holding the requested time window for someone else.
+    const releasePendingBooking = async () => {
+      if (!pendingBookingId) return;
+      try {
+        await api.put(`/booking/${pendingBookingId}/cancel`);
+        pendingBookingId = null;
+      } catch { /* best effort — the booking expires on its own */ }
+    };
+
     try {
       setCreating(true);
       setError('');
@@ -167,16 +178,20 @@ const Checkout = () => {
       if (!booking || !booking._id) {
         throw new Error('Invalid response from server');
       }
+      pendingBookingId = booking._id;
       setCreatedBookingId(booking._id);
-      addToast('Booking created! Redirecting to payment...', 'success');
+
       const payRes = await api.post('/payment/init', { bookingId: booking._id });
       if (payRes.data.url) {
+        addToast('Booking created! Redirecting to payment...', 'success');
         window.location.replace(payRes.data.url);
       } else {
+        await releasePendingBooking();
         setError('Payment gateway unavailable. Please try again.');
         setCreating(false);
       }
     } catch (err) {
+      await releasePendingBooking();
       const status = err.response?.status;
       const serverMsg = err.response?.data?.message || '';
       let userMsg;

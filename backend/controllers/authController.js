@@ -7,6 +7,8 @@ const RefreshToken = require('../models/RefreshToken');
 const BlacklistedToken = require('../models/BlacklistedToken');
 const { sanitize } = require('../utils/sanitize');
 const { checkPasswordStrength } = require('../security/utils/passwordPolicy');
+const { hashIdentifier } = require('../security/utils/piiHash');
+const { invalidateTokenVersionCache } = require('../middleware/authMiddleware');
 const { generateAccessToken, generateRefreshToken, verifyToken, buildFingerprint } = require('../security/utils/tokenManager');
 const securityConfig = require('../security/config/securityConfig');
 const { logSecurityEvent } = require('../utils/securityLogger');
@@ -16,6 +18,8 @@ const adminNotify = require('../services/AdminNotificationService');
 
 const MAX_ATTEMPTS = securityConfig.lockout.maxAttempts;
 const LOCK_DURATION = securityConfig.lockout.lockDuration;
+const MAX_OTP_ATTEMPTS = 5;
+const REFRESH_GRACE_MS = 10 * 1000;
 
 function generateTokenPair(user, req) {
   const fingerprint = buildFingerprint(req);
@@ -60,10 +64,20 @@ exports.register = async (req, res) => {
     let user = await User.findOne({ email });
     if (user) return res.status(400).json({ message: 'User already exists' });
 
-    const existingNid = await User.findOne({ nid: cleanNid });
+    // Duplicate detection goes through the keyed hashes when a pepper is
+    // configured. Querying the plaintext fields only worked while encryption was
+    // off, so enabling it silently disabled these checks.
+    const nidDigest = hashIdentifier(cleanNid);
+    const phoneDigest = hashIdentifier(phoneNumber);
+
+    const existingNid = nidDigest
+      ? await User.findOne({ nidHash: nidDigest })
+      : await User.findOne({ nid: cleanNid });
     if (existingNid) return res.status(400).json({ message: 'An account with this NID already exists' });
 
-    const existingPhone = await User.findOne({ phoneNumber });
+    const existingPhone = phoneDigest
+      ? await User.findOne({ phoneHash: phoneDigest })
+      : await User.findOne({ phoneNumber });
     if (existingPhone) return res.status(400).json({ message: 'An account with this phone number already exists' });
 
     const salt = await bcrypt.genSalt(12);
@@ -112,8 +126,12 @@ exports.login = async (req, res) => {
     const ip = req.ip || req.connection?.remoteAddress || 'unknown';
     const userAgent = req.headers['user-agent'] || '';
 
+    // Scoped to this email *and* this IP. Counting per email alone let anyone lock
+    // a known account (the admin address is published in the README) with five
+    // bad passwords from a single address, repeatedly.
     const recentFailures = await LoginAttempt.countDocuments({
       email,
+      ip,
       success: false,
       createdAt: { $gt: new Date(Date.now() - LOCK_DURATION) },
     });
@@ -179,6 +197,9 @@ exports.login = async (req, res) => {
 
     await LoginAttempt.create({ email, ip, userAgent, success: true, failureCount: 0 });
 
+    user.lastLoginAt = new Date();
+    await user.save();
+
     const { accessToken, refreshToken, familyId } = generateTokenPair(user, req);
     await storeRefreshToken(refreshToken, user._id, familyId, req);
 
@@ -207,11 +228,23 @@ exports.refresh = async (req, res) => {
     const tokenHash = RefreshToken.hashToken(refreshToken);
     const storedToken = await RefreshToken.findOne({ tokenHash });
 
-    if (!storedToken || storedToken.revoked) {
-      if (storedToken?.familyId) {
-        await RefreshToken.updateMany({ familyId: storedToken.familyId }, { revoked: true });
-      }
+    if (!storedToken) {
       return res.status(401).json({ message: 'Refresh token revoked' });
+    }
+
+    if (storedToken.revoked) {
+      // Grace window. Rotation is single-use, so two tabs refreshing in the same
+      // moment looked identical to a stolen token being replayed and revoked the
+      // entire family, signing the user out. A token rotated seconds ago is the
+      // same session; anything older still counts as reuse. The cost is that a
+      // stolen token replayed inside this window also yields a pair.
+      const rotatedAgoMs = Date.now() - new Date(storedToken.updatedAt).getTime();
+      const withinGrace = !!storedToken.replacedByHash && rotatedAgoMs <= REFRESH_GRACE_MS;
+
+      if (!withinGrace) {
+        await RefreshToken.updateMany({ familyId: storedToken.familyId }, { revoked: true });
+        return res.status(401).json({ message: 'Refresh token revoked' });
+      }
     }
 
     if (new Date() > storedToken.expiresAt) {
@@ -293,7 +326,11 @@ exports.changePassword = async (req, res) => {
 
     const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(newPassword, salt);
+    // Revokes every access token for this user immediately, on top of the refresh
+    // tokens below.
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+    invalidateTokenVersionCache(user._id.toString());
 
     await RefreshToken.updateMany({ userId: user._id, revoked: false }, { revoked: true });
 
@@ -488,15 +525,29 @@ exports.verifyOtp = async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Invalid or expired OTP' });
 
     const PasswordReset = require('../models/PasswordReset');
-    const otpHash = PasswordReset.hashOtp(otp);
     const record = await PasswordReset.findOne({
       userId: user._id,
-      otpHash,
       used: false,
       expiresAt: { $gt: new Date() },
-    });
+    }).sort({ createdAt: -1 });
 
     if (!record) return res.status(400).json({ message: 'Invalid or expired OTP' });
+
+    if (record.attempts >= MAX_OTP_ATTEMPTS) {
+      record.used = true;
+      await record.save();
+      return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new code.' });
+    }
+
+    const supplied = Buffer.from(PasswordReset.hashOtp(otp), 'hex');
+    const expected = Buffer.from(record.otpHash, 'hex');
+    const matches = supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+
+    if (!matches) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
 
     res.json({ message: 'OTP verified', resetToken: record._id.toString() });
   } catch (error) {
@@ -527,7 +578,9 @@ exports.resetPassword = async (req, res) => {
 
     const salt = await bcrypt.genSalt(12);
     user.password = await bcrypt.hash(newPassword, salt);
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+    invalidateTokenVersionCache(user._id.toString());
 
     record.used = true;
     await record.save();
@@ -535,17 +588,10 @@ exports.resetPassword = async (req, res) => {
     const RefreshToken = require('../models/RefreshToken');
     await RefreshToken.updateMany({ userId: user._id, revoked: false }, { revoked: true });
 
-    const BlacklistedToken = require('../models/BlacklistedToken');
-    const tokens = await RefreshToken.find({ userId: user._id, revoked: true }).select('expiresAt');
-    for (const t of tokens) {
-      const jtiHash = BlacklistedToken.hashJti(`reset-${user._id}-${t._id}`);
-      await BlacklistedToken.create({
-        jtiHash,
-        userId: user._id,
-        expiresAt: t.expiresAt,
-        reason: 'password_change',
-      }).catch(() => {});
-    }
+    // The loop that used to sit here inserted BlacklistedToken rows keyed on
+    // `reset-<userId>-<tokenId>`. No real access token's `jti` can equal that, so
+    // it revoked nothing while writing rows that never expired out of usefulness.
+    // Access tokens are now revoked by the tokenVersion bump above.
 
     res.json({ message: 'Password reset successful. Please login with your new password.' });
   } catch (error) {

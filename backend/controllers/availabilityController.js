@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const MaintenanceLog = require('../models/MaintenanceLog');
 const { BUFFER_MINUTES } = require('../utils/pricing');
+const { buildOverlapFilter } = require('../utils/bookingLock');
 const logger = require('../utils/logger');
 
 const bufferMs = BUFFER_MINUTES * 60 * 1000;
@@ -26,12 +27,12 @@ exports.getBikeAvailability = async (req, res) => {
     const fromDate = from ? new Date(from) : new Date();
     const toDate = to ? new Date(to) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    const bookings = await Booking.find({
-      bike: bikeId,
-      status: { $in: ['Pending', 'Confirmed'] },
-      startTime: { $lt: toDate },
-      endTime: { $gt: fromDate },
-    }).select('startTime endTime status').sort({ startTime: 1 }).lean();
+    // Shares the booking engine's overlap filter so this endpoint can never
+    // disagree with what createBooking will actually allow.
+    const bookings = await Booking.find(buildOverlapFilter(bikeId, fromDate, toDate))
+      .select('startTime endTime status')
+      .sort({ startTime: 1 })
+      .lean();
 
     const bookedSlots = bookings.map(b => ({
       start: b.startTime,
@@ -68,8 +69,13 @@ exports.getBikeAvailability = async (req, res) => {
     if (todayBooked) availabilityStatus = 'booked_today';
     if (bike.isUnderMaintenance) availabilityStatus = 'maintenance';
 
+    // `available` is about the requested window, not the vehicle's whole life.
+    // It previously ignored the booked slots it had just fetched and returned the
+    // manual out-of-service flag, so every future booking read as unavailable.
+    const windowConflict = bookings.length > 0;
+
     res.json({
-      available: bike.availability && !bike.isUnderMaintenance,
+      available: !windowConflict && bike.availability !== false && !bike.isUnderMaintenance,
       availabilityStatus,
       bookedSlots,
       maintenanceSlots,

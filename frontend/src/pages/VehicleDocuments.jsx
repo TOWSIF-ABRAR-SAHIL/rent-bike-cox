@@ -16,9 +16,13 @@ export default function VehicleDocuments() {
   useEffect(() => {
     const fetchBikes = async () => {
       try {
-        const { data } = await api.get('/dashboard/bikes');
-        const myBikes = user.role === 'Admin' ? data : data.filter(b => b.renter?._id === user.id || b.renter === user.id);
-        setBikes(myBikes);
+        // `GET /dashboard/bikes` has no backend route (only `/available`, `/:id`,
+        // and the POST that lists a new vehicle), so this request always 404'd and
+        // the vehicle picker stayed empty. Renters own-fleet endpoint is /my-bikes;
+        // admins get the paginated full list.
+        const endpoint = user.role === 'Admin' ? '/dashboard/admin/bikes' : '/dashboard/my-bikes';
+        const { data } = await api.get(endpoint);
+        setBikes(Array.isArray(data) ? data : (data.bikes || []));
       } catch { /* */ } finally { setLoading(false); }
     };
     fetchBikes();

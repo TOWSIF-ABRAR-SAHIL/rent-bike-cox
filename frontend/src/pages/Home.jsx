@@ -7,6 +7,7 @@ import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useCompare } from '../context/useCompare';
 import { useWishlist } from '../context/useWishlist';
+import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
 import LiveFleetMap from '../components/LiveFleetMap';
 
@@ -40,6 +41,8 @@ const Home = () => {
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
+  // Gates the live fleet map: only signed-in visitors see real-time positions.
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!loading) {
@@ -510,7 +513,25 @@ const Home = () => {
           </div>
           <Navigation size={20} style={{ color: 'var(--accent-text)' }} />
         </div>
-        <LiveFleetMap height="400px" showRecenter={true} />
+        {/* Live vehicle positions are only shown to signed-in visitors. The feed
+            used to be public, which published every vehicle's real-time location —
+            including a customer's while they were riding it — to anonymous
+            visitors. The API also now requires a session unless TRACKING_PUBLIC
+            is explicitly enabled. */}
+        {user ? (
+          <LiveFleetMap height="400px" showRecenter={true} />
+        ) : (
+          <div
+            className="glass rounded-2xl p-8 text-center"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            <MapPin size={28} className="mx-auto mb-3" style={{ color: 'var(--accent-text)' }} />
+            <p className="text-sm">
+              <Link to="/login" style={{ color: 'var(--accent-text)' }} className="font-semibold">Sign in</Link>{' '}
+              to view the live fleet map.
+            </p>
+          </div>
+        )}
       </section>
 
       {/* Testimonials */}

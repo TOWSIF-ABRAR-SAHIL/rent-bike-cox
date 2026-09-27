@@ -72,7 +72,14 @@ async function runMaintenanceReminder() {
 }
 
 function startMaintenanceReminder() {
-  setInterval(runMaintenanceReminder, 12 * 60 * 60 * 1000);
+  // The only job in jobs/ without the kill switch, so it kept running in tests and
+  // CI (and refused to let the process exit) even with DISABLE_JOBS=true.
+  if (process.env.DISABLE_JOBS === 'true') {
+    logger.info('Maintenance reminder job disabled (DISABLE_JOBS=true)');
+    return;
+  }
+  const timer = setInterval(runMaintenanceReminder, 12 * 60 * 60 * 1000);
+  if (typeof timer.unref === 'function') timer.unref();
   runMaintenanceReminder();
   logger.info('Maintenance reminder job started (interval: 12h)');
 }

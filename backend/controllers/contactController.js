@@ -112,7 +112,12 @@ exports.replyAsUser = async (req, res) => {
 
     const msg = await ContactMessage.findById(req.params.id);
     if (!msg) return res.status(404).json({ message: 'Message not found' });
-    if (req.user.id && msg.user && req.user.id.toString() !== msg.user.toString()) {
+    // Guest tickets (submitted without an account) have no `user`, and the old
+    // `msg.user &&` clause skipped the ownership test entirely for them — so any
+    // signed-in account could post into any visitor's support thread by id.
+    // Only the ticket owner, or an admin, may reply as the customer.
+    const isOwner = msg.user && msg.user.toString() === req.user.id.toString();
+    if (!isOwner && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Not your ticket' });
     }
 

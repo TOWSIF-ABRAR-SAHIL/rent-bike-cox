@@ -26,7 +26,10 @@ function idempotencyMiddleware(ttlMs = DEFAULT_TTL_MS) {
 
     try {
       const existing = await IdempotencyKey.findOne({ key: lookupKey });
-      if (existing) {
+      // Only successful responses are replayable. Entries recorded before this
+      // rule existed may hold a 4xx/5xx — ignore those rather than replaying a
+      // stale failure for the rest of the TTL.
+      if (existing && (!existing.statusCode || existing.statusCode < 400)) {
         res.status(existing.statusCode || 200).json(existing.response);
         return;
       }
@@ -37,13 +40,17 @@ function idempotencyMiddleware(ttlMs = DEFAULT_TTL_MS) {
 
     const originalJson = res.json.bind(res);
     res.json = function (body) {
-      const cacheKey = explicitKey || `hash:${computeRequestHash(req)}`;
-      IdempotencyKey.create({
-        key: cacheKey,
-        response: body,
-        statusCode: res.statusCode,
-        expiresAt: new Date(Date.now() + ttlMs),
-      }).catch(err => logger.error('Cache write error:', err.message));
+      // Caching a failure used to create a 10-minute dead zone: one transient
+      // gateway 500 on /payment/init made every retry replay the same error.
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        const cacheKey = explicitKey || `hash:${computeRequestHash(req)}`;
+        IdempotencyKey.create({
+          key: cacheKey,
+          response: body,
+          statusCode: res.statusCode,
+          expiresAt: new Date(Date.now() + ttlMs),
+        }).catch(err => logger.error('Cache write error:', err.message));
+      }
 
       return originalJson(body);
     };

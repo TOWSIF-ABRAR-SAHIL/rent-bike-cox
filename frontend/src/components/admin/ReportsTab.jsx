@@ -59,6 +59,8 @@ const FORMATS = [
   { value: 'xlsx', label: 'XLSX', icon: FileSpreadsheet, desc: 'Excel workbook' },
 ];
 
+const HISTORY_PAGE_SIZE = 10;
+
 const HistoryItem = ({ item, onDownload, onDelete, catColor }) => (
   <div className="flex items-center justify-between p-3 rounded-xl transition-all duration-200 hover:shadow-md group"
     style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
@@ -69,7 +71,7 @@ const HistoryItem = ({ item, onDownload, onDelete, catColor }) => (
       <div className="min-w-0">
         <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{item.reportType}</p>
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          {item.format?.toUpperCase()} &middot; {item.fileSize || '—'}
+          {item.format?.toUpperCase()} &middot; {item.fileSize || '—'} &middot; {item.rowCount || 0} rows
           {item.createdAt && ` · ${new Date(item.createdAt).toLocaleDateString('en-BD')}`}
         </p>
       </div>
@@ -93,7 +95,7 @@ const PreviewModal = ({ report, format, fromDate, toDate, onClose, onConfirm }) 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div className="rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slide-up"
+      <div className="rounded-2xl w-full max-w-lg max-h-[85dvh] overflow-y-auto animate-slide-up"
         style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}
         onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-base)' }}>
@@ -169,6 +171,8 @@ const ReportsTab = () => {
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
   const [previewReport, setPreviewReport] = useState(null);
   const [history, setHistory] = useState([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyMeta, setHistoryMeta] = useState({ total: 0, pages: 1 });
   const [showHistory, setShowHistory] = useState(false);
   const formatRef = useRef(null);
 
@@ -181,13 +185,21 @@ const ReportsTab = () => {
 
   useEffect(() => { fetchTypes(); }, [fetchTypes]);
 
-  useEffect(() => {
-    let mounted = true;
-    api.get('/admin/reports/history').then(res => {
-      if (mounted && res.data?.reports) setHistory(res.data.reports);
-    }).catch(() => {});
-    return () => { mounted = false; };
+  // The endpoint is paginated, so the panel can reach every page instead of only the
+  // newest ten.
+  const fetchHistory = useCallback(async (page = 1) => {
+    try {
+      const res = await api.get(`/admin/reports/history?page=${page}&limit=${HISTORY_PAGE_SIZE}`);
+      setHistory(res.data?.reports || []);
+      setHistoryMeta({ total: res.data?.total ?? 0, pages: res.data?.pages ?? 1 });
+      setHistoryPage(res.data?.page ?? page);
+    } catch { /* history is non-critical */ }
   }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchHistory(1).catch(() => {});
+  }, [fetchHistory]);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -234,9 +246,8 @@ const ReportsTab = () => {
 
       addToast(`${type} report downloaded as ${fmt.toUpperCase()}`, 'success');
       setPreviewReport(null);
-      api.get('/admin/reports/history').then(res => {
-        if (res.data?.reports) setHistory(res.data.reports);
-      }).catch(() => {});
+      // Back to page 1: the report just generated is the newest row.
+      fetchHistory(1);
     } catch {
       addToast(`Failed to generate ${type} report`, 'error');
     } finally {
@@ -253,6 +264,8 @@ const ReportsTab = () => {
       await api.delete(`/admin/reports/history/${id}`);
       setHistory(prev => prev.filter(h => h._id !== id));
       addToast('Report deleted', 'success');
+      // That may have been the only row left on this page.
+      fetchHistory(history.length === 1 && historyPage > 1 ? historyPage - 1 : historyPage);
     } catch {
       addToast('Failed to delete report', 'error');
     }
@@ -350,7 +363,7 @@ const ReportsTab = () => {
         <div className="rounded-2xl p-5 border animate-slide-up" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
           <div className="flex items-center justify-between mb-4">
             <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Recent Reports</h4>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{history.length} total</span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{historyMeta.total} total</span>
           </div>
           <div className="space-y-2">
             {history.map(item => {
@@ -364,6 +377,19 @@ const ReportsTab = () => {
               );
             })}
           </div>
+          {historyMeta.pages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-3 border-t" style={{ borderColor: 'var(--border-base)' }}>
+              <button onClick={() => fetchHistory(historyPage - 1)} disabled={historyPage <= 1}
+                className="btn-ghost text-xs !px-3 !py-2 disabled:opacity-40" aria-label="Previous page of reports">
+                Previous
+              </button>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Page {historyPage} of {historyMeta.pages}</span>
+              <button onClick={() => fetchHistory(historyPage + 1)} disabled={historyPage >= historyMeta.pages}
+                className="btn-ghost text-xs !px-3 !py-2 disabled:opacity-40" aria-label="Next page of reports">
+                Next
+              </button>
+            </div>
+          )}
         </div>
       )}
 

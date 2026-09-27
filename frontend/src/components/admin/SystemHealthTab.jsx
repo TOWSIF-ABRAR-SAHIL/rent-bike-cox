@@ -53,7 +53,9 @@ const SystemHealthTab = () => {
   }, [fetchHealth, fetchAlerts]);
 
   const statusColor = (s) => {
-    if (s === 'healthy' || s === 'connected') return { bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' };
+    // 'online' is what the health endpoint reports for the server itself; without it
+    // here a perfectly healthy server rendered in the danger colour.
+    if (s === 'healthy' || s === 'connected' || s === 'online') return { bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' };
     if (s === 'degraded') return { bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)' };
     return { bg: 'var(--danger-bg)', color: 'var(--danger-text)', border: 'var(--danger-border)' };
   };

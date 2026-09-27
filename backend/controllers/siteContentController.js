@@ -122,8 +122,11 @@ exports.adminUpdate = async (req, res) => {
     item.lastModifiedBy = req.user.id;
 
     await item.save();
-    invalidateCache(key.split('.')[0]);
-    invalidateCache('__all__');
+    // Prefix invalidation never matched anything: cache keys are `key:<key>`,
+    // `page:<page>` and `__all__`, so `startsWith('home')` missed
+    // `key:home.hero.title` and edits stayed invisible for up to 10 minutes.
+    // The collection is tiny, so drop the whole content cache instead.
+    invalidateCache();
 
     res.json(item);
   } catch (error) {
@@ -157,8 +160,11 @@ exports.rollback = async (req, res) => {
     item.lastModifiedBy = req.user.id;
     await item.save();
 
-    invalidateCache(key.split('.')[0]);
-    invalidateCache('__all__');
+    // Prefix invalidation never matched anything: cache keys are `key:<key>`,
+    // `page:<page>` and `__all__`, so `startsWith('home')` missed
+    // `key:home.hero.title` and edits stayed invisible for up to 10 minutes.
+    // The collection is tiny, so drop the whole content cache instead.
+    invalidateCache();
 
     res.json(item);
   } catch (error) {
@@ -180,8 +186,11 @@ exports.resetToDefault = async (req, res) => {
     item.lastModifiedBy = req.user.id;
     await item.save();
 
-    invalidateCache(key.split('.')[0]);
-    invalidateCache('__all__');
+    // Prefix invalidation never matched anything: cache keys are `key:<key>`,
+    // `page:<page>` and `__all__`, so `startsWith('home')` missed
+    // `key:home.hero.title` and edits stayed invisible for up to 10 minutes.
+    // The collection is tiny, so drop the whole content cache instead.
+    invalidateCache();
     res.json(item);
   } catch (error) {
     logger.error('resetToDefault error:', error.message);
@@ -260,14 +269,19 @@ exports.importContent = async (req, res) => {
             results.errors.push({ key: item.key, error: 'Locked' });
             continue;
           }
-          existing.value = item.value;
+          // Sanitize and keep history on import too. Every other write path
+          // sanitizes; an imported payload skipped it, and the admin content
+          // editor renders values as HTML.
+          existing.history.push({ value: existing.value, modifiedBy: req.user.id, at: new Date() });
+          if (existing.history.length > 20) existing.history = existing.history.slice(-20);
+          existing.value = typeof item.value === 'string' ? sanitize(String(item.value)) : item.value;
           existing.lastModifiedBy = req.user.id;
           await existing.save();
           results.updated++;
         } else {
           await SiteContent.create({
             key: item.key,
-            value: item.value,
+            value: typeof item.value === 'string' ? sanitize(String(item.value)) : item.value,
             type: item.type || 'text',
             page: item.page || 'global',
             section: item.section || '',

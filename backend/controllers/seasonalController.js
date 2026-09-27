@@ -1,13 +1,16 @@
 const SeasonalRate = require('../models/SeasonalRate');
 const { clearCache } = require('../utils/seasonalPricing');
 const { defaultCache } = require('../utils/cache');
+const logger = require('../utils/logger');
+const { clientMessage } = require('../utils/httpError');
 
 exports.list = async (req, res) => {
   try {
     const rates = await SeasonalRate.find().sort({ priority: -1, createdAt: -1 }).lean();
     res.json(rates);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('list seasonal rates error', { error: err.message });
+    res.status(500).json({ message: 'Failed to load seasonal rates' });
   }
 };
 
@@ -17,7 +20,8 @@ exports.get = async (req, res) => {
     if (!rate) return res.status(404).json({ message: 'Rate not found' });
     res.json(rate);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('get seasonal rate error', { rateId: req.params.id, error: err.message });
+    res.status(500).json({ message: 'Failed to load the seasonal rate' });
   }
 };
 
@@ -33,7 +37,8 @@ exports.create = async (req, res) => {
     clearCache();
     res.status(201).json(rate);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('create seasonal rate error', { error: err.message });
+    res.status(400).json({ message: clientMessage(err, 'Could not save the seasonal rate') });
   }
 };
 
@@ -46,7 +51,8 @@ exports.update = async (req, res) => {
     clearCache();
     res.json(rate);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('update seasonal rate error', { rateId: req.params.id, error: err.message });
+    res.status(400).json({ message: clientMessage(err, 'Could not update the seasonal rate') });
   }
 };
 
@@ -58,7 +64,8 @@ exports.remove = async (req, res) => {
     clearCache();
     res.json({ message: 'Rate deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('remove seasonal rate error', { rateId: req.params.id, error: err.message });
+    res.status(500).json({ message: 'Failed to delete the seasonal rate' });
   }
 };
 
@@ -70,6 +77,9 @@ exports.active = async (_req, res) => {
     defaultCache.set('seasonal:active', rates, 300000);
     res.json(rates);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    // Public endpoint (GET /api/seasonal-rates, no session): an unauthenticated
+    // caller must not learn the cluster hostname or collection from a failed read.
+    logger.error('active seasonal rates error', { error: err.message });
+    res.status(500).json({ message: 'Failed to load seasonal rates' });
   }
 };

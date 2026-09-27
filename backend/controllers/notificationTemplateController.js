@@ -1,5 +1,5 @@
 const NotificationTemplate = require('../models/NotificationTemplate');
-const { sanitize } = require('../utils/sanitize');
+const { sanitize, sanitizeEmail } = require('../utils/sanitize');
 const logger = require('../utils/logger');
 
 const defaultTemplates = [
@@ -94,7 +94,10 @@ exports.update = async (req, res) => {
     if (channels !== undefined) {
       if (channels.email) {
         if (channels.email.subject !== undefined) template.channels.email.subject = channels.email.subject;
-        if (channels.email.body !== undefined) template.channels.email.body = sanitize(channels.email.body);
+        // Email bodies are HTML by design. Sanitizing them with the tag-stripping
+        // text sanitizer erased every <p>/<h2>/<strong> in the template the moment
+        // an admin saved it, so the themed emails degraded to unformatted text.
+        if (channels.email.body !== undefined) template.channels.email.body = sanitizeEmail(channels.email.body);
         if (channels.email.isActive !== undefined) template.channels.email.isActive = channels.email.isActive;
       }
       if (channels.inApp) {

@@ -1,4 +1,6 @@
 const NotificationPreference = require('../models/NotificationPreference');
+const logger = require('../utils/logger');
+const { clientMessage } = require('../utils/httpError');
 
 exports.getPreferences = async (req, res) => {
   try {
@@ -10,7 +12,8 @@ exports.getPreferences = async (req, res) => {
     }
     res.json(prefs);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('getPreferences error', { userId: req.user.id, error: err.message });
+    res.status(500).json({ message: 'Failed to load notification preferences' });
   }
 };
 
@@ -28,7 +31,8 @@ exports.updatePreferences = async (req, res) => {
     await prefs.save();
     res.json(prefs);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('updatePreferences error', { userId: req.user.id, error: err.message });
+    res.status(400).json({ message: clientMessage(err, 'Could not update notification preferences') });
   }
 };
 

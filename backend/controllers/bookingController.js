@@ -3,13 +3,20 @@ const Bike = require('../models/Bike');
 const Coupon = require('../models/Coupon');
 const { generateInvoiceNumber } = require('../utils/invoiceNumber');
 const { calculateBookingPrice, applyCoupon } = require('../utils/pricing');
-const { createBookingAtomically, extendBookingAtomically, createWalkInBooking, releaseBikeLock } = require('../utils/bookingLock');
+const { createBookingAtomically, extendBookingAtomically, createWalkInBooking } = require('../utils/bookingLock');
 const { calculateRefundWithBreaker, processRefund } = require('../utils/refund');
+const {
+  validateCouponForBooking,
+  applyCouponToTotal,
+  buildCouponConsumeUpdate,
+  buildCouponReleaseUpdate,
+} = require('../utils/couponRules');
+const { withOptionalTransaction } = require('../utils/withOptionalTransaction');
 const RefundService = require('../services/RefundService');
 const { roundPaisa, multiplyPaisa, subtractPaisa } = require('../utils/safeAmount');
 const { createJournalEntry } = require('../utils/ledger');
 const { checkVelocity, recordFraudEvent, getClientIp, isFingerprintBlocked, buildFingerprint } = require('../utils/fraud');
-const { sanitize } = require('../utils/sanitize');
+const { sanitize, escapeRegex } = require('../utils/sanitize');
 const bus = require('../events/EventBus');
 const { increment } = require('../utils/metrics');
 const logger = require('../utils/logger');
@@ -18,6 +25,9 @@ const notificationService = require('../services/NotificationService');
 const adminNotify = require('../services/AdminNotificationService');
 
 const CHECKOUT_TIMEOUT_MS = 5 * 60 * 1000;
+// A checkout may only be kept alive for this long in total. Without a ceiling,
+// heartbeats let anyone hold a vehicle's window open indefinitely for free.
+const MAX_CHECKOUT_LIFETIME_MS = 30 * 60 * 1000;
 
 exports.createBooking = async (req, res) => {
   try {
@@ -60,34 +70,27 @@ exports.createBooking = async (req, res) => {
     let couponDoc = null;
     if (couponCode) {
       const code = couponCode.toUpperCase().trim();
+      couponDoc = await Coupon.findOne({ code });
 
-      couponDoc = await Coupon.findOneAndUpdate(
-        {
-          code,
-          isActive: true,
-          $and: [
-            { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
-            { $or: [{ maxUses: 0 }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }] },
-          ],
-        },
-        { $setOnInsert: {} },
-        { new: true }
-      );
+      const priorBookings = await Booking.countDocuments({ user: req.user.id, status: { $ne: 'Cancelled' } });
 
-      if (!couponDoc) {
-        const existing = await Coupon.findOne({ code });
-        if (existing) {
-          return res.status(400).json({ message: 'Coupon is invalid, expired, or has reached its usage limit' });
-        }
-        return res.status(400).json({ message: 'Coupon not found' });
+      const check = validateCouponForBooking({
+        coupon: couponDoc,
+        totalTaka: pricing.totalPrice,
+        userId: req.user.id,
+        bikeCategoryId: bike.category?._id || bike.category,
+        hasPriorBookings: priorBookings > 0,
+      });
+
+      if (!check.valid) {
+        return res.status(400).json({ message: check.message });
       }
 
-      const userUsageCount = couponDoc.usedBy ? couponDoc.usedBy.filter(entry => entry.user?.toString() === req.user.id).length : 0;
-      if (couponDoc.maxUsesPerUser > 0 && userUsageCount >= couponDoc.maxUsesPerUser) {
-        return res.status(400).json({ message: 'You have already used this coupon' });
-      }
-
-      pricing.totalPrice = applyCoupon(pricing.totalPrice, couponDoc.discountPercent);
+      // Honours discountType (FIXED vs PERCENTAGE) and maxDiscountPaisa, which
+      // the previous percentage-only application silently ignored.
+      const { discountedTotal, discountTaka } = applyCouponToTotal(pricing.totalPrice, couponDoc);
+      pricing.totalPrice = discountedTotal;
+      pricing.discountTaka = discountTaka;
       pricing.minAdvance = roundPaisa(multiplyPaisa(pricing.totalPrice, pricing.advancePercent));
     }
 
@@ -175,33 +178,45 @@ exports.confirmPayment = async (req, res) => {
     const computedAdvance = roundPaisa(multiplyPaisa(booking.totalPrice, advancePercent));
     const remainingBalance = subtractPaisa(booking.totalPrice, computedAdvance);
 
-    const session = await require('mongoose').startSession();
-    try {
-      await session.withTransaction(async () => {
-        booking.advancePaid = computedAdvance;
-        booking.remainingBalance = remainingBalance;
-        booking.paymentStatus = advancePercent >= 1 ? 'Paid' : 'Partial';
-        booking.status = 'Confirmed';
-        booking.paymentVerifiedBy = 'manual';
-        booking.paymentDate = new Date();
-        booking.expiresAt = undefined;
+    // Captured before the state is overwritten, so the history records where the
+    // booking actually came from.
+    const previousState = booking.state || 'PAYMENT_PENDING';
 
-        if (booking.couponApplied) {
-          await Coupon.findByIdAndUpdate(booking.couponApplied, {
-            $inc: { usedCount: 1 },
-            $addToSet: { usedBy: booking.user },
-          }, { session });
-        }
-
-        if (!booking.invoiceNumber) {
-          booking.invoiceNumber = await generateInvoiceNumber();
-        }
-
-        await booking.save({ session });
+    await withOptionalTransaction(async (session) => {
+      booking.advancePaid = computedAdvance;
+      booking.remainingBalance = remainingBalance;
+      booking.paymentStatus = advancePercent >= 1 ? 'Paid' : 'Partial';
+      booking.status = 'Confirmed';
+      booking.state = 'CONFIRMED';
+      booking.paymentVerifiedBy = 'manual';
+      booking.paymentDate = new Date();
+      booking.expiresAt = undefined;
+      booking.stateHistory.push({
+        from: previousState,
+        to: 'CONFIRMED',
+        at: new Date(),
+        actor: req.user.id,
+        reason: 'Manual confirmation by admin',
       });
-    } finally {
-      await session.endSession();
-    }
+
+      if (booking.couponApplied) {
+        const couponOpts = {};
+        if (session) couponOpts.session = session;
+        await Coupon.findByIdAndUpdate(
+          booking.couponApplied,
+          buildCouponConsumeUpdate({ userId: booking.user, bookingId: booking._id }),
+          couponOpts
+        );
+      }
+
+      if (!booking.invoiceNumber) {
+        booking.invoiceNumber = await generateInvoiceNumber();
+      }
+
+      const saveOpts = {};
+      if (session) saveOpts.session = session;
+      await booking.save(saveOpts);
+    });
 
     await createJournalEntry({
       bookingId: booking._id,
@@ -279,29 +294,39 @@ exports.cancelBooking = async (req, res) => {
       }
     }
 
-    const session = await require('mongoose').startSession();
-    try {
-      await session.withTransaction(async () => {
-        booking.status = 'Cancelled';
-        booking.refundAmount = refund.refundableAmount;
-        booking.cancellationReason = refund.penaltyReason;
-        booking.paymentStatus = refund.refundableAmount > 0 ? 'Refunded' : 'Partial';
-        booking.cancellationAt = new Date();
-        await booking.save({ session });
+    const stateBeforeCancel = booking.state || 'PAYMENT_PENDING';
 
-        if (booking.couponApplied && originalStatus !== 'Pending') {
-          await Coupon.findByIdAndUpdate(booking.couponApplied, {
-            $inc: { usedCount: -1 },
-            $min: { usedCount: 0 },
-            $pull: { usedBy: booking.user },
-          }, { session });
-        }
+    await withOptionalTransaction(async (session) => {
+      booking.status = 'Cancelled';
+      booking.state = 'CANCELLED';
+      booking.refundAmount = refund.refundableAmount;
+      booking.cancellationReason = refund.penaltyReason;
+      booking.paymentStatus = refund.refundableAmount > 0 ? 'Refunded' : 'Partial';
+      booking.cancellationAt = new Date();
+      booking.stateHistory.push({
+        from: stateBeforeCancel,
+        to: 'CANCELLED',
+        at: new Date(),
+        actor: req.user.id,
+        reason: refund.penaltyReason,
       });
-    } finally {
-      await session.endSession();
-    }
+      const saveOpts = {};
+      if (session) saveOpts.session = session;
+      await booking.save(saveOpts);
 
-    await releaseBikeLock(booking.bike);
+      if (booking.couponApplied && originalStatus !== 'Pending') {
+        // Only decrements when usedCount > 0; no $min, which would be a
+        // conflicting operator on the same path and fail the whole cancel.
+        const { filter, update } = buildCouponReleaseUpdate({ userId: booking.user });
+        const couponOpts = {};
+        if (session) couponOpts.session = session;
+        await Coupon.findOneAndUpdate(
+          { _id: booking.couponApplied, ...filter },
+          update,
+          couponOpts
+        );
+      }
+    });
 
     if (refund.refundableAmount > 0) {
       await processRefund(booking, refund.refundableAmount);
@@ -395,7 +420,7 @@ exports.getMyBookings = async (req, res) => {
 
     let bikeIds = [];
     if (searchQuery) {
-      const bikes = await Bike.find({ model: { $regex: searchQuery, $options: 'i' } }).select('_id').lean();
+      const bikes = await Bike.find({ model: { $regex: escapeRegex(searchQuery), $options: 'i' } }).select('_id').lean();
       bikeIds = bikes.map(b => b._id);
       filter.bike = { $in: bikeIds };
     }
@@ -494,8 +519,6 @@ exports.completeBooking = async (req, res) => {
     booking.status = 'Completed';
     await booking.save();
 
-    await releaseBikeLock(booking.bike);
-
     if (booking.remainingBalance > 0) {
       await createJournalEntry({
         bookingId: booking._id,
@@ -523,6 +546,7 @@ exports.checkoutHeartbeat = async (req, res) => {
         user: req.user.id,
         status: 'Pending',
         expiresAt: { $gt: new Date() },
+        createdAt: { $gte: new Date(Date.now() - MAX_CHECKOUT_LIFETIME_MS) },
       },
       { $set: { expiresAt: new Date(Date.now() + CHECKOUT_TIMEOUT_MS) } },
       { new: true }

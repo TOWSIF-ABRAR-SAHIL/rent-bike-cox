@@ -969,7 +969,7 @@ const AdminDashboard = () => {
       {editingBike && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setEditingBike(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto animate-slideIn" onClick={e => e.stopPropagation()}>
+          <div className="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[85dvh] overflow-y-auto animate-slideIn" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Edit Pricing Tiers — {editingBike.model}</h3>
               <button onClick={() => setEditingBike(null)} className="p-2 rounded-lg hover:opacity-80" style={{ color: 'var(--text-muted)' }} aria-label="Close pricing tiers modal">

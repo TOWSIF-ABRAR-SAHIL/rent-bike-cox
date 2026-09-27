@@ -22,7 +22,13 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-dark border-t" style={{ borderColor: 'var(--border-base)' }}>
+    // minHeight + safe-area-bottom together equal --bottom-nav-h (index.css), so the compare
+    // bar sitting above this bar lines up exactly instead of covering it, and the labels clear
+    // the home indicator on notched phones.
+    <nav
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-dark border-t safe-area-bottom"
+      style={{ borderColor: 'var(--border-base)', minHeight: '4.25rem' }}
+    >
       <div className="flex items-center justify-around px-2 py-1">
         {navItems.map(item => {
           if (item.auth && !user) return null;

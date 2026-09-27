@@ -302,6 +302,22 @@ html.light {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* Clears the fixed mobile bottom nav, whose height lives in --bottom-nav-h so the bar,
+     the compare bar and the footer cannot drift apart (they did: the compare bar sat at a
+     hard-coded 56px under a 67px nav and covered it). */
+  .pb-bottom-nav {
+    padding-bottom: calc(var(--bottom-nav-h) + var(--compare-bar-h));
+  }
+
+  /* Horizontal scrollers whose scrollbar is noise on touch. */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out;
   }
@@ -413,7 +429,30 @@ html.light {
   .animate-spin { animation-duration: 2s !important; }
 }
 
-/* Mobile bottom nav padding */
+/* ── Fixed mobile bottom nav ────────────────────────────────────────────────
+   Single source of truth for the bar's height (`md:hidden` => below 768px). The bar
+   enforces it as its min-height, the compare bar sits directly on top of it, and the
+   footer pads by it so its last line is not hidden behind the bar. Previously these were
+   three uncoordinated magic numbers, which is how the compare bar ended up overlapping the
+   nav by 11px while the footer's last line sat under it unreachable. */
+:root {
+  --bottom-nav-h: 0px;
+  /* Height the compare bar needs reserved while it is on screen. It is fixed-position on every
+     breakpoint, so this is not mobile-only. Toggled by CompareBar via `body.has-compare-bar`. */
+  --compare-bar-h: 0px;
+}
+
+body.has-compare-bar {
+  --compare-bar-h: 4.5rem;
+}
+
 @media (max-width: 767px) {
+  :root {
+    --bottom-nav-h: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Spacing between the last page section and the footer. The nav itself is cleared by
+     .pb-bottom-nav on the footer — padding `main` never helped, because the footer is
+     `main`'s sibling and is what the bar actually overlapped. */
   main { padding-bottom: 5rem !important; }
 }

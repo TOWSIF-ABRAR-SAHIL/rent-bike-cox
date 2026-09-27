@@ -1,5 +1,33 @@
 const SeasonalRate = require('../models/SeasonalRate');
-const { dhakaHour } = require('./timezone');
+const { DHAKA_TZ } = require('./timezone');
+
+/**
+ * Day-of-week and calendar date as they are in Dhaka.
+ *
+ * Rates used to be matched with getDay()/getMonth()/getDate() on the server clock,
+ * which is UTC on Render — six hours behind Dhaka. A Saturday 02:00 booking was
+ * therefore matched as a Friday, and holiday dates shifted for any booking made
+ * after 18:00 local time.
+ */
+function dhakaParts(date) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: DHAKA_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+  }).formatToParts(new Date(date));
+
+  const get = type => parts.find(p => p.type === type)?.value;
+  const weekdayIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
+
+  return {
+    year: Number(get('year')),
+    month: Number(get('month')),
+    dayOfMonth: Number(get('day')),
+    dayOfWeek: weekdayIndex,
+  };
+}
 
 let cachedRates = [];
 let cacheExpiry = 0;
@@ -17,17 +45,19 @@ async function loadRates() {
 
 function matchesRecurring(rate, date) {
   if (!rate.recurringYearly || rate.month == null || rate.dayOfMonth == null) return false;
-  return date.getMonth() + 1 === rate.month && date.getDate() === rate.dayOfMonth;
+  const { month, dayOfMonth } = dhakaParts(date);
+  return month === rate.month && dayOfMonth === rate.dayOfMonth;
 }
 
 function matchesDateRange(rate, date) {
   if (!rate.startDate || !rate.endDate) return false;
-  return date >= rate.startDate && date <= rate.endDate;
+  const d = new Date(date);
+  return d >= rate.startDate && d <= rate.endDate;
 }
 
 function matchesDayOfWeek(rate, date) {
   if (!rate.daysOfWeek || rate.daysOfWeek.length === 0) return false;
-  return rate.daysOfWeek.includes(date.getDay());
+  return rate.daysOfWeek.includes(dhakaParts(date).dayOfWeek);
 }
 
 function getApplicableRate(date) {
@@ -49,4 +79,4 @@ function clearCache() {
   cacheExpiry = 0;
 }
 
-module.exports = { loadRates, getApplicableRate, clearCache };
+module.exports = { loadRates, getApplicableRate, clearCache, dhakaParts };

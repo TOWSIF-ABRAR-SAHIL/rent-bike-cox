@@ -119,6 +119,7 @@ class NotificationService {
         userName: user.name,
         bookingId: booking.invoiceNumber || booking._id.toString(),
       },
+      // Deliberate: a payment notification, so it follows the payment preference.
       prefType: 'paymentConfirmation',
     });
   }
@@ -149,7 +150,9 @@ class NotificationService {
         title: 'Fraud Alert',
         message: `Suspicious activity detected (score: ${score}). Decision: ${decision}. Booking: ${bookingId}`,
         data: { bookingId, action: '/admin-dashboard' },
-        prefType: 'maintenanceReminder',
+        // Was 'maintenanceReminder', so an admin who muted maintenance reminders
+        // silently stopped receiving fraud alerts.
+        prefType: 'adminAlerts',
       });
     }
   }
@@ -163,7 +166,9 @@ class NotificationService {
       emailSubject: 'Welcome to Rent Bike Cox\'s Bazar!',
       emailTemplate: templates.welcome,
       emailData: { userName: user.name },
-      prefType: 'bookingConfirmation',
+      // Was 'bookingConfirmation', so a user with booking mail off never got a
+      // welcome email.
+      prefType: 'accountAlerts',
     });
   }
 

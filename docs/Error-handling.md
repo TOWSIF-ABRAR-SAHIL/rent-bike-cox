@@ -10,7 +10,7 @@
 | 401 | Unauthorized | No token, invalid token, expired token |
 | 403 | Forbidden | CORS violation, wrong role |
 | 404 | Not Found | Unknown API endpoint, missing resource |
-| 409 | Conflict | Duplicate email/nid/license on registration |
+| 409 | Conflict | Duplicate email/nid/license on registration; Mongo duplicate key (`code: 11000`); a refund/payout already in another state |
 | 429 | Too Many Requests | Rate limit exceeded (auth routes) |
 | 500 | Internal Server Error | Unhandled errors, DB connection failures |
 
@@ -30,6 +30,16 @@
   "message": "Human-readable error description"
 }
 ```
+
+### 500 Response
+```json
+{
+  "message": "Internal server error",
+  "correlationId": "9f1c…"
+}
+```
+The `correlationId` is the one on the matching log line, so a user's report can be traced to the
+stack trace without the trace leaving the server.
 
 ### Validation Error (Registration)
 ```json
@@ -54,17 +64,34 @@
 Status: 403
 
 ### File Upload Error
+All of these are **400**. A rejected file is the caller's mistake, never a 500. The declared
+mimetype is checked in multer's `fileFilter`; the file **content** (magic bytes) is checked in
+`middleware/fileContentGuard.js` before the bytes are written or uploaded, so a rejected upload
+never reaches Cloudinary. If the guard cannot read the stream's head (it needs to hand the storage
+back the bytes it inspected), it **refuses the upload** with a generic 500 rather than forwarding
+content it could not check — a security control fails closed.
 ```json
-{
-  "message": "File too large. Maximum size is 5MB."
-}
+{ "message": "File too large. Maximum size is 5MB." }
 ```
-or
 ```json
-{
-  "message": "Only JPG, JPEG, and PNG files are allowed"
-}
+{ "message": "Only JPG, JPEG, and PNG files are allowed" }
 ```
+```json
+{ "message": "Unable to determine file type from content" }
+```
+```json
+{ "message": "File content is \"image/gif\", only JPEG and PNG are allowed" }
+```
+```json
+{ "message": "File extension \".php\" is not allowed" }
+```
+
+### Duplicate Key
+```json
+{ "message": "A record with that value already exists" }
+```
+Mongo quotes the collection, the index and the duplicated value in its own message; that is both
+an internal detail and an account-existence oracle, so it is never forwarded.
 
 ### 404 Not Found
 ```json
@@ -75,21 +102,54 @@ or
 
 ## Backend Error Handler
 
+`middleware/errorHandler.js`, mounted last in `server.js`. The rule it exists to enforce: **a
+message reaches a response body only when we wrote it.**
+
 ```js
-// server.js — global error handler
-app.use((err, req, res, next) => {
-  console.error('[ERROR]', err.message);  // Log only, not exposed
+// utils/httpError.js
+const CLIENT_FACING = Symbol('rentbike.clientFacingError');
+class HttpError extends Error {
+  constructor(status, message) { super(message); this.status = status; this[CLIENT_FACING] = true; }
+}
+const isClientFacing = (err) => Boolean(err && err[CLIENT_FACING] === true);
 
-  if (err.message === 'Not allowed by CORS') → 403
-  if (err.code === 'LIMIT_FILE_SIZE') → 400
-  if (err.message.includes('Only JPG')) → 400
-
-  // Default: sanitized
-  res.status(500).json({ message: 'Internal server error' });
-});
+// middleware/errorHandler.js (order matters)
+if (err.message === 'Not allowed by CORS')            → 403 'Not allowed by CORS'
+if (UPLOAD_ERRORS[err.code])                          → 400 (multer limit codes, our wording)
+if (err.code === 'EBADCSRFTOKEN')                     → 403 'Invalid CSRF token'
+if (isClientFacing(err) && typeof err.status === 'number')
+                                                      → that status, that message
+if (err.name === 'CastError' || 'ValidationError')    → 400 schema message, else 'Invalid request data'
+if (err.name === 'JsonWebTokenError' || 'TokenExpiredError') → 401
+if (err.code === 11000)                               → 409 'A record with that value already exists'
+if (400 <= err.status < 500)                          → that status, canned text for it
+otherwise                                             → 500 'Internal server error' + correlationId
 ```
 
-**Key:** `err.message` is NEVER sent to client in the 500 case.
+Gating on a **symbol** rather than an `expose` boolean is deliberate: `http-errors` — the package
+behind body-parser and express's own 4xx errors — sets `expose: true` on every client error it
+builds, so an `expose` check forwards body-parser's raw parse text to the client.
+
+### What a controller may send
+
+```js
+const { HttpError, clientMessage, clientStatus } = require('../utils/httpError');
+
+try {
+  const doc = await Model.findById(req.params.id);
+  if (!doc) throw new HttpError(404, 'Document not found');   // we wrote this → caller sees it
+  res.json(doc);
+} catch (err) {
+  logger.error('getDocument error', { documentId: req.params.id, error: err.message });
+  res.status(clientStatus(err, 400)).json({ message: clientMessage(err, 'Could not load the document') });
+}
+```
+
+`clientMessage` returns, in order: the `HttpError` message, a mongoose **schema** validation
+message (`Path \`expiryDate\` is required.` — our words, naming a field and its constraint), or
+the fallback. Never a driver's, a gateway's or a library's message. Every catch logs the real
+message first, or the failure disappears from the logs entirely.
+
 
 ## Per-Controller Error Patterns
 

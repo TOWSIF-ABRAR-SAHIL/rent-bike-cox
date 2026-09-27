@@ -1,13 +1,25 @@
 const VehicleDocument = require('../models/VehicleDocument');
 const Bike = require('../models/Bike');
+const logger = require('../utils/logger');
+const { clientMessage } = require('../utils/httpError');
 
 exports.listByBike = async (req, res) => {
   try {
     const { bikeId } = req.params;
+    // Documents carry scan URLs and registration numbers, so they are limited to
+    // the vehicle's owner (or an admin). Every sibling handler here already checked
+    // ownership; this one did not, so any Renter could read any vehicle's papers.
+    const bike = await Bike.findById(bikeId).select('renter').lean();
+    if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    if (bike.renter && bike.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Not authorized to view this vehicle\u2019s documents' });
+    }
+
     const docs = await VehicleDocument.find({ bike: bikeId }).sort({ type: 1, createdAt: -1 }).lean();
     res.json(docs);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('listByBike (vehicle documents) error', { bikeId: req.params.bikeId, error: err.message });
+    res.status(500).json({ message: 'Failed to load vehicle documents' });
   }
 };
 
@@ -19,7 +31,8 @@ exports.listMyDocs = async (req, res) => {
       .lean();
     res.json(docs);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('listMyDocs error', { userId: req.user.id, error: err.message });
+    res.status(500).json({ message: 'Failed to load your documents' });
   }
 };
 
@@ -63,7 +76,8 @@ exports.upload = async (req, res) => {
     await doc.save();
     res.status(201).json(doc);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('upload vehicle document error', { bikeId: req.params.bikeId, error: err.message });
+    res.status(400).json({ message: clientMessage(err, 'Could not save the document') });
   }
 };
 
@@ -81,7 +95,8 @@ exports.update = async (req, res) => {
     await doc.save();
     res.json(doc);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('update vehicle document error', { documentId: req.params.id, error: err.message });
+    res.status(400).json({ message: clientMessage(err, 'Could not update the document') });
   }
 };
 
@@ -95,7 +110,8 @@ exports.verify = async (req, res) => {
     if (!doc) return res.status(404).json({ message: 'Document not found' });
     res.json(doc);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('verify vehicle document error', { documentId: req.params.id, error: err.message });
+    res.status(500).json({ message: 'Failed to verify the document' });
   }
 };
 
@@ -109,22 +125,32 @@ exports.remove = async (req, res) => {
     await doc.deleteOne();
     res.json({ message: 'Document deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('remove vehicle document error', { documentId: req.params.id, error: err.message });
+    res.status(500).json({ message: 'Failed to delete the document' });
   }
 };
 
 exports.expiring = async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = Math.min(365, Math.max(1, parseInt(req.query.days) || 30));
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + days);
 
-    const docs = await VehicleDocument.find({
-      expiryDate: { $lte: cutoff, $gte: new Date() },
-    }).populate('bike', 'model brand').populate('renter', 'name').lean();
+    // A Renter sees only their own fleet. This returned every expiring document on
+    // the platform — including document numbers and scan URLs for other operators'
+    // vehicles — to any authenticated Renter.
+    const filter = { expiryDate: { $lte: cutoff, $gte: new Date() } };
+    if (req.user.role !== 'Admin') filter.renter = req.user.id;
+
+    const docs = await VehicleDocument.find(filter)
+      .populate('bike', 'model brand')
+      .populate('renter', 'name')
+      .sort({ expiryDate: 1 })
+      .lean();
 
     res.json(docs);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    logger.error('expiring vehicle documents error', { userId: req.user.id, error: err.message });
+    res.status(500).json({ message: 'Failed to load expiring documents' });
   }
 };

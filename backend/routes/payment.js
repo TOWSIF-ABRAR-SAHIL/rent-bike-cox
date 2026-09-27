@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/authMiddleware');
 const authorize = require('../security/middleware/authorize');
-const { initPayment, paymentSuccess, paymentFail, paymentCancel, paymentIPN } = require('../controllers/paymentController');
-const { getPaymentIntents, getRefunds, approveRefund, rejectRefund, processRefund } = require('../controllers/paymentAdminController');
+const { initPayment, paymentSuccess, paymentFail, paymentCancel, paymentIPN, getUnconfirmedPayments } = require('../controllers/paymentController');
+const { getRefunds, approveRefund, rejectRefund, processRefund } = require('../controllers/paymentAdminController');
 const { idempotencyMiddleware } = require('../utils/idempotency');
 
 const { paymentInitRules, paginationRules } = require('../security/validators/index');
@@ -110,6 +110,36 @@ router.post('/success/:bookingId/:tranId', paymentSuccess);
  *       302:
  *         description: Redirects to frontend payment-failed page
  */
+router.get('/fail/:bookingId/:tranId', paymentFail);
+
+/**
+ * @swagger
+ * /api/payment/fail/{bookingId}/{tranId}:
+ *   post:
+ *     tags: [Payment]
+ *     summary: Payment failure callback carrying the transaction id
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: tranId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirects to the frontend
+ */
+router.post('/fail/:bookingId/:tranId', paymentFail);
+
+/**
+ * Cancellation with an explicit booking id and no tranId is left in place for
+ * in-flight payments created before tranId was tracked. It cannot prove ownership,
+ * so cancelUnpaidBooking refuses to act on it and the booking simply expires.
+ */
 router.get('/fail/:bookingId', paymentFail);
 
 /**
@@ -170,6 +200,31 @@ router.post('/fail', paymentFail);
  *       302:
  *         description: Redirects to frontend
  */
+router.get('/cancel/:bookingId/:tranId', paymentCancel);
+
+/**
+ * @swagger
+ * /api/payment/cancel/{bookingId}/{tranId}:
+ *   post:
+ *     tags: [Payment]
+ *     summary: Payment cancel callback carrying the transaction id
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: tranId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirects to the frontend
+ */
+router.post('/cancel/:bookingId/:tranId', paymentCancel);
+
 router.get('/cancel/:bookingId', paymentCancel);
 
 /**
@@ -233,6 +288,28 @@ router.post('/cancel', paymentCancel);
  */
 router.post('/ipn', paymentIPN);
 
+/**
+ * @swagger
+ * /api/payment/admin/unconfirmed:
+ *   get:
+ *     tags: [Admin Refunds]
+ *     summary: Bookings that show a gateway transaction but were never confirmed (Admin only)
+ *     description: Read-only reconciliation report. Confirm individual bookings via POST /api/booking/confirm.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Reconciliation report
+ *       403:
+ *         description: Admin access required
+ */
+router.get('/admin/unconfirmed', auth, authorize('Admin'), getUnconfirmedPayments);
+
 // Admin: payment intents + refunds
 
 /**
@@ -260,7 +337,10 @@ router.post('/ipn', paymentIPN);
  *       403:
  *         description: Admin access required
  */
-router.get('/intents', auth, authorize('Admin'), paginationRules, getPaymentIntents);
+// NOTE: GET /intents was removed. It listed PaymentIntent documents, a collection
+// nothing ever wrote to, so it always returned an empty list and had no frontend
+// caller. Real payment records live on the booking (tranId, advancePaid,
+// paymentStatus) and are reported by GET /api/admin/payments/unconfirmed.
 
 /**
  * @swagger

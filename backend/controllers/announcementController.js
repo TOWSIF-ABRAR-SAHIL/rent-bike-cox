@@ -106,6 +106,11 @@ exports.update = async (req, res) => {
         update[field] = ['title', 'message'].includes(field) ? sanitize(String(req.body[field])) : req.body[field];
       }
     }
+    // A deliberate switch-off is recorded so the scheduled maintenance job does not
+    // re-activate it on its next pass.
+    if (update.isActive === false) update.manuallyDisabled = true;
+    if (update.isActive === true) update.manuallyDisabled = false;
+
     const announcement = await Announcement.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!announcement) return res.status(404).json({ message: 'Announcement not found' });
     res.json(announcement);

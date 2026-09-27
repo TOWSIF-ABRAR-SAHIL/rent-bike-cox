@@ -7,6 +7,20 @@ const logger = require('../utils/logger');
 let isRunning = false;
 let intervalId = null;
 
+/**
+ * How many recipients a campaign has already attempted.
+ *
+ * Every attempt increments exactly one of `sent` or `failed` (`bounced` is a subset
+ * of `failed`), so the sum — not the success count — is the correct pagination
+ * offset. Paging by successes re-contacted everyone who failed.
+ *
+ * @param {{sent?: number, failed?: number}} [progress]
+ * @returns {number}
+ */
+function campaignResumeOffset(progress) {
+  return (progress?.sent || 0) + (progress?.failed || 0);
+}
+
 async function processCampaign(campaign) {
   const filter = {};
   switch (campaign.audience.filter) {
@@ -32,22 +46,27 @@ async function processCampaign(campaign) {
   const total = await User.countDocuments(filter);
   const batchSize = campaign.batchSize || 50;
   const batchDelay = campaign.batchDelay || 5000;
-  const skip = campaign.progress?.sent || 0;
 
   await EmailCampaign.findByIdAndUpdate(campaign._id, {
     'progress.total': total,
     status: 'sending'
   });
 
-  let sent = skip;
+  let sent = campaign.progress?.sent || 0;
   let failed = campaign.progress?.failed || 0;
   let bounced = campaign.progress?.bounced || 0;
 
-  while (sent < total) {
-    const users = await User.find(filter).skip(sent).limit(batchSize).lean();
+  // Page by recipients *attempted*, not by successes. Using the success count as a
+  // pagination offset re-contacted everyone who failed: with 3 failures in a batch
+  // of 50, offset 47 re-fetched users 47-96 and emailed 47-49 a second time.
+  let offset = campaignResumeOffset(campaign.progress);
+
+  while (offset < total) {
+    const users = await User.find(filter).skip(offset).limit(batchSize).lean();
     if (users.length === 0) break;
 
     for (const user of users) {
+      offset++;
       try {
         const variables = {
           userName: user.name || user.email,
@@ -103,7 +122,7 @@ async function processCampaign(campaign) {
       'progress.bounced': bounced
     });
 
-    if (sent < total) {
+    if (offset < total) {
       await new Promise(r => setTimeout(r, batchDelay));
     }
   }
@@ -164,4 +183,4 @@ function stopEmailCampaignSender() {
   }
 }
 
-module.exports = { startEmailCampaignSender, stopEmailCampaignSender };
+module.exports = { startEmailCampaignSender, stopEmailCampaignSender, campaignResumeOffset };

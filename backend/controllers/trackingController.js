@@ -1,13 +1,26 @@
 const mongoose = require('mongoose');
 const Bike = require('../models/Bike');
+const Booking = require('../models/Booking');
 const Category = require('../models/Category');
 const LocationHistory = require('../models/LocationHistory');
+const { escapeRegex } = require('../utils/sanitize');
 const logger = require('../utils/logger');
 
 let ioInstance = null;
 
 function setIO(io) {
   ioInstance = io;
+}
+
+/**
+ * A Renter may only read tracking data for vehicles they own; Admin sees all.
+ * These endpoints used to accept any authenticated account, so any registered
+ * user could pull a full movement trail for any vehicle on the platform.
+ */
+function canAccessBike(req, bike) {
+  if (!bike) return false;
+  if (req.user?.role === 'Admin') return true;
+  return String(bike.renter?._id || bike.renter) === String(req.user?.id);
 }
 
 async function updateLocation(req, res) {
@@ -84,6 +97,27 @@ async function getLocations(req, res) {
       match['currentLocation.coordinates.1'] = { $gte: minLat, $lte: maxLat };
     }
 
+    // Scope the feed by role. Requiring a session (rather than leaving this public)
+    // stopped anonymous scraping, but any signed-up customer still received every
+    // vehicle's live position — including one currently out on rent, which publishes
+    // a rider's real-time location. A customer now sees only bookable vehicles that
+    // are not out on a rental right now.
+    if (req.user?.role === 'Renter') {
+      match.renter = req.user.id;
+    } else if (req.user?.role !== 'Admin') {
+      match.availability = true;
+      match.isVerified = true;
+      match.isUnderMaintenance = false;
+
+      const now = new Date();
+      const onRental = await Booking.find({
+        status: { $in: ['Pending', 'Confirmed'] },
+        startTime: { $lte: now },
+        endTime: { $gte: now },
+      }).distinct('bike');
+      if (onRental.length > 0) match._id = { $nin: onRental };
+    }
+
     const bikes = await Bike.find(match)
       .select('model brand currentLocation category images')
       .populate('category', 'name');
@@ -127,6 +161,9 @@ async function getBikeLocation(req, res) {
       .populate('category', 'name');
 
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    if (!canAccessBike(req, bike)) {
+      return res.status(403).json({ message: 'Not authorized to view this vehicle' });
+    }
 
     const latestHistory = await LocationHistory.findOne({ bike: bike._id })
       .sort({ recordedAt: -1 })
@@ -158,8 +195,11 @@ async function getHistory(req, res) {
     const from = req.query.from ? new Date(req.query.from) : new Date(0);
     const to = req.query.to ? new Date(req.query.to) : new Date();
 
-    const bike = await Bike.findById(bikeId).select('_id');
+    const bike = await Bike.findById(bikeId).select('_id renter');
     if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    if (!canAccessBike(req, bike)) {
+      return res.status(403).json({ message: 'Not authorized to view this vehicle' });
+    }
 
     const points = await LocationHistory.find({
       bike: bikeId,
@@ -179,8 +219,12 @@ async function getHistory(req, res) {
 async function getStats(req, res) {
   try {
     const match = { 'currentLocation.coordinates.0': { $ne: 0 } };
+    // A renter's stats cover their own fleet only.
+    if (req.user?.role !== 'Admin') {
+      match.renter = req.user?.id;
+    }
     if (req.query.category) {
-      const cat = await Category.findOne({ name: { $regex: req.query.category, $options: 'i' } });
+      const cat = await Category.findOne({ name: { $regex: escapeRegex(req.query.category), $options: 'i' } });
       if (cat) match.category = cat._id;
     }
 

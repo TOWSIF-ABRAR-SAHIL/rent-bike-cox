@@ -1,5 +1,4 @@
 const Booking = require('../models/Booking');
-const { releaseBikeLock } = require('./bookingLock');
 const logger = require('./logger');
 
 const PENDING_AGE_MS = 5 * 60 * 1000;
@@ -23,12 +22,10 @@ async function cleanupAbandonedBookings() {
 
     for (const booking of expiredBookings) {
       try {
-        await releaseBikeLock(booking.bike);
-
         booking.status = 'Expired';
         await booking.save();
 
-        logger.info(`Released bike ${booking.bike} from expired booking ${booking._id}`);
+        logger.info(`Expired abandoned booking ${booking._id}`);
       } catch (err) {
         logger.error(`Failed to clean booking ${booking._id}`, { error: err.message });
       }

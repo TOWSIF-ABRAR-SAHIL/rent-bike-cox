@@ -5,7 +5,10 @@ const logger = require('../utils/logger');
 
 exports.bulkUpdateStatus = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    // `id` is the JWT claim; there is no `ownerId` on req.user. Destructuring it
+    // before left `bikeQuery.renter` as undefined, which Mongoose strips from the
+    // filter — dropping the renter constraint entirely for non-admins.
+    const { id: ownerId, role } = req.user;
     const { bikeIds, availability, isUnderMaintenance } = req.body;
 
     if (!Array.isArray(bikeIds) || bikeIds.length === 0) {
@@ -36,7 +39,7 @@ exports.bulkUpdateStatus = async (req, res) => {
 
 exports.bulkScheduleMaintenance = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const { bikeIds, type, title, nextServiceDue } = req.body;
 
     if (!Array.isArray(bikeIds) || bikeIds.length === 0) {
@@ -79,7 +82,7 @@ exports.bulkScheduleMaintenance = async (req, res) => {
 
 exports.bulkExportSelected = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const { bikeIds } = req.body;
 
     if (!Array.isArray(bikeIds) || bikeIds.length === 0) {
@@ -102,7 +105,7 @@ exports.bulkExportSelected = async (req, res) => {
         bike.category?.name || 'N/A',
         bike.pricePerHour,
         bike.condition,
-        bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'Active' : 'Unavailable',
+        bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'In service' : 'Out of service',
         bike.currentMileage || 0,
         bike.nextServiceDue ? new Date(bike.nextServiceDue).toLocaleDateString() : 'N/A',
       ]);
@@ -121,7 +124,7 @@ exports.bulkExportSelected = async (req, res) => {
 
 exports.bulkDelete = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const { bikeIds } = req.body;
 
     if (!Array.isArray(bikeIds) || bikeIds.length === 0) {
@@ -131,8 +134,10 @@ exports.bulkDelete = async (req, res) => {
     const bikeQuery = { _id: { $in: bikeIds } };
     if (role !== 'Admin') bikeQuery.renter = ownerId;
 
+    // Only count bookings on the vehicles this caller can actually touch.
+    const ownedBikeIds = await Bike.find(bikeQuery).select('_id').lean();
     const activeBookings = await Booking.countDocuments({
-      bike: { $in: bikeIds },
+      bike: { $in: ownedBikeIds.map(b => b._id) },
       status: { $in: ['Pending', 'Confirmed', 'Active'] },
     });
 

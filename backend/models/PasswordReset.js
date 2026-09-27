@@ -6,6 +6,9 @@ const passwordResetSchema = new mongoose.Schema({
   otpHash: { type: String, required: true },
   expiresAt: { type: Date, required: true },
   used: { type: Boolean, default: false },
+  // A 6-digit OTP is only 1e6 possibilities; without a cap it is brute-forceable
+  // by anyone who knows the address.
+  attempts: { type: Number, default: 0 },
 }, { timestamps: true });
 
 passwordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

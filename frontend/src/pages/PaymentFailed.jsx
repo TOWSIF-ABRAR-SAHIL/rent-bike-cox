@@ -5,7 +5,7 @@ const PaymentFailed = () => {
   const navigate = useNavigate();
 
   return (
-  <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
+  <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
     <div className="absolute inset-0 opacity-20">
       <div className="absolute top-20 left-20 w-96 h-96 bg-red-500 rounded-full blur-[120px]" />
     </div>

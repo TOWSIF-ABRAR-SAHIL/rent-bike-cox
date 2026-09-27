@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const LedgerEntry = require('../models/LedgerEntry');
@@ -64,7 +65,7 @@ exports.getFraudReport = async (req, res) => {
   try {
     if (req.user.role !== 'Admin') return res.status(403).json({ message: 'Access denied' });
     const { ip, phone, hours } = req.query;
-    const report = await getVelocityReport(ip, phone, parseInt(hours) || 24);
+    const report = await getVelocityReport({ ip, phone, hours: parseInt(hours, 10) || 24 });
     res.json(report);
   } catch (error) {
     logger.error('getFraudReport error', { tag: 'Financial', message: error.message });
@@ -121,13 +122,28 @@ exports.getRenterEarnings = async (req, res) => {
       createdAt: { $gte: since },
     }).lean();
 
-    const totalEarnings = completed.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    // Gross fare minus the platform commission, which is what the renter is
+    // actually paid. The dashboard previously showed gross as "earnings" while
+    // PayoutService deducted a commission before paying out.
+    const settings = await require('../models/Settings').findOne().lean();
+    const commissionPercent = settings?.adminCommissionPercent || 10;
+    const grossEarnings = completed.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    const commission = Math.round(grossEarnings * commissionPercent / 100);
+    const totalEarnings = grossEarnings - commission;
     const completedBookings = completed.length;
     const avgPerBooking = completedBookings > 0 ? Math.round(totalEarnings / completedBookings) : 0;
 
-    const pendingPayoutAgg = await Booking.aggregate([
-      { $match: { bike: { $in: bikeIds }, status: 'Completed', createdAt: { $gte: since } } },
-      { $group: { _id: null, total: { $sum: '$remainingBalance' } } },
+    // Money the platform still owes the renter, from actual payout records — not
+    // the customers' outstanding pickup balance, which is what this used to sum.
+    const Payout = require('../models/Payout');
+    const pendingPayoutAgg = await Payout.aggregate([
+      {
+        $match: {
+          renterId: new mongoose.Types.ObjectId(req.user.id),
+          status: { $in: ['PENDING', 'APPROVED', 'SCHEDULED', 'PROCESSING'] },
+        },
+      },
+      { $group: { _id: null, total: { $sum: '$netAmountPaisa' } } },
     ]);
     const pendingPayout = pendingPayoutAgg[0]?.total || 0;
 
@@ -205,7 +221,16 @@ exports.getRenterEarnings = async (req, res) => {
     }));
 
     res.json({
-      totalEarnings, completedBookings, avgPerBooking, pendingPayout, byVehicle, revenueSeries, recentTransactions: transactions,
+      totalEarnings,
+      grossEarnings,
+      commission,
+      commissionPercent,
+      completedBookings,
+      avgPerBooking,
+      pendingPayout,
+      byVehicle,
+      revenueSeries,
+      recentTransactions: transactions,
     });
   } catch (error) {
     logger.error('getRenterEarnings error', { tag: 'Financial', message: error.message });

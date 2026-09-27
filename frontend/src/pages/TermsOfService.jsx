@@ -1,6 +1,6 @@
 const TermsOfService = () => {
   return (
-    <div className="min-h-[calc(100vh-4rem)] py-12 px-4">
+    <div className="min-h-[calc(100dvh-4rem)] py-12 px-4">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--text-primary)' }}>Terms of Service</h1>
         <div className="glass rounded-2xl p-6 sm:p-8 space-y-6" style={{ color: 'var(--text-secondary)' }}>

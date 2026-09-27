@@ -242,7 +242,9 @@ router.put('/:id/cancel', auth, bookingIdRules, cancelBooking);
  *       403:
  *         description: Admin access required
  */
-router.put('/:id/complete', auth, authorize('Admin'), bookingIdRules, completeBooking);
+// The controller already supports Renter for this (it verifies the caller owns the
+// vehicle), but the route was Admin-only, so renters could never complete a rental.
+router.put('/:id/complete', auth, authorize('Renter', 'Admin'), bookingIdRules, completeBooking);
 
 /**
  * @swagger
