@@ -11,6 +11,7 @@ import { SkeletonPage } from '../components/ui/Skeleton';
 import ReviewForm from '../components/ReviewForm';
 import ReviewList from '../components/ReviewList';
 import { resolveImages, getBikeSpecs } from '../lib/bikeMedia';
+import { getSavedPickupLocation } from '../lib/pickupSpots';
 
 const SPEC_ICON = {
   Capacity: Users,
@@ -105,6 +106,7 @@ const BikeDetails = () => {
         startTime,
         endTime,
         pricing,
+        pickupLocation: getSavedPickupLocation(),
         bike: {
           model: bike.model,
           brand: bike.brand,

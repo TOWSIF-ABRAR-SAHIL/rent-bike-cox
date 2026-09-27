@@ -5,6 +5,7 @@ import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Ch
 import { SkeletonPage } from '../components/ui/Skeleton';
 import { useToast } from '../components/useToast';
 import { useAuth } from '../context/useAuth';
+import { PICKUP_SPOTS, getSavedPickupLocation, savePickupLocation } from '../lib/pickupSpots';
 
 const POLL_INTERVAL_MS = 20000;
 const START_TIME_MIN_MINUTES = 10;
@@ -33,6 +34,7 @@ const Checkout = () => {
     startTime: state.startTime,
     endTime: state.endTime,
     pricing: state.pricing,
+    pickupLocation: state.pickupLocation || '',
     bike: state.bike,
   } : null, [state]);
 
@@ -42,6 +44,7 @@ const Checkout = () => {
   const [error, setError] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [destination, setDestination] = useState('');
+  const [pickupLocation, setPickupLocation] = useState(() => bookingData?.pickupLocation || getSavedPickupLocation());
   const [specialRequests, setSpecialRequests] = useState('');
   const [fetchError, setFetchError] = useState(bookingData ? '' : 'No booking data found. Please go back and select your booking details.');
   const [createdBookingId, setCreatedBookingId] = useState(null);
@@ -162,6 +165,10 @@ const Checkout = () => {
       };
       if (couponCode) body.couponCode = couponCode;
       if (destination) body.destination = destination;
+      if (pickupLocation) {
+        body.pickupLocation = pickupLocation;
+        savePickupLocation(pickupLocation);
+      }
       const res = await api.post('/booking', body);
       const booking = res.data.booking;
       if (!booking || !booking._id) {
@@ -291,6 +298,16 @@ const Checkout = () => {
               <MapPin size={16} style={{ color: 'var(--accent-text)' }} /> Trip Details
             </h2>
             <div className="space-y-3">
+              <div>
+                <label htmlFor="checkout-pickup" className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Pickup Location</label>
+                <select id="checkout-pickup" value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)}
+                  className="input-dark text-sm" aria-label="Pickup location">
+                  <option value="">Anywhere in Cox&apos;s Bazar</option>
+                  {PICKUP_SPOTS.map(spot => (
+                    <option key={spot} value={spot}>{spot}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Destination / Trip Plan</label>
                 <textarea value={destination} onChange={(e) => setDestination(e.target.value)}
@@ -428,6 +445,17 @@ const Checkout = () => {
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{duration} Hours</p>
                 </div>
               </div>
+              {pickupLocation && (
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
+                    <MapPin size={14} style={{ color: 'var(--accent-text)' }} />
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Pickup Location</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{pickupLocation}</p>
+                  </div>
+                </div>
+              )}
               {destination && (
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>

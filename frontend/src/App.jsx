@@ -60,7 +60,7 @@ function App() {
               <WishlistProvider>
                 <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
               <Navbar />
-              <main className="pt-16">
+              <main className="pt-[72px]">
                 <Suspense fallback={<PageSpinner />}>
                   <ErrorBoundary>
                     <Routes>

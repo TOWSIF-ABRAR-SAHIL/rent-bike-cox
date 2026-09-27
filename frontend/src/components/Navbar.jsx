@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, Search, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, Heart } from 'lucide-react';
+import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, Heart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import AdminNotificationBell from './admin/AdminNotificationBell';
 import { useAuth } from '../context/useAuth';
 import { useTheme } from '../context/useTheme';
+
+const NAV_LINKS = [
+  { to: '/', label: 'Home', exact: true },
+  { to: '/search', label: 'Vehicles' },
+  { to: '/faq', label: 'FAQ' },
+  { to: '/contact', label: 'Contact' },
+];
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -73,6 +80,9 @@ const Navbar = () => {
     setMoreDropdownOpen(false);
   };
 
+  const isActive = (to, exact = false) =>
+    exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + '/');
+
   const moreItems = [
     ...(user?.role === 'Admin' || user?.role === 'Renter' ? [
       { to: user?.role === 'Admin' ? '/admin-dashboard' : '/renter-dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -97,120 +107,107 @@ const Navbar = () => {
       icon: LayoutDashboard, label: 'Dashboard',
     }] : []),
     { to: '/my-bookings', icon: Clock, label: 'My Bookings' },
+    { to: '/my-disputes', icon: ShieldCheck, label: 'My Disputes' },
     { to: '/wishlist', icon: Heart, label: 'Favorites' },
   ];
 
+  const dropdownPanel = 'absolute right-0 top-full mt-2 rounded-xl shadow-xl z-[100] overflow-hidden bg-white border border-slate-200 animate-slide-up';
+  const dropdownLink = 'flex items-center w-full text-left text-sm px-4 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all';
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-dark">
+    <nav className="nav-light fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-[0_1px_12px_rgba(0,0,0,0.06)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center text-lg font-bold group whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>
-            <div className="w-9 h-9 gradient-primary rounded-xl flex items-center justify-center mr-2 group-hover:scale-105 transition-transform">
-              <Bike size={20} className="text-white" />
+        <div className="flex items-center justify-between h-[72px] gap-4">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2.5 shrink-0 group" aria-label="Rent Bike Cox's Bazar home">
+            <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-105 transition-transform">
+              <Bike size={22} className="text-white" />
             </div>
-            <span className="hidden sm:inline">Rent Bike<br className="sm:hidden" /><span className="sm:hidden"> </span>Cox's Bazar</span>
-            <span className="sm:hidden">RBC</span>
+            <div className="leading-none">
+              <p className="text-[17px] font-black text-slate-900 tracking-tight">Rent Bike</p>
+              <p className="text-[10px] font-bold tracking-[0.18em] text-orange-600 mt-0.5">COX&apos;S BAZAR</p>
+            </div>
           </Link>
 
-          <div className="hidden xl:flex items-center text-sm">
-            <div className="flex items-center px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
-              <Phone size={12} className="mr-1" style={{ color: 'var(--accent-text)' }} />
-              <span className="text-[11px]">01891154443</span>
-            </div>
-            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>|</span>
-            <div className="flex items-center px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
-              <Phone size={12} className="mr-1" style={{ color: 'var(--accent-text)' }} />
-              <span className="text-[11px]">01764466757</span>
-            </div>
+          {/* Center links */}
+          <div className="hidden lg:flex items-center gap-1">
+            {NAV_LINKS.map(link => {
+              const active = isActive(link.to, link.exact);
+              return (
+                <Link key={link.to} to={link.to}
+                  className={`relative px-4 py-2 text-sm font-bold transition-colors ${active ? 'text-orange-600' : 'text-slate-700 hover:text-slate-950'}`}>
+                  {link.label}
+                  {active && <span className="absolute left-4 right-4 -bottom-[1px] h-[3px] rounded-full bg-orange-500" />}
+                </Link>
+              );
+            })}
           </div>
 
-          <div className="hidden lg:flex items-center gap-1">
-            <button onClick={cycle} className="flex items-center justify-center w-9 h-9 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} title={`Theme: ${theme}`} aria-label="Toggle theme">
-              <ThemeIcon size={16} />
+          {/* Right actions */}
+          <div className="hidden lg:flex items-center gap-1.5">
+            <button onClick={cycle} className="flex items-center justify-center w-9 h-9 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-all" title={`Theme: ${theme}`} aria-label="Toggle theme">
+              <ThemeIcon size={17} />
             </button>
-            <Link to="/search" className="flex items-center justify-center w-9 h-9 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} title="Search" aria-label="Search vehicles">
-              <Search size={16} />
-            </Link>
-            <Link to="/policies" className="items-center text-xs px-3 py-2 rounded-lg transition-all whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>
-              <ShieldCheck size={14} className="mr-1" />
-              Policies
-            </Link>
 
             {user ? (
               <>
                 <NotificationBell />
-                <div className="relative" ref={moreDropdownRef}>
-                  <button onClick={() => setMoreDropdownOpen(!moreDropdownOpen)} className="flex items-center text-xs px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="More menu" aria-expanded={moreDropdownOpen} aria-haspopup="true">
-                    More<ChevronDown size={12} className={`ml-0.5 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {moreDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-48 rounded-xl shadow-2xl animate-slide-up z-[100] overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
-                      <div className="py-1">
-                        {moreItems.map(item => (
-                          <Link key={item.to} to={item.to} onClick={() => setMoreDropdownOpen(false)}
-                            className="flex items-center text-sm px-4 py-3 transition-all"
-                            style={{ color: 'var(--text-secondary)' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                            onMouseLeave={e => e.currentTarget.style.background = ''}>
-                            <item.icon size={14} className="mr-2 flex-shrink-0" /> {item.label}
-                          </Link>
-                        ))}
+                {moreItems.length > 0 && (
+                  <div className="relative" ref={moreDropdownRef}>
+                    <button onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
+                      className="flex items-center text-sm font-semibold px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-all"
+                      aria-label="More menu" aria-expanded={moreDropdownOpen} aria-haspopup="true">
+                      More<ChevronDown size={14} className={`ml-1 transition-transform ${moreDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {moreDropdownOpen && (
+                      <div className={`${dropdownPanel} w-52`}>
+                        <div className="py-1.5">
+                          {moreItems.map(item => (
+                            <Link key={item.to} to={item.to} onClick={() => setMoreDropdownOpen(false)} className={dropdownLink}>
+                              <item.icon size={15} className="mr-2.5 flex-shrink-0 text-slate-400" /> {item.label}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="relative" ref={userDropdownRef}>
-                  <button onClick={() => setUserDropdownOpen(!userDropdownOpen)} className="flex items-center text-xs px-3 py-2 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }} aria-label="User menu" aria-expanded={userDropdownOpen} aria-haspopup="true">
-                    <div className="w-7 h-7 gradient-primary rounded-full flex items-center justify-center mr-1.5">
-                      <User size={13} className="text-white" />
+                  <button onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-full border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all"
+                    aria-label="User menu" aria-expanded={userDropdownOpen} aria-haspopup="true">
+                    <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white text-xs font-black">
+                      {(user.name || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <span className="max-w-[80px] truncate">{user.name}</span>
-                    <ChevronDown size={12} className={`ml-0.5 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+                    <span className="max-w-[90px] truncate text-sm font-bold text-slate-800">{user.name}</span>
+                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {userDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-2xl animate-slide-up z-[100] overflow-hidden" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
-                      <div className="px-4 py-3 flex flex-col gap-0.5" style={{ borderBottom: '1px solid var(--border-base)' }}>
-                        <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
-                        <span className="inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-md w-fit" style={{ color: 'var(--accent-text)', background: 'var(--accent-bg)' }}>{user.role}</span>
+                    <div className={`${dropdownPanel} w-60`}>
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-sm font-bold truncate text-slate-900">{user.name}</p>
+                        <p className="text-xs truncate text-slate-500">{user.email}</p>
+                        <span className="inline-block mt-1.5 text-[11px] font-bold px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200">{user.role}</span>
                       </div>
-                      <div className="py-1">
+                      <div className="py-1.5">
                         {userMenuItems.map(item => (
-                          <Link key={item.to} to={item.to} onClick={() => setUserDropdownOpen(false)}
-                            className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
-                            style={{ color: 'var(--text-secondary)' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                            onMouseLeave={e => e.currentTarget.style.background = ''}>
-                            <item.icon size={14} className="mr-2" /> {item.label}
+                          <Link key={item.to} to={item.to} onClick={() => setUserDropdownOpen(false)} className={dropdownLink}>
+                            <item.icon size={15} className="mr-2.5 text-slate-400" /> {item.label}
                           </Link>
                         ))}
-                        <div className="my-1" style={{ borderTop: '1px solid var(--border-base)' }} />
-                        <Link to="/profile" onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
-                          style={{ color: 'var(--text-secondary)' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => e.currentTarget.style.background = ''}>
-                          <User size={14} className="mr-2" /> Profile
+                        <div className="my-1 border-t border-slate-100" />
+                        <Link to="/profile" onClick={() => setUserDropdownOpen(false)} className={dropdownLink}>
+                          <User size={15} className="mr-2.5 text-slate-400" /> Profile
                         </Link>
-                        <Link to="/change-password" onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
-                          style={{ color: 'var(--text-secondary)' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => e.currentTarget.style.background = ''}>
-                          <KeyRound size={14} className="mr-2" /> Change Password
+                        <Link to="/change-password" onClick={() => setUserDropdownOpen(false)} className={dropdownLink}>
+                          <KeyRound size={15} className="mr-2.5 text-slate-400" /> Change Password
                         </Link>
-                        <Link to="/notification-settings" onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center w-full text-left text-sm px-4 py-3 transition-all"
-                          style={{ color: 'var(--text-secondary)' }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--hover-bg)'}
-                          onMouseLeave={e => e.currentTarget.style.background = ''}>
-                          <Bell size={14} className="mr-2" /> Notification Settings
+                        <Link to="/notification-settings" onClick={() => setUserDropdownOpen(false)} className={dropdownLink}>
+                          <Bell size={15} className="mr-2.5 text-slate-400" /> Notification Settings
                         </Link>
-                        <button onClick={handleLogout} className="flex items-center w-full text-left text-sm px-4 py-3 transition-all" style={{ color: 'var(--danger-text)' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; e.currentTarget.style.filter = 'brightness(1.2)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.filter = ''; }}>
-                          <LogOut size={14} className="mr-2" /> Logout
+                        <button onClick={handleLogout} className={`${dropdownLink} text-red-600 hover:!bg-red-50`}>
+                          <LogOut size={15} className="mr-2.5" /> Logout
                         </button>
                       </div>
                     </div>
@@ -219,70 +216,84 @@ const Navbar = () => {
               </>
             ) : (
               <>
-                <Link to="/login" className="text-xs px-3 py-2 rounded-lg transition-all whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>Login</Link>
-                <Link to="/signup" className="btn-primary text-xs !px-3 !py-2 whitespace-nowrap">Sign Up</Link>
+                <Link to="/login" className="text-sm font-bold px-5 py-2.5 rounded-lg bg-neutral-900 hover:bg-black text-white transition-all">
+                  Sign In
+                </Link>
+                <Link to="/signup" className="text-sm font-bold px-5 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-all shadow-lg shadow-orange-500/30">
+                  Sign Up
+                </Link>
               </>
             )}
           </div>
 
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden p-2 min-h-11 min-w-11 rounded-lg transition-all flex items-center justify-center" style={{ color: 'var(--text-primary)' }} aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
+          {/* Mobile hamburger */}
+          <button onClick={() => setMobileOpen(!mobileOpen)}
+            className="lg:hidden p-2 min-h-11 min-w-11 rounded-lg text-slate-800 hover:bg-slate-100 transition-all flex items-center justify-center"
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileOpen}>
             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
+      {/* Mobile panel */}
       {mobileOpen && (
-        <div ref={mobileMenuRef} className="lg:hidden glass-dark border-t animate-slide-up" style={{ borderColor: 'var(--border-base)' }}>
+        <div ref={mobileMenuRef} className="lg:hidden bg-white border-t border-slate-200 shadow-xl animate-slide-up max-h-[calc(100dvh-72px)] overflow-y-auto">
           <div className="px-4 py-4 space-y-1">
-            <div className="flex items-center text-sm px-3 py-2.5 min-h-11" style={{ color: 'var(--text-muted)' }}>
-              <Phone size={14} className="mr-2" style={{ color: 'var(--accent-text)' }} />
+            {NAV_LINKS.map(link => {
+              const active = isActive(link.to, link.exact);
+              return (
+                <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)}
+                  className={`flex items-center text-sm font-bold px-3 py-2.5 min-h-11 rounded-lg transition-all ${active ? 'bg-orange-50 text-orange-700' : 'text-slate-700'}`}>
+                  {link.label}
+                </Link>
+              );
+            })}
+            <div className="flex items-center text-sm px-3 py-2.5 min-h-11 text-slate-500">
+              <Phone size={14} className="mr-2 text-orange-500" />
               01891154443 | 01764466757
             </div>
-            <button onClick={() => { cycle(); }} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--text-secondary)' }} aria-label="Toggle theme">
+            <button onClick={() => { cycle(); }} className="flex items-center text-sm font-semibold px-3 py-2.5 min-h-11 rounded-lg text-slate-600 w-full text-left" aria-label="Toggle theme">
               <ThemeIcon size={16} className="mr-2" /> Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}
             </button>
-            <Link to="/search" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
-              <Search size={16} className="mr-2" /> Search
-            </Link>
             {user ? (
               <>
-                <div className="px-3 py-2.5 border-t mt-2 pt-3 min-h-11" style={{ borderColor: 'var(--border-base)' }}>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
-                  <p className="text-xs" style={{ color: 'var(--accent-text)' }}>{user.role}</p>
+                <div className="px-3 py-2.5 border-t border-slate-100 mt-2 pt-3 min-h-11">
+                  <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                  <p className="text-xs text-orange-600 font-semibold">{user.role}</p>
                 </div>
                 {moreItems.map(item => (
-                  <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                  <Link key={item.to} to={item.to} onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg text-slate-600">
                     <item.icon size={16} className="mr-2" /> {item.label}
                   </Link>
                 ))}
-                <Link to="/my-bookings" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                <Link to="/my-bookings" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg text-slate-600">
                   <Clock size={16} className="mr-2" /> My Bookings
                 </Link>
-                <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg text-slate-600">
                   <Heart size={16} className="mr-2" /> Favorites
                 </Link>
                 <div className="flex items-center gap-3 px-3 py-2.5 min-h-11">
                   <NotificationBell />
                   {user.role === 'Admin' && <AdminNotificationBell />}
                 </div>
-                <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                <Link to="/profile" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg text-slate-600">
                   <User size={16} className="mr-2" /> Profile
                 </Link>
-                <Link to="/change-password" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                <Link to="/change-password" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg text-slate-600">
                   <KeyRound size={16} className="mr-2" /> Change Password
                 </Link>
-                <button onClick={handleLogout} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all w-full text-left" style={{ color: 'var(--danger-text)' }} aria-label="Log out" onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>
+                <button onClick={handleLogout} className="flex items-center text-sm font-semibold px-3 py-2.5 min-h-11 rounded-lg w-full text-left text-red-600" aria-label="Log out">
                   <LogOut size={16} className="mr-2" /> Logout
                 </button>
               </>
             ) : (
               <>
-                <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg transition-all" style={{ color: 'var(--text-secondary)' }}>
+                <Link to="/policies" onClick={() => setMobileOpen(false)} className="flex items-center text-sm px-3 py-2.5 min-h-11 rounded-lg text-slate-600">
                   <ShieldCheck size={16} className="mr-2" /> Policies
                 </Link>
-                <div className="flex space-x-2 pt-2">
-                  <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-ghost !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Login</Link>
-                  <Link to="/signup" onClick={() => setMobileOpen(false)} className="btn-primary !py-3 text-sm flex-1 text-center min-h-11 flex items-center justify-center">Sign Up</Link>
+                <div className="flex gap-2 pt-2">
+                  <Link to="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center text-sm font-bold px-4 py-3 min-h-11 rounded-lg bg-neutral-900 text-white flex items-center justify-center">Sign In</Link>
+                  <Link to="/signup" onClick={() => setMobileOpen(false)} className="flex-1 text-center text-sm font-bold px-4 py-3 min-h-11 rounded-lg bg-orange-500 text-white flex items-center justify-center">Sign Up</Link>
                 </div>
               </>
             )}

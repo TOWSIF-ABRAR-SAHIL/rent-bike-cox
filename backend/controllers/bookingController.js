@@ -33,7 +33,7 @@ exports.createBooking = async (req, res) => {
       return res.status(403).json({ message: 'Access temporarily restricted. Contact support.' });
     }
 
-    const { bikeId, startTime, endTime, couponCode, destination } = req.body;
+    const { bikeId, startTime, endTime, couponCode, destination, pickupLocation } = req.body;
     if (!bikeId || !startTime || !endTime) {
       return res.status(400).json({ message: 'bikeId, startTime, and endTime are required' });
     }
@@ -100,6 +100,7 @@ exports.createBooking = async (req, res) => {
       advancePaid: 0,
       advancePercent: pricing.advancePercent,
       destination: sanitize(destination) || '',
+      pickupLocation: sanitize(pickupLocation) || '',
       securityDeposit: 2000,
       status: 'Pending',
       packageName: pricing.packageName,

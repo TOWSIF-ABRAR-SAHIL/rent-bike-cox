@@ -322,6 +322,22 @@ html.light {
     animation: glowPulse 3s ease-in-out infinite;
   }
 
+  /* Light scope for the template navbar: forces light-theme values on
+     child components (notification bells) that read CSS vars, so they
+     stay readable on the white navbar in either site theme. */
+  .nav-light {
+    --text-primary: #1f2937;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+    --bg-card: #ffffff;
+    --bg-surface: #ffffff;
+    --border-base: rgba(0, 0, 0, 0.07);
+    --hover-bg: rgba(0, 0, 0, 0.04);
+    --accent-text: #d97706;
+    --accent-bg: rgba(217, 119, 6, 0.1);
+    --danger-text: #dc2626;
+  }
+
 }
 
 @keyframes fadeIn {
