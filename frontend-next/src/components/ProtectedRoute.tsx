@@ -1,0 +1,16 @@
+// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
+"use client";
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/useAuth';
+import PageSpinner from './PageSpinner';
+
+export default function ProtectedRoute({ children, roles }) {
+  const { user, token, loading } = useAuth();
+
+  if (loading) return <PageSpinner />;
+  if (token && !user) return <Navigate to="/login" replace />;
+  if (!token) return <Navigate to="/login" replace />;
+  if (roles && user && !roles.includes(user.role)) return <Navigate to="/" replace />;
+
+  return children;
+}

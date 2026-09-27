@@ -1,5 +1,4 @@
-/* TODO(P1): re-enable after leaflet is installed:
-   @import 'leaflet/dist/leaflet.css'; */
+@import 'leaflet/dist/leaflet.css';
 @import "tailwindcss";
 
 @theme {

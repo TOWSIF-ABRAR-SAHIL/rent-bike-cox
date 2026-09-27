@@ -1,0 +1,12 @@
+// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
+"use client";
+const Spinner = ({ size = 40, className = '' }) => (
+  <div className={`flex items-center justify-center ${className}`}>
+    <div className="relative" style={{ width: size, height: size }}>
+      <div className="absolute inset-0 rounded-full border-2" style={{ borderColor: 'var(--border-base)' }} />
+      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-500 animate-spin" />
+    </div>
+  </div>
+);
+
+export default Spinner;
