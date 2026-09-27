@@ -1,0 +1,35 @@
+// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
+"use client";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { XCircle, Home, RefreshCw } from 'lucide-react';
+
+const PaymentCancelled = () => {
+  const router = useRouter();
+
+  return (
+  <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
+    <div className="absolute inset-0 opacity-20">
+      <div className="absolute top-20 right-20 w-96 h-96 bg-amber-500 rounded-full blur-[120px]" />
+    </div>
+    <div className="glass rounded-3xl p-6 sm:p-10 text-center max-w-md w-full animate-slide-up relative">
+      <div className="w-20 h-20 rounded-2xl border flex items-center justify-center mx-auto mb-6" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
+        <XCircle size={40} style={{ color: 'var(--warning-text)' }} />
+      </div>
+      <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Payment Cancelled</h1>
+      <p className="mb-8" style={{ color: 'var(--text-secondary)' }}>You cancelled the payment. Your booking is not confirmed.</p>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link href="/" className="btn-primary flex-1 flex items-center justify-center">
+          <Home size={18} className="mr-2" /> Go Home
+        </Link>
+        <button onClick={() => router.back()} className="btn-ghost flex-1 flex items-center justify-center" aria-label="Go back">
+          <RefreshCw size={18} className="mr-2" /> Try Again
+        </button>
+      </div>
+    </div>
+  </div>
+  );
+};
+
+export default PaymentCancelled;

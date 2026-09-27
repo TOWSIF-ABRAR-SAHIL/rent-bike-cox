@@ -1,7 +1,8 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+
 import api from '../api/axios';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 
@@ -137,7 +138,7 @@ const NotificationBell = () => {
             )}
           </div>
           <div className="px-4 py-2 text-center" style={{ borderTop: '1px solid var(--border-base)' }}>
-            <Link to="/notifications" onClick={() => setOpen(false)} className="text-xs font-medium" style={{ color: 'var(--accent-text)' }} aria-label="View all notifications">
+            <Link href="/notifications" onClick={() => setOpen(false)} className="text-xs font-medium" style={{ color: 'var(--accent-text)' }} aria-label="View all notifications">
               View all notifications
             </Link>
           </div>

@@ -1,16 +1,17 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { usePathname } from 'next/navigation';
 
 function ScrollToTop() {
-  const { pathname, hash } = useLocation();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!hash) {
+    if (!window.location.hash) {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
-  }, [pathname, hash]);
+  }, [pathname]);
 
   return null;
 }

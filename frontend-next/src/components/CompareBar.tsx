@@ -1,7 +1,8 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import Link from 'next/link';
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
+
 import { X, GitCompareArrows, Trash2 } from 'lucide-react';
 import { useCompare } from '../context/useCompare';
 
@@ -34,7 +35,7 @@ const CompareBar = () => {
               <Trash2 size={16} />
             </button>
             <Link
-              to="/compare"
+              href="/compare"
               className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5"
               style={{ background: 'var(--accent-text)', color: 'white' }}
             >

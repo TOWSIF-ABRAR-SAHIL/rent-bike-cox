@@ -1,16 +1,26 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { Navigate } from 'react-router-dom';
+
+import { useEffect, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/useAuth';
 import PageSpinner from './PageSpinner';
 
-export default function ProtectedRoute({ children, roles }) {
+export default function ProtectedRoute({ children, roles }: { children: ReactNode; roles?: string[] }) {
   const { user, token, loading } = useAuth();
+  const router = useRouter();
+
+  const denied = !loading && (!token || (roles && user && !roles.includes(user.role)));
+
+  useEffect(() => {
+    if (loading) return;
+    if (!token) router.replace('/login');
+    else if (roles && user && !roles.includes(user.role)) router.replace('/');
+  }, [loading, token, user, roles, router]);
 
   if (loading) return <PageSpinner />;
-  if (token && !user) return <Navigate to="/login" replace />;
-  if (!token) return <Navigate to="/login" replace />;
-  if (roles && user && !roles.includes(user.role)) return <Navigate to="/" replace />;
+  if (!token) return <PageSpinner />;
+  if (roles && user && !roles.includes(user.role)) return <PageSpinner />;
 
   return children;
 }

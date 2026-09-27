@@ -1,7 +1,9 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { memo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+
 import { Home, Search, Heart, Clock, User } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useWishlist } from '../context/useWishlist';
@@ -14,13 +16,13 @@ const navItems = [
 ];
 
 const BottomNav = () => {
-  const location = useLocation();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { count } = useWishlist();
 
   const isActive = (path) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
   };
 
   return (
@@ -33,7 +35,7 @@ const BottomNav = () => {
           return (
             <Link
               key={item.to}
-              to={item.to}
+              href={item.to}
               className="flex flex-col items-center gap-0.5 py-1.5 px-3 min-w-[56px] rounded-xl transition-all relative"
               style={{ color: active ? 'var(--accent-text)' : 'var(--text-muted)' }}
               aria-label={item.label}
@@ -55,7 +57,7 @@ const BottomNav = () => {
           );
         })}
         <Link
-          to={user ? (user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Renter' ? '/renter-dashboard' : '/profile') : '/login'}
+          href={user ? (user.role === 'Admin' ? '/admin-dashboard' : user.role === 'Renter' ? '/renter-dashboard' : '/profile') : '/login'}
           className="flex flex-col items-center gap-0.5 py-1.5 px-3 min-w-[56px] rounded-xl transition-all relative"
           style={{ color: isActive('/admin-dashboard') || isActive('/renter-dashboard') || isActive('/profile') ? 'var(--accent-text)' : 'var(--text-muted)' }}
           aria-label={user ? 'Dashboard' : 'Login'}

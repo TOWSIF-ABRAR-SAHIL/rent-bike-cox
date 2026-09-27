@@ -1,10 +1,11 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import { useRouter } from 'next/navigation';
 import { Trophy } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+
 
 const TopBikes = ({ data }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
@@ -20,7 +21,7 @@ const TopBikes = ({ data }) => {
               key={i}
               className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all"
               style={{ background: 'var(--input-bg)' }}
-              onClick={() => item.bike?._id && navigate(`/vehicle-history/${item.bike._id}`)}
+              onClick={() => item.bike?._id && router.push(`/vehicle-history/${item.bike._id}`)}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--input-bg)'; }}
             >

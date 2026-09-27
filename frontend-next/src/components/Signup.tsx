@@ -1,8 +1,10 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import api from '../api/axios';
-import { useNavigate, Link } from 'react-router-dom';
+
 import { useAuth } from '../context/useAuth';
 import { UserPlus, User, Mail, Lock, Phone, CreditCard, MapPin } from 'lucide-react';
 
@@ -15,7 +17,7 @@ const Signup = () => {
   const [licenseFile, setLicenseFile] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
   const { login } = useAuth();
 
   const handleNidFile = (e) => {
@@ -55,7 +57,7 @@ const Signup = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       login(response.data.accessToken, response.data.refreshToken, response.data.user);
-      navigate('/');
+      router.push('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Signup failed');
     } finally {
@@ -151,7 +153,7 @@ const Signup = () => {
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Sign in</Link>
+            <Link href="/login" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Sign in</Link>
           </p>
         </div>
       </div>

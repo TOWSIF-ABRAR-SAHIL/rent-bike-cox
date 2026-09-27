@@ -1,8 +1,10 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import api from '../api/axios';
-import { useNavigate, Link } from 'react-router-dom';
+
 import { useAuth } from '../context/useAuth';
 import { Mail, Lock, LogIn } from 'lucide-react';
 
@@ -10,7 +12,7 @@ const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
   const { login } = useAuth();
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,7 +24,7 @@ const Login = () => {
     try {
       const response = await api.post('/auth/login', formData);
       login(response.data.accessToken, response.data.refreshToken, response.data.user);
-      navigate('/');
+      router.push('/');
     } catch (err) {
       if (err.response?.status === 423) {
         const retryAfter = err.response.data?.retryAfter || 900;
@@ -68,7 +70,7 @@ const Login = () => {
               <input type="password" name="password" placeholder="Password" onChange={handleChange} className="input-dark !pl-11" required />
             </div>
             <div className="text-right">
-              <Link to="/forgot-password" className="text-xs" style={{ color: 'var(--accent-text)' }}>Forgot Password?</Link>
+              <Link href="/forgot-password" className="text-xs" style={{ color: 'var(--accent-text)' }}>Forgot Password?</Link>
             </div>
             <button type="submit" disabled={loading} className="btn-primary w-full">
               {loading ? 'Signing in...' : 'Sign In'}
@@ -77,7 +79,7 @@ const Login = () => {
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
             Don't have an account?{' '}
-            <Link to="/signup" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Create one</Link>
+            <Link href="/signup" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Create one</Link>
           </p>
         </div>
       </div>

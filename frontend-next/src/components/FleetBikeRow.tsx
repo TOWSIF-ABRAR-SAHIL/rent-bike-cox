@@ -1,11 +1,12 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useState, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+
 import { Wrench, Clock, History } from 'lucide-react';
 import PageSpinner from './PageSpinner';
 
-const VehicleHistory = lazy(() => import('../pages/VehicleHistory'));
+import VehicleHistory from '../views/VehicleHistory';
 
 const conditionColors = {
   excellent: { text: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
@@ -15,7 +16,7 @@ const conditionColors = {
 };
 
 const FleetBikeRow = ({ bike, selected, onToggle }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
   const colors = conditionColors[bike.condition] || conditionColors.good;
 
@@ -55,7 +56,7 @@ const FleetBikeRow = ({ bike, selected, onToggle }) => {
       )}
       <div
         className="flex items-center gap-4 flex-1 min-w-0"
-        onClick={() => navigate(`/bike/${bike._id}`)}
+        onClick={() => router.push(`/bike/${bike._id}`)}
       >
         <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'var(--border-base)' }}>
           {bike.images?.[0] ? (

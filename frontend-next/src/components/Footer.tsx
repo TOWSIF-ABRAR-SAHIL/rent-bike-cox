@@ -1,6 +1,7 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
+
 import { Bike, Phone, MapPin } from 'lucide-react';
 import { memo } from 'react';
 import useSiteContent from '../hooks/useSiteContent';
@@ -36,7 +37,7 @@ const Footer = () => {
               { to: '/policies', label: 'Policies' },
             ].map(link => (
               <li key={link.label}>
-                <Link to={link.to} className="text-sm transition-colors py-1.5" style={{ color: 'var(--footer-text)' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-text)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--footer-text)'}>{link.label}</Link>
+                <Link href={link.to} className="text-sm transition-colors py-1.5" style={{ color: 'var(--footer-text)' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-text)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--footer-text)'}>{link.label}</Link>
               </li>
             ))}
           </ul>

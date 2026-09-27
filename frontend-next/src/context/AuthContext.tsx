@@ -59,11 +59,13 @@ function getInitialUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(getInitialUser);
-  const [token, setToken] = useState<string | null>(() =>
-    typeof window === 'undefined' ? null : localStorage.getItem('accessToken')
-  );
-  const [loading] = useState(false);
+  // NOTE: intentionally NOT initialized from localStorage. The server
+  // prerender has no access to it, so initializing here would produce a
+  // different first render on the client -> React hydration mismatch.
+  // The session is restored in the mount effect below instead.
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const refreshTimeout = useRef<number | null>(null);
 
   const scheduleRefresh = useCallback((accessToken: string) => {
@@ -99,7 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem('accessToken');
-    if (stored) scheduleRefresh(stored);
+    if (stored) {
+      setToken(stored);
+      setUser(getInitialUser());
+      scheduleRefresh(stored);
+    }
+    setLoading(false);
     return () => {
       if (refreshTimeout.current) window.clearTimeout(refreshTimeout.current);
     };

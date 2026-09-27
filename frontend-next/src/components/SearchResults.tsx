@@ -1,7 +1,8 @@
 // @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import Link from 'next/link';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+
 import { LayoutGrid, List } from 'lucide-react';
 
 const conditionColors = {
@@ -29,7 +30,7 @@ const SearchResults = ({ bikes }) => {
         </div>
         <div className="space-y-3">
           {bikes.map(bike => (
-            <Link key={bike._id} to={`/bike/${bike._id}`} className="flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.01]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} aria-label={`View ${bike.brand} ${bike.model} details`}>
+            <Link key={bike._id} href={`/bike/${bike._id}`} className="flex items-center gap-4 p-4 rounded-xl transition-all hover:scale-[1.01]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} aria-label={`View ${bike.brand} ${bike.model} details`}>
               <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0" style={{ background: 'var(--border-base)' }}>
                 {bike.images?.[0] ? (
                   <img src={bike.images[0]} alt={bike.model} className="w-full h-full object-cover" />
@@ -71,7 +72,7 @@ const SearchResults = ({ bikes }) => {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {bikes.map(bike => (
-          <Link key={bike._id} to={`/bike/${bike._id}`} className="group rounded-xl overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} aria-label={`View ${bike.brand} ${bike.model} details`}>
+          <Link key={bike._id} href={`/bike/${bike._id}`} className="group rounded-xl overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }} aria-label={`View ${bike.brand} ${bike.model} details`}>
             <div className="aspect-video relative overflow-hidden" style={{ background: 'var(--border-base)' }}>
               {bike.images?.[0] ? (
                 <img src={bike.images[0]} alt={bike.model} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />

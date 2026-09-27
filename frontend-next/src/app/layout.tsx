@@ -1,6 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import BottomNav from "@/components/BottomNav";
+import WhatsAppButton from "@/components/WhatsAppButton";
+import CompareBar from "@/components/CompareBar";
+import ScrollToTop from "@/components/ScrollToTop";
+import PageSpinner from "@/components/PageSpinner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,7 +59,19 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-[#0a0a0f] antialiased`}>
-        {children}
+        <Providers>
+          <ScrollToTop />
+          <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
+            <Navbar />
+            <main className="pt-[72px]">
+              <Suspense fallback={<PageSpinner />}>{children}</Suspense>
+            </main>
+            <Footer />
+            <BottomNav />
+            <WhatsAppButton />
+            <CompareBar />
+          </div>
+        </Providers>
       </body>
     </html>
   );
