@@ -38,7 +38,7 @@ jobs:
         run: cd frontend && npm run build
 
   frontend-next:
-    name: Frontend Next (lint, typecheck, build)
+    name: Frontend Next (lint, typecheck, test, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +53,8 @@ jobs:
         run: cd frontend-next && npm run lint
       - name: Typecheck
         run: cd frontend-next && npm run typecheck
+      - name: Test
+        run: cd frontend-next && npm test
       - name: Build
         run: cd frontend-next && npm run build
 

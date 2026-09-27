@@ -11,12 +11,12 @@ export default function ProtectedRoute({ children, roles }: { children: ReactNod
 
   useEffect(() => {
     if (loading) return;
-    if (!token) router.replace('/login');
+    if (!token || (token && !user)) router.replace('/login');
     else if (roles && user && !roles.includes(user.role)) router.replace('/');
   }, [loading, token, user, roles, router]);
 
   if (loading) return <PageSpinner />;
-  if (!token) return <PageSpinner />;
+  if (!token || (token && !user)) return <PageSpinner />;
   if (roles && user && !roles.includes(user.role)) return <PageSpinner />;
 
   return children;
