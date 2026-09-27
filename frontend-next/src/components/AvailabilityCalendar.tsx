@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
-import type { Bike, DateRange, TimeSlot } from '@/types';
+import type { DateRange, TimeSlot } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

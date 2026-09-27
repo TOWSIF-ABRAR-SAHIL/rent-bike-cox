@@ -43,6 +43,7 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         if (window.location.pathname !== '/login') {
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- hard nav required: auth state is being wiped, no router in module scope
           window.location.href = '/login';
         }
       } else if (original && !original._retry) {
@@ -60,6 +61,7 @@ api.interceptors.response.use(
         } catch {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- hard nav required: session expired, must reset app state
           window.location.href = '/login';
         }
       }

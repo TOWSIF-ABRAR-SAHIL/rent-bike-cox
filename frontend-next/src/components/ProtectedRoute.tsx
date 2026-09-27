@@ -9,8 +9,6 @@ export default function ProtectedRoute({ children, roles }: { children: ReactNod
   const { user, token, loading } = useAuth();
   const router = useRouter();
 
-  const denied = !loading && (!token || (roles && user && !roles.includes(user.role)));
-
   useEffect(() => {
     if (loading) return;
     if (!token) router.replace('/login');

@@ -2,7 +2,6 @@
 import { Calendar, DollarSign, Wrench, Clock, CheckCircle, TrendingUp } from 'lucide-react';
 
 import type { HistoryStatsData } from '@/types';
-import type { LucideIcon } from 'lucide-react';
 
 const HistoryStats = ({ stats }: { stats: HistoryStatsData }) => {
   const cards = [

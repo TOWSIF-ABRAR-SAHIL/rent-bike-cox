@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-import type { Bike, ConditionMap, FleetFilters, FleetSummaryData, UtilizationData } from '@/types';
+import type { Bike, FleetFilters, FleetSummaryData, UtilizationData } from '@/types';
 import FleetSummary from '../components/FleetSummary';
 import FleetHealthChart from '../components/FleetHealthChart';
 import FleetUtilizationChart from '../components/FleetUtilizationChart';

@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import type { Bike, FleetStats } from '@/types';
-import type { LucideIcon } from 'lucide-react';
 import { Bike as BikeIcon, Wrench, AlertTriangle, CheckCircle } from 'lucide-react';
 
 const FleetOverview = ({ bikes = [] }: { bikes?: Bike[] }) => {

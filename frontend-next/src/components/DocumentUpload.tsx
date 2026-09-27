@@ -10,8 +10,7 @@ const TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-import type { ChangeEvent, DragEvent, FormEvent } from 'react';
-import type { DocumentFormState } from '@/types';
+import type { DragEvent, FormEvent } from 'react';
 
 export default function DocumentUpload({ bikeId, onUploaded }: { bikeId: string; onUploaded?: () => void }) {
   const [form, setForm] = useState({

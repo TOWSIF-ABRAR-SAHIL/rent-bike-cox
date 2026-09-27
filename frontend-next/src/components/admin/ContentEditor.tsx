@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import api, { type ApiError } from '../../api/axios';
 import type { ContentItem } from '@/types';
-import type { ChangeEvent, FormEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import { useToast } from '../useToast';
 import { FileText, Save, RotateCcw, Download, Upload, ChevronDown, ChevronRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 

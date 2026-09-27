@@ -132,6 +132,7 @@ const MyBookings = () => {
       await api.delete('/auth/delete-account');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- hard nav required: account deleted, must reset app state
       window.location.href = '/login';
     } catch (err) {
       const data = (err as ApiError).response?.data as { message?: string } | undefined;

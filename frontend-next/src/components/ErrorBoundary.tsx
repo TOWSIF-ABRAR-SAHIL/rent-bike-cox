@@ -33,6 +33,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   };
 
   handleGoHome = (): void => {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional full reload out of the broken render tree
     window.location.href = '/';
   };
 

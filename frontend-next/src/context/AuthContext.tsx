@@ -99,6 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional one-time session
+     restore on mount (SSR has no localStorage, so init must happen client-side) */
   useEffect(() => {
     const stored = localStorage.getItem('accessToken');
     if (stored) {
@@ -106,12 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(getInitialUser());
       scheduleRefresh(stored);
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional session restore on mount
     setLoading(false);
     return () => {
       if (refreshTimeout.current) window.clearTimeout(refreshTimeout.current);
     };
   }, [scheduleRefresh]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const logout = useCallback(async () => {
     try {

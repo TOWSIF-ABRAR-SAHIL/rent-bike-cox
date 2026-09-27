@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api, { type ApiError } from '../../api/axios';
 import type { Branding } from '@/types';
-import type { ChangeEvent } from 'react';
 import { useToast } from '../useToast';
 import { Palette, Save, Download, Upload } from 'lucide-react';
 

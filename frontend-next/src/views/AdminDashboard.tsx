@@ -34,7 +34,7 @@ const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
 
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import type { Bike as BikeType, BikeCategory, BikePackage, Coupon, FinancialData, StoredUser, AdminFinance, AdminSettings } from '@/types';
+import type { Bike as BikeType, BikeCategory, BikePackage, Coupon, StoredUser, AdminFinance, AdminSettings } from '@/types';
 
 const TabButton = ({ active, onClick, icon: Icon, children }: { active: boolean; onClick: () => void; icon: LucideIcon; children: ReactNode }) => (
   <button onClick={onClick}

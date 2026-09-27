@@ -15,7 +15,6 @@ const QUICK_ACTIONS = [
 ];
 
 import type { HealthData } from '@/types';
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export interface PlatformStats { bikes?: number; users?: number; coupons?: number; categories?: number; }

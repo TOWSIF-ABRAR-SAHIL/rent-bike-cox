@@ -115,7 +115,7 @@ const CustomSelect = ({
       )}
       <button
         type="button"
-          onClick={() => { if (!disabled) { open ? close() : openDropdown(); } }}
+          onClick={() => { if (disabled) return; if (open) close(); else openDropdown(); }}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         aria-expanded={open}

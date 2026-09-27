@@ -11,7 +11,7 @@ const formatRevenueLabel = (date?: string): string => {
   return d.toLocaleDateString('en-BD', { day: 'numeric', month: 'short' });
 };
 
-import type { RenterEarningsData, RenterTransaction, RevenuePoint, VehicleEarning } from '@/types';
+import type { RenterEarningsData, RenterTransaction, VehicleEarning } from '@/types';
 
 const PAYOUT_STYLES: Record<string, { bg: string; text: string }> = {
   Paid: { bg: 'var(--success-bg)', text: 'var(--success-text)' },

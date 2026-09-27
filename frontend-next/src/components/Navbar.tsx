@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect, useRef, type MouseEvent as ReactMouseEvent, type TouchEvent as ReactTouchEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { Bike, Menu, X, LogOut, LayoutDashboard, ShieldCheck, Phone, ChevronDown, User, Sun, Moon, Monitor, Clock, BarChart3, PieChart, Calendar, FileText, Bell, KeyRound, DollarSign, Heart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
