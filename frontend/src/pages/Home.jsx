@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows, Calendar, Navigation } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, ChevronRight, RefreshCw, Star, Heart, GitCompareArrows, Calendar, Navigation, BadgeCheck, Gauge, ChevronDown, PlusCircle, Phone } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
@@ -25,6 +25,15 @@ const steps = [
   { num: '03', title: 'Ride', desc: "Pick up and explore Cox's Bazar", icon: Bike },
 ];
 
+const hotspots = [
+  { name: 'Laboni Beach', icon: MapPin },
+  { name: 'Marine Drive', icon: MapPin },
+  { name: 'Inani Beach', icon: MapPin },
+  { name: 'Himchari', icon: MapPin },
+  { name: 'Kolatoli', icon: MapPin },
+  { name: 'Sea Beach', icon: MapPin },
+];
+
 const Home = () => {
   const { get } = useSiteContent();
   const [bikes, setBikes] = useState([]);
@@ -37,6 +46,9 @@ const Home = () => {
   const [slowNetwork, setSlowNetwork] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
   const [bikeRatings, setBikeRatings] = useState({});
+  const [faqs, setFaqs] = useState([]);
+  const [openFaq, setOpenFaq] = useState(0);
+  const [heroLocation, setHeroLocation] = useState('');
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
@@ -57,6 +69,17 @@ const Home = () => {
 
   useEffect(() => {
     api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
+  }, []);
+
+  useEffect(() => {
+    api.get('/faqs')
+      .then(res => {
+        if (res.data && res.data.faqs) {
+          const all = Object.values(res.data.faqs).flat();
+          setFaqs(all.slice(0, 6));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const fetchBikes = useCallback(async () => {
@@ -102,6 +125,10 @@ const Home = () => {
     setActiveCategory(prev => prev === slug ? '' : slug);
   };
 
+  const handleHeroSearch = () => {
+    document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const categoryCounts = useMemo(() =>
     categories.map(cat => ({
       ...cat,
@@ -109,6 +136,17 @@ const Home = () => {
     })),
     [categories, bikes]
   );
+
+  const brands = useMemo(() => {
+    const counts = {};
+    bikes.forEach(b => {
+      if (b.brand) counts[b.brand] = (counts[b.brand] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, count]) => ({ name, count }));
+  }, [bikes]);
 
   const orgSchema = {
     "@context": "https://schema.org",
@@ -233,8 +271,72 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Hero Search Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 relative z-20">
+        <div className="glass-dark rounded-2xl p-4 sm:p-5 shadow-2xl" style={{ border: '1px solid var(--glass-border-strong)' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label htmlFor="hero-location" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Pickup Location</label>
+                <div className="relative">
+                  <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                  <input
+                    id="hero-location"
+                    type="text"
+                    value={heroLocation}
+                    onChange={(e) => setHeroLocation(e.target.value)}
+                    placeholder="Cox's Bazar, Bangladesh"
+                    aria-label="Pickup location"
+                    className="input-dark !pl-10"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="hero-category" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Vehicle Type</label>
+                <div className="relative">
+                  <Bike size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                  <select
+                    id="hero-category"
+                    value={activeCategory}
+                    onChange={(e) => handleCategoryClick(e.target.value)}
+                    aria-label="Vehicle type"
+                    className="input-dark !pl-10 appearance-none"
+                  >
+                    <option value="">Any Type</option>
+                    {categories.map(cat => (
+                      <option key={cat._id} value={cat.slug}>{cat.name}s</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="hero-model" className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>Model</label>
+                <div className="relative">
+                  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                  <input
+                    id="hero-model"
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search model or brand..."
+                    aria-label="Search model or brand"
+                    className="input-dark !pl-10"
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleHeroSearch(); }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <button onClick={handleHeroSearch} className="btn-primary w-full md:w-auto !px-8 !py-3.5 text-sm flex items-center justify-center gap-2">
+                <Search size={16} /> Search
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Bar */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 relative z-10">
         <div className="glass rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-sm" style={{ border: '1px solid var(--border-strong)' }}>
           <div className="flex items-center gap-2">
             <span className="text-3xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">{bikes.length}</span>
@@ -248,15 +350,25 @@ const Home = () => {
             </div>
           ))}
           <div className="w-px h-6 hidden sm:block" style={{ background: 'var(--divider)' }} />
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg gradient-primary text-white text-sm font-bold shadow-lg">
-            From 200 TK/hr
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-black" style={{ color: 'var(--stat-number)' }}>200+</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>TK/hr from</span>
           </div>
         </div>
       </section>
 
       {/* Category Cards */}
       {categories.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 relative z-10">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 relative z-10">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>Most Popular Categories</p>
+              <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--section-title)' }}>Pick Your Ride Type</h2>
+            </div>
+            <a href="#vehicles" className="hidden sm:flex items-center gap-1 text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
+              View all vehicles <ArrowRight size={14} />
+            </a>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {categoryCounts.map(cat => {
               const Icon = categoryIcons[cat.name] || Bike;
@@ -265,25 +377,25 @@ const Home = () => {
                 <button
                   key={cat._id}
                   onClick={() => { if (isZero) return; handleCategoryClick(cat.slug); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
-                  className={`rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 text-left ${
+                  className={`rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 text-left group ${
                     isZero ? 'opacity-50 cursor-default' : activeCategory === cat.slug
                       ? 'border-amber-500/50 bg-amber-500/10 shadow-lg shadow-amber-500/10'
                       : ''
-                  } ${!isZero ? 'glass' : ''}`}
+                  } ${!isZero ? 'glass card-hover' : ''}`}
                   style={!isZero && activeCategory !== cat.slug ? { background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' } : isZero ? { background: 'var(--input-bg)', border: '1px solid var(--border-base)' } : undefined}
                  aria-label={isZero ? `${cat.name} — coming soon` : "Filter by category"}>
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 ${!isZero ? 'group-hover:scale-110' : ''} ${
                     activeCategory === cat.slug ? 'gradient-primary' : ''
                   }`}
                     style={activeCategory !== cat.slug ? { background: isZero ? 'transparent' : 'var(--hover-bg)' } : undefined}
                   >
-                    <Icon size={22} className={activeCategory === cat.slug ? 'text-white' : ''} style={activeCategory !== cat.slug ? { color: isZero ? 'var(--text-muted)' : 'var(--text-muted)' } : undefined} />
+                    <Icon size={24} className={activeCategory === cat.slug ? 'text-white' : ''} style={activeCategory !== cat.slug ? { color: isZero ? 'var(--text-muted)' : 'var(--accent-text)' } : undefined} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm" style={{ color: isZero ? 'var(--text-muted)' : 'var(--card-title)' }}>{cat.name}s</h3>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{isZero ? 'Coming soon' : `${cat.count} available`}</p>
+                    <h3 className="font-bold text-base" style={{ color: isZero ? 'var(--text-muted)' : 'var(--card-title)' }}>{cat.name}s</h3>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{isZero ? 'Coming soon' : `${cat.count} available`}</p>
                   </div>
-                  {!isZero && <ChevronRight size={16} className={`ml-auto ${activeCategory === cat.slug ? 'text-amber-400' : ''}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />}
+                  {!isZero && <ChevronRight size={18} className={`ml-auto transition-transform duration-300 ${activeCategory === cat.slug ? 'text-amber-400' : 'group-hover:translate-x-1'}`} style={activeCategory !== cat.slug ? { color: 'var(--text-muted)' } : undefined} />}
                 </button>
               );
             })}
@@ -294,6 +406,14 @@ const Home = () => {
       {/* Vehicle Grid */}
       <div style={{ background: 'var(--bg-section-alt)' }}>
       <section id="vehicles" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>Featured &amp; Top Rated</p>
+            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--section-title)' }}>Explore Most Popular Vehicles</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--section-sub)' }}>Here's a list of some of the most popular vehicles, based on our riders' preferences</p>
+          </div>
+        </div>
+
         {/* Search */}
         <div className="relative mb-6 max-w-lg">
           <div className="glass rounded-2xl p-1">
@@ -376,6 +496,9 @@ const Home = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {bikes.map((bike, index) => {
               const rating = bikeRatings[bike._id];
+              const isTopRated = rating && (rating.avgRating || 0) >= 4.5 && (rating.total || 0) > 0;
+              const conditionLabel = bike.condition ? bike.condition.charAt(0).toUpperCase() + bike.condition.slice(1) : 'Good';
+              const packageStart = bike.packages?.[0]?.minHours;
               return (
               <Link
                 key={bike._id}
@@ -394,10 +517,17 @@ const Home = () => {
                     onError={(e) => { e.target.src = 'https://placehold.co/800x600/1a1a2e/666?text=No+Image'; }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1 rounded-lg text-xs font-medium" style={{ background: 'var(--badge-bg)', color: 'var(--pill-text)' }}>
-                      {bike.category?.name || 'Vehicle'}
-                    </span>
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                    {bike.isVerified && (
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-emerald-500/90 text-white shadow-lg">
+                        <BadgeCheck size={12} /> Verified
+                      </span>
+                    )}
+                    {isTopRated && (
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-medium inline-flex items-center gap-1 bg-amber-500/90 text-white shadow-lg">
+                        <Star size={12} fill="currentColor" /> Top Rated
+                      </span>
+                    )}
                   </div>
                   <div className="absolute top-3 right-3 flex gap-1.5">
                     <button
@@ -434,10 +564,32 @@ const Home = () => {
                       {rating ? `${(rating.avgRating || 0).toFixed(1)} (${rating.total || 0})` : 'No reviews'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-semibold transition-all mt-auto group-hover:border-amber-500/50 group-hover:text-amber-400"
-                    style={{ border: '1px solid var(--border-base)', color: 'var(--text-secondary)' }}
+                  {/* Spec chips */}
+                  <div className="grid grid-cols-3 gap-1.5 mb-4">
+                    <div className="rounded-lg px-2 py-1.5 text-center" style={{ background: 'var(--hover-bg)' }} title="Condition">
+                      <p className="text-[10px] font-medium leading-none mb-1 flex items-center justify-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                        <Gauge size={10} /> Condition
+                      </p>
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-secondary)' }}>{conditionLabel}</p>
+                    </div>
+                    <div className="rounded-lg px-2 py-1.5 text-center" style={{ background: 'var(--hover-bg)' }} title="Category">
+                      <p className="text-[10px] font-medium leading-none mb-1 flex items-center justify-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                        <Bike size={10} /> Type
+                      </p>
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-secondary)' }}>{bike.category?.name || '—'}</p>
+                    </div>
+                    <div className="rounded-lg px-2 py-1.5 text-center" style={{ background: 'var(--hover-bg)' }} title="Rental duration">
+                      <p className="text-[10px] font-medium leading-none mb-1 flex items-center justify-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                        <Clock size={10} /> From
+                      </p>
+                      <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-secondary)' }}>{packageStart ? `${packageStart}h+` : '1h+'}</p>
+                    </div>
+                  </div>
+                  {/* CTA */}
+                  <div className="flex items-center justify-center w-full py-2.5 min-h-11 rounded-xl text-sm font-bold uppercase tracking-wide transition-all mt-auto gradient-primary text-white shadow-lg shadow-amber-500/25"
+                    style={{ backgroundColor: 'transparent' }}
                   >
-                    View Details
+                    Rent Now
                     <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
@@ -456,10 +608,62 @@ const Home = () => {
 
       </div>
 
+      {/* Popular Brands */}
+      {brands.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="text-center mb-8">
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>Popular Brands</p>
+            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--section-title)' }}>Bikes &amp; Cars from Trusted Brands</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {brands.map(brand => (
+              <button
+                key={brand.name}
+                onClick={() => { setSearch(brand.name); setActiveCategory(''); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
+                className="glass rounded-xl px-4 py-4 text-left transition-all duration-300 card-hover"
+                aria-label={`Filter by brand ${brand.name}`}
+              >
+                <p className="font-bold text-sm truncate" style={{ color: 'var(--card-title)' }}>{brand.name}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{brand.count} vehicle{brand.count !== 1 ? 's' : ''}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Explore Cox's Bazar */}
+      <div style={{ background: 'var(--bg-section-alt)' }}>
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>Popular Spots</p>
+            <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--section-title)' }}>Explore Cox's Bazar</h2>
+            <p className="text-sm mt-1" style={{ color: 'var(--section-sub)' }}>Ride to the world's longest unbroken sea beach — one of Cox's Bazar's most loved destinations</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {hotspots.map(spot => {
+            const Icon = spot.icon;
+            return (
+              <Link
+                key={spot.name}
+                to="/search"
+                className="glass rounded-xl px-4 py-4 text-center transition-all duration-300 card-hover block"
+              >
+                <Icon size={20} className="mx-auto mb-2" style={{ color: 'var(--accent-text)' }} />
+                <p className="font-semibold text-sm" style={{ color: 'var(--card-title)' }}>{spot.name}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+      </div>
+
       {/* Features */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Why Choose Us</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>Why Choose Us</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Why People Love to Rent With Us</h2>
           <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">The best vehicle rental experience in Cox's Bazar</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -479,7 +683,8 @@ const Home = () => {
       <div style={{ background: 'var(--bg-section-alt)' }}>
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
         <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>How It Works</h2>
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>How It Works</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>How It Works — Three Simple Steps</h2>
           <p style={{ color: 'var(--section-sub)' }}>Three simple steps to your ride</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto relative">
@@ -513,11 +718,71 @@ const Home = () => {
         <LiveFleetMap height="400px" showRecenter={true} />
       </section>
 
+      {/* FAQ */}
+      {faqs.length > 0 && (
+      <div style={{ background: 'var(--bg-section-alt)' }}>
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-10">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>FAQ</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>Frequently Asked Questions</h2>
+          <p style={{ color: 'var(--section-sub)' }}>Find answers to your questions from our riders</p>
+        </div>
+        <div className="space-y-3">
+          {faqs.map((faq, i) => (
+            <div key={faq._id} className="glass rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-base)' }}>
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? -1 : i)}
+                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
+                aria-expanded={openFaq === i}
+              >
+                <span className="font-semibold text-sm" style={{ color: 'var(--card-title)' }}>{faq.question}</span>
+                <ChevronDown size={18} className={`shrink-0 transition-transform duration-300 ${openFaq === i ? 'rotate-180' : ''}`} style={{ color: 'var(--accent-text)' }} />
+              </button>
+              {openFaq === i && (
+                <div className="px-5 pb-4">
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--section-sub)' }}>{faq.answer}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <Link to="/faq" className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: 'var(--accent-text)' }}>
+            View all FAQs <ArrowRight size={14} />
+          </Link>
+        </div>
+      </section>
+      </div>
+      )}
+
+      {/* CTA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="gradient-primary rounded-3xl px-6 sm:px-12 py-10 sm:py-12 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 0, transparent 50%), radial-gradient(circle at 80% 20%, white 0, transparent 50%)' }} />
+          <div className="relative flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-100 mb-2">Want to add your vehicle for rent?</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-white">Own a bike, car or jeep in Cox's Bazar?</h2>
+              <p className="text-white/90 mt-1 text-sm max-w-lg">List your vehicle and start earning with Rent Bike Cox's Bazar.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link to="/signup" className="bg-white text-amber-600 font-bold px-8 py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg hover:-translate-y-0.5 transition-all">
+                <PlusCircle size={16} /> Add Your Listing
+              </Link>
+              <Link to="/contact" className="border-2 border-white/60 text-white font-bold px-8 py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-white/10 transition-all">
+                <Phone size={16} /> 01891-154443
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16" style={{ borderTop: '1px solid var(--divider)' }}>
         <div className="text-center mb-12">
+          <p className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--accent-text)' }}>Testimonials</p>
           <h2 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: 'var(--section-title)' }}>What Riders Say</h2>
-          <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">Real experiences from our customers in Cox's Bazar</p>
+          <p style={{ color: 'var(--section-sub)' }} className="max-w-lg mx-auto">Discover what our customers think about us</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
           {[
