@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import api from '../../api/axios';
+import type { NotificationTemplate, TemplateChannel } from '@/types';
 import { useToast } from '../useToast';
 import { FileText, Save, Eye, EyeOff, ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -12,7 +12,7 @@ const CHANNEL_CONFIG = [
   { key: 'push', label: 'Push', fields: ['title', 'body'] },
 ];
 
-const CATEGORY_COLORS = {
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   auth: { bg: 'var(--purple-bg)', text: 'var(--purple-text)' },
   booking: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
   payment: { bg: 'var(--success-bg)', text: 'var(--success-text)' },
@@ -24,24 +24,24 @@ const CATEGORY_COLORS = {
 
 const TemplateManager = () => {
   const { addToast } = useToast();
-  const [templates, setTemplates] = useState([]);
+  const [templates, setTemplates] = useState<NotificationTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  const [editChannels, setEditChannels] = useState({});
+  const [selected, setSelected] = useState<NotificationTemplate | null>(null);
+  const [editChannels, setEditChannels] = useState<Record<string, TemplateChannel>>({});
   const [editName, setEditName] = useState('');
   const [editIsActive, setEditIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewChannel, setPreviewChannel] = useState(null);
+  const [previewChannel, setPreviewChannel] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState('');
-  const [expandedCats, setExpandedCats] = useState({});
+  const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/admin/notification-templates');
       setTemplates(res.data);
-      const cats = {};
-      res.data.forEach(t => { cats[t.category] = true; });
+      const cats: Record<string, boolean> = {};
+      res.data.forEach((t: NotificationTemplate) => { cats[t.category ?? ''] = true; });
       setExpandedCats(cats);
     } catch {
       addToast('Failed to load templates', 'error');
@@ -53,7 +53,7 @@ const TemplateManager = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
-  const selectTemplate = (t) => {
+  const selectTemplate = (t: NotificationTemplate): void => {
     setSelected(t);
     setEditName(t.name || '');
     setEditIsActive(t.isActive !== false);
@@ -61,7 +61,7 @@ const TemplateManager = () => {
     setPreviewChannel(null);
   };
 
-  const handleChannelChange = (channel, field, value) => {
+  const handleChannelChange = (channel: string, field: string, value: string | boolean): void => {
     setEditChannels(prev => ({
       ...prev,
       [channel]: { ...(prev[channel] || {}), [field]: value }
@@ -86,7 +86,7 @@ const TemplateManager = () => {
     }
   };
 
-  const categorized = {};
+  const categorized: Record<string, NotificationTemplate[]> = {};
   templates.forEach(t => {
     const cat = t.category || 'uncategorized';
     if (!categorized[cat]) categorized[cat] = [];
@@ -147,7 +147,7 @@ const TemplateManager = () => {
                     <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{editName || selected.key}</h4>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{selected.key}</p>
                   </div>
-                  <span className="px-2 py-1 rounded text-[10px] font-medium" style={CATEGORY_COLORS[selected.category] || { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' }}>
+                  <span className="px-2 py-1 rounded text-[10px] font-medium" style={(CATEGORY_COLORS[selected.category ?? ''] || { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' }) as CSSProperties}>
                     {selected.category}
                   </span>
                 </div>
@@ -163,11 +163,11 @@ const TemplateManager = () => {
                 </div>
               </div>
 
-              {selected.variables?.length > 0 && (
+              {((selected.variables ?? []).length > 0) && (
                 <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
                   <h5 className="text-xs font-medium uppercase tracking-wide mb-3" style={{ color: 'var(--text-secondary)' }}>Available Variables</h5>
                   <div className="flex flex-wrap gap-2">
-                    {selected.variables.map((v, i) => (
+                    {(selected.variables ?? []).map((v, i) => (
                       <div key={i} className="px-3 py-2 rounded-xl border text-xs" style={{ borderColor: 'var(--border-base)' }}>
                         <code className="font-bold" style={{ color: 'var(--accent-text)' }}>{`{{${v.name}}}`}</code>
                         {v.description && <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>{v.description}</p>}
@@ -196,10 +196,10 @@ const TemplateManager = () => {
                     <div key={field} className="mb-3">
                       <label className="text-xs font-medium uppercase tracking-wide mb-1 block" style={{ color: 'var(--text-secondary)' }}>{field}</label>
                       {field === 'body' || field === 'message' ? (
-                        <textarea value={editChannels[ch.key]?.[field] || ''} onChange={e => handleChannelChange(ch.key, field, e.target.value)}
+                        <textarea value={String(editChannels[ch.key]?.[field] ?? '')} onChange={e => handleChannelChange(ch.key, field, e.target.value)}
                           className="input-dark text-sm w-full font-mono" rows={4} aria-label={`${ch.label} ${field}`} />
                       ) : (
-                        <input type="text" value={editChannels[ch.key]?.[field] || ''} onChange={e => handleChannelChange(ch.key, field, e.target.value)}
+                        <input type="text" value={String(editChannels[ch.key]?.[field] ?? '')} onChange={e => handleChannelChange(ch.key, field, e.target.value)}
                           className="input-dark text-sm w-full" aria-label={`${ch.label} ${field}`} />
                       )}
                     </div>

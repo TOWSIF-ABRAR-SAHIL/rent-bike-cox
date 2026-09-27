@@ -1,16 +1,18 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState } from 'react';
 import { Star } from 'lucide-react';
 
-const ReviewForm = ({ onSubmit, loading }) => {
+import type { FormEvent } from 'react';
+import type { ApiError } from '../api/axios';
+
+const ReviewForm = ({ onSubmit, loading }: { onSubmit: (data: { rating: number; title: string; comment: string }) => Promise<void> | void; loading?: boolean }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     if (rating === 0) {
       setError('Please select a rating');
@@ -23,7 +25,8 @@ const ReviewForm = ({ onSubmit, loading }) => {
       setTitle('');
       setComment('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit review');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setError(data?.message || 'Failed to submit review');
     }
   };
 

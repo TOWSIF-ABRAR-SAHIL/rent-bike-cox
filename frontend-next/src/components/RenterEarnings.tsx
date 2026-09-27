@@ -1,18 +1,19 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import api from '../api/axios';
 import { DollarSign, Bike, RefreshCw, TrendingUp, Wallet } from 'lucide-react';
 
-const formatRevenueLabel = (date) => {
+const formatRevenueLabel = (date?: string): string => {
   if (!date) return '';
   if (date.length === 7) return date;
   const d = new Date(date + 'T00:00:00');
   return d.toLocaleDateString('en-BD', { day: 'numeric', month: 'short' });
 };
 
-const PAYOUT_STYLES = {
+import type { RenterEarningsData, RenterTransaction, RevenuePoint, VehicleEarning } from '@/types';
+
+const PAYOUT_STYLES: Record<string, { bg: string; text: string }> = {
   Paid: { bg: 'var(--success-bg)', text: 'var(--success-text)' },
   Partial: { bg: 'var(--warning-bg)', text: 'var(--warning-text)' },
   Unpaid: { bg: 'var(--info-bg, rgba(59,130,246,0.1))', text: 'var(--info-text, #3b82f6)' },
@@ -20,7 +21,7 @@ const PAYOUT_STYLES = {
 };
 
 const RenterEarnings = () => {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<RenterEarningsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30');
 
@@ -104,7 +105,7 @@ const RenterEarnings = () => {
         <h4 className="font-semibold text-sm mb-1 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
           <BarChart3 /> Revenue Over Time
         </h4>
-        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Earnings broken down by {period > 90 ? 'month' : 'day'}</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Earnings broken down by {Number(period) > 90 ? 'month' : 'day'}</p>
         <div style={{ width: '100%', height: 280 }}>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -119,7 +120,7 @@ const RenterEarnings = () => {
                 <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={60} tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
                 <Tooltip
                   formatter={(value) => [`${Number(value).toLocaleString()} TK`, 'Revenue']}
-                  labelFormatter={formatRevenueLabel}
+                  labelFormatter={(label) => formatRevenueLabel(String(label ?? ''))}
                   contentStyle={{ background: 'var(--card-bg)', border: '1px solid var(--border-base)', borderRadius: 12, color: 'var(--text-primary)' }}
                 />
                 <Bar dataKey="revenue" fill="#f97316" radius={[4, 4, 0, 0]} maxBarSize={32} />
@@ -154,18 +155,18 @@ const RenterEarnings = () => {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((t, i) => (
+                {transactions.map((t: RenterTransaction, i: number) => (
                   <tr key={t.bookingId || i} style={{ borderBottom: '1px solid var(--border-base)' }}>
                     <td className="py-3 px-2 font-mono text-xs" style={{ color: 'var(--text-muted)' }}>#{typeof t.bookingId === 'string' ? t.bookingId.slice(-8) : t.bookingId}</td>
                     <td className="py-3 px-2 font-medium" style={{ color: 'var(--text-primary)' }}>{t.vehicle}</td>
                     <td className="py-3 px-2" style={{ color: 'var(--text-secondary)' }}>{t.renterName}</td>
                     <td className="py-3 px-2" style={{ color: 'var(--text-secondary)' }}>{t.duration}h</td>
-                    <td className="py-3 px-2 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>{t.totalAmount.toLocaleString()} TK</td>
+                    <td className="py-3 px-2 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>{(t.totalAmount ?? 0).toLocaleString()} TK</td>
                     <td className="py-3 px-2">
                       <span className="px-2 py-1 rounded-lg text-xs font-medium"
                         style={{
-                          background: (PAYOUT_STYLES[t.payoutStatus] || PAYOUT_STYLES.Paid).bg,
-                          color: (PAYOUT_STYLES[t.payoutStatus] || PAYOUT_STYLES.Paid).text,
+                          background: (PAYOUT_STYLES[t.payoutStatus ?? ''] || PAYOUT_STYLES.Paid).bg,
+                          color: (PAYOUT_STYLES[t.payoutStatus ?? ''] || PAYOUT_STYLES.Paid).text,
                         }}>
                         {t.payoutStatus}
                       </span>
@@ -185,7 +186,7 @@ const RenterEarnings = () => {
             <Bike size={16} /> Earnings by Vehicle
           </h4>
           <div className="space-y-2">
-            {data.byVehicle.map(v => (
+            {data.byVehicle.map((v: VehicleEarning) => (
               <div key={v._id || v.model} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-tertiary)' }}>
                 <div>
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{v.model || v.brand || 'Vehicle'}</p>

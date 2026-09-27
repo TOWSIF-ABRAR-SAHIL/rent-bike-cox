@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
+import type { Bike, ConditionMap, FleetFilters, FleetSummaryData, UtilizationData } from '@/types';
 import FleetSummary from '../components/FleetSummary';
 import FleetHealthChart from '../components/FleetHealthChart';
 import FleetUtilizationChart from '../components/FleetUtilizationChart';
@@ -11,14 +11,14 @@ import BulkOperations from '../components/BulkOperations';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const FleetDashboard = () => {
-  const [summary, setSummary] = useState(null);
-  const [utilization, setUtilization] = useState(null);
-  const [bikes, setBikes] = useState([]);
+  const [summary, setSummary] = useState<FleetSummaryData | null>(null);
+  const [utilization, setUtilization] = useState<UtilizationData | null>(null);
+  const [bikes, setBikes] = useState<Bike[]>([]);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
-  const [filters, setFilters] = useState({ search: '', status: 'all', condition: 'all', sort: '-createdAt' });
+  const [filters, setFilters] = useState<FleetFilters>({ search: '', status: 'all', condition: 'all', sort: '-createdAt' });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedBikes, setSelectedBikes] = useState([]);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedBikes, setSelectedBikes] = useState<string[]>([]);
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -70,15 +70,15 @@ const FleetDashboard = () => {
     fetchBikes(1);
   }, [fetchBikes]);
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (key: string, value: string): void => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handlePageChange = (page) => {
+  const handlePageChange = (page: number): void => {
     fetchBikes(page);
   };
 
-  const handleToggleSelect = (bikeId) => {
+  const handleToggleSelect = (bikeId: string): void => {
     setSelectedBikes(prev =>
       prev.includes(bikeId) ? prev.filter(id => id !== bikeId) : [...prev, bikeId]
     );
@@ -88,7 +88,7 @@ const FleetDashboard = () => {
     if (selectedBikes.length === bikes.length) {
       setSelectedBikes([]);
     } else {
-      setSelectedBikes(bikes.map(b => b._id));
+      setSelectedBikes(bikes.map((b: Bike) => b._id));
     }
   };
 
@@ -150,7 +150,7 @@ const FleetDashboard = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           {summary ? (
-            <FleetHealthChart conditionMap={summary.conditionMap} />
+            <FleetHealthChart conditionMap={summary?.conditionMap ?? {}} />
           ) : (
             <LoadingSkeleton rows={1} />
           )}

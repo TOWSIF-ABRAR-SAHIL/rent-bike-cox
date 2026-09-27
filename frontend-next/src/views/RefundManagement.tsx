@@ -1,13 +1,13 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { RefundItem } from '@/types';
 import { DollarSign, CheckCircle, XCircle, Clock, Filter, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonTable } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string }> = {
   REQUESTED: { bg: 'var(--warning-bg)', text: 'var(--warning-text)', border: 'var(--warning-border)' },
   APPROVED: { bg: 'var(--info-bg)', text: 'var(--info-text)', border: 'var(--info-border)' },
   PROCESSING: { bg: 'var(--purple-bg)', text: 'var(--purple-text)', border: 'var(--purple-border)' },
@@ -17,23 +17,23 @@ const STATUS_CONFIG = {
 
 const STATUS_LABELS = ['REQUESTED', 'APPROVED', 'PROCESSING', 'COMPLETED', 'REJECTED'];
 
-const formatTK = (paisa) => {
-  const tk = (paisa / 100).toFixed(2);
+const formatTK = (paisa?: number): string => {
+  const tk = ((paisa ?? 0) / 100).toFixed(2);
   return tk.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
 
-const formatDate = (d) => new Date(d).toLocaleDateString('en-BD', { year: 'numeric', month: 'short', day: 'numeric' });
+const formatDate = (d?: string) => new Date(d ?? '').toLocaleDateString('en-BD', { year: 'numeric', month: 'short', day: 'numeric' });
 
 const RefundManagement = () => {
   const { addToast } = useToast();
-  const [refunds, setRefunds] = useState([]);
+  const [refunds, setRefunds] = useState<RefundItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
-  const [rejectModal, setRejectModal] = useState(null);
+  const [rejectModal, setRejectModal] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState('');
 
@@ -41,7 +41,7 @@ const RefundManagement = () => {
     setLoading(true);
     setFetchError('');
     try {
-      const params = { page: p, limit };
+      const params: Record<string, string | number> = { page: p, limit };
       if (s) params.status = s;
       const { data } = await api.get('/payment/refunds', { params });
       setRefunds(data.refunds || []);
@@ -57,20 +57,21 @@ const RefundManagement = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchRefunds(1, statusFilter); }, [statusFilter, fetchRefunds]);
 
-  const handleFilterChange = useCallback((s) => {
+  const handleFilterChange = useCallback((s: string): void => {
     const val = s === 'ALL' ? '' : s;
     setStatusFilter(val);
     setPage(1);
   }, []);
 
-  const handleApprove = useCallback(async (refundId) => {
+  const handleApprove = useCallback(async (refundId: string): Promise<void> => {
     setActionLoading(refundId);
     try {
       await api.post(`/payment/refunds/${refundId}/approve`);
       addToast('Refund approved', 'success');
       fetchRefunds();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to approve', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to approve', 'error');
     } finally {
       setActionLoading('');
     }
@@ -86,20 +87,22 @@ const RefundManagement = () => {
       setRejectReason('');
       fetchRefunds();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to reject', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to reject', 'error');
     } finally {
       setActionLoading('');
     }
   }, [rejectModal, rejectReason, addToast, fetchRefunds]);
 
-  const handleProcess = useCallback(async (refundId) => {
+  const handleProcess = useCallback(async (refundId: string): Promise<void> => {
     setActionLoading(refundId);
     try {
       await api.post(`/payment/refunds/${refundId}/process`);
       addToast('Refund processing started', 'success');
       fetchRefunds();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to process', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to process', 'error');
     } finally {
       setActionLoading('');
     }
@@ -110,7 +113,7 @@ const RefundManagement = () => {
   const stats = useMemo(() => {
     let totalAmount = 0, pending = 0, approved = 0;
     refunds.forEach(r => {
-      totalAmount += r.amountPaisa;
+      totalAmount += r.amountPaisa ?? 0;
       if (r.status === 'REQUESTED') pending++;
       if (r.status === 'APPROVED') approved++;
     });
@@ -208,28 +211,28 @@ const RefundManagement = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <span className="font-mono font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{r.refundId}</span>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{r.userId?.name} · {r.userId?.email}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{(typeof r.userId === 'string' ? undefined : r.userId?.name)} · {(typeof r.userId === 'string' ? undefined : r.userId?.email)}</p>
                   </div>
                   <span className="px-2.5 py-1 rounded-lg text-xs font-medium border" style={{
-                    background: STATUS_CONFIG[r.status]?.bg,
-                    color: STATUS_CONFIG[r.status]?.text,
-                    borderColor: STATUS_CONFIG[r.status]?.border,
+                    background: STATUS_CONFIG[r.status ?? '']?.bg,
+                    color: STATUS_CONFIG[r.status ?? '']?.text,
+                    borderColor: STATUS_CONFIG[r.status ?? '']?.border,
                   }}>{r.status}</span>
                 </div>
                 <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  <span>{r.bookingId?.invoiceNumber || 'N/A'}</span>
+                  <span>{(typeof r.bookingId === 'string' ? undefined : r.bookingId?.invoiceNumber) || 'N/A'}</span>
                   <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{formatTK(r.amountPaisa)} TK</span>
                 </div>
                 <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatDate(r.createdAt)}</div>
                 {r.status === 'REQUESTED' && (
                   <div className="flex gap-2 pt-1">
-                    <button onClick={() => handleApprove(r.refundId)} disabled={actionLoading === r.refundId}
+                    <button onClick={() => handleApprove(r.refundId ?? '')} disabled={actionLoading === r.refundId}
                       className="flex-1 px-3 py-2.5 min-h-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all disabled:opacity-50"
                       style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }}
                       aria-label={`Approve refund ${r.refundId}`}>
                       <CheckCircle size={14} className="mr-1" /> Approve
                     </button>
-                    <button onClick={() => { setRejectModal(r.refundId); setRejectReason(''); }}
+                    <button onClick={() => { setRejectModal(r.refundId ?? ''); setRejectReason(''); }}
                       disabled={actionLoading === r.refundId}
                       className="flex-1 px-3 py-2.5 min-h-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all disabled:opacity-50"
                       style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}
@@ -240,7 +243,7 @@ const RefundManagement = () => {
                 )}
                 {r.status === 'APPROVED' && (
                   <div className="pt-1">
-                    <button onClick={() => handleProcess(r.refundId)} disabled={actionLoading === r.refundId}
+                    <button onClick={() => handleProcess(r.refundId ?? '')} disabled={actionLoading === r.refundId}
                       className="w-full px-3 py-2.5 min-h-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all disabled:opacity-50"
                       style={{ background: 'var(--info-bg)', color: 'var(--info-text)', borderColor: 'var(--info-border)' }}
                       aria-label={`Process refund ${r.refundId}`}>
@@ -273,16 +276,16 @@ const RefundManagement = () => {
                     onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
                     <td className="p-4 font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{r.refundId}</td>
                     <td className="p-4">
-                      <div style={{ color: 'var(--text-primary)' }}>{r.userId?.name}</div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.userId?.email}</div>
+                      <div style={{ color: 'var(--text-primary)' }}>{typeof r.userId === 'string' ? r.userId : r.userId?.name}</div>
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{typeof r.userId === 'string' ? '' : r.userId?.email}</div>
                     </td>
-                    <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{r.bookingId?.invoiceNumber || 'N/A'}</td>
+                    <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{(typeof r.bookingId === 'string' ? undefined : r.bookingId?.invoiceNumber) || 'N/A'}</td>
                     <td className="p-4 font-bold" style={{ color: 'var(--text-primary)' }}>{formatTK(r.amountPaisa)} TK</td>
                     <td className="p-4">
                       <span className="px-2.5 py-1 rounded-lg text-xs font-medium border" style={{
-                        background: STATUS_CONFIG[r.status]?.bg,
-                        color: STATUS_CONFIG[r.status]?.text,
-                        borderColor: STATUS_CONFIG[r.status]?.border,
+                        background: STATUS_CONFIG[r.status ?? '']?.bg,
+                        color: STATUS_CONFIG[r.status ?? '']?.text,
+                        borderColor: STATUS_CONFIG[r.status ?? '']?.border,
                       }}>{r.status}</span>
                     </td>
                     <td className="p-4" style={{ color: 'var(--text-muted)' }}>{formatDate(r.createdAt)}</td>
@@ -290,13 +293,13 @@ const RefundManagement = () => {
                       <div className="flex gap-2">
                         {r.status === 'REQUESTED' && (
                           <>
-                            <button onClick={() => handleApprove(r.refundId)} disabled={actionLoading === r.refundId}
+                            <button onClick={() => handleApprove(r.refundId ?? '')} disabled={actionLoading === r.refundId}
                               className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all disabled:opacity-50"
                               style={{ background: 'var(--success-bg)', color: 'var(--success-text)', borderColor: 'var(--success-border)' }}
                               aria-label={`Approve refund ${r.refundId}`}>
                               <CheckCircle size={14} />
                             </button>
-                            <button onClick={() => { setRejectModal(r.refundId); setRejectReason(''); }}
+                            <button onClick={() => { setRejectModal(r.refundId ?? ''); setRejectReason(''); }}
                               disabled={actionLoading === r.refundId}
                               className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all disabled:opacity-50"
                               style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }}
@@ -306,14 +309,14 @@ const RefundManagement = () => {
                           </>
                         )}
                         {r.status === 'APPROVED' && (
-                          <button onClick={() => handleProcess(r.refundId)} disabled={actionLoading === r.refundId}
+                          <button onClick={() => handleProcess(r.refundId ?? '')} disabled={actionLoading === r.refundId}
                             className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all disabled:opacity-50"
                             style={{ background: 'var(--info-bg)', color: 'var(--info-text)', borderColor: 'var(--info-border)' }}
                             aria-label={`Process refund ${r.refundId}`}>
                             <RefreshCw size={14} />
                           </button>
                         )}
-                        {!['REQUESTED', 'APPROVED'].includes(r.status) && (
+                        {!['REQUESTED', 'APPROVED'].includes(r.status ?? '') && (
                           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
                         )}
                       </div>

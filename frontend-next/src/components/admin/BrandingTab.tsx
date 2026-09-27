@@ -1,13 +1,14 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import api from '../../api/axios';
+import api, { type ApiError } from '../../api/axios';
+import type { Branding } from '@/types';
+import type { ChangeEvent } from 'react';
 import { useToast } from '../useToast';
 import { Palette, Save, Download, Upload } from 'lucide-react';
 
 const BrandingTab = () => {
   const { addToast } = useToast();
-  const [branding, setBranding] = useState({
+  const [branding, setBranding] = useState<Branding>({
     businessName: '',
     businessTagline: '',
     businessAddress: '',
@@ -54,7 +55,8 @@ const BrandingTab = () => {
       await api.put('/dashboard/admin/branding', branding);
       addToast('Branding updated!', 'success');
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to save', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to save', 'error');
     } finally {
       setSaving(false);
     }
@@ -67,7 +69,7 @@ const BrandingTab = () => {
     }
   };
 
-  const removeNumber = (num) => {
+  const removeNumber = (num: string): void => {
     setBranding(prev => ({ ...prev, contactNumbers: prev.contactNumbers.filter(n => n !== num) }));
   };
 
@@ -88,13 +90,13 @@ const BrandingTab = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.onchange = (e) => {
-      const file = e.target.files?.[0];
+    input.onchange = (e: Event): void => {
+      const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = (ev: ProgressEvent<FileReader>): void => {
         try {
-          const data = JSON.parse(ev.target.result);
+          const data = JSON.parse(ev.target?.result as string);
           setBranding(prev => ({ ...prev, ...data }));
           addToast('Branding loaded from file', 'success');
         } catch { addToast('Invalid JSON file', 'error'); }
@@ -150,8 +152,8 @@ const BrandingTab = () => {
             <div key={field}>
               <label className="text-[10px] font-medium uppercase tracking-wide mb-1 block" style={{ color: 'var(--text-secondary)' }}>{label}</label>
               <div className="flex items-center gap-2">
-                <input type="color" value={branding[field] || '#000000'} onChange={e => setBranding({ ...branding, [field]: e.target.value })} className="w-10 h-10 rounded cursor-pointer border-0" />
-                <input type="text" value={branding[field]} onChange={e => setBranding({ ...branding, [field]: e.target.value })} className="input-dark text-sm flex-1" aria-label={`${label} hex`} />
+                <input type="color" value={String(branding[field as keyof Branding] ?? '#000000')} onChange={e => setBranding({ ...branding, [field]: e.target.value } as Branding)} className="w-10 h-10 rounded cursor-pointer border-0" />
+                <input type="text" value={String(branding[field as keyof Branding] ?? '')} onChange={e => setBranding({ ...branding, [field]: e.target.value } as Branding)} className="input-dark text-sm flex-1" aria-label={`${label} hex`} />
               </div>
             </div>
           ))}
@@ -161,8 +163,8 @@ const BrandingTab = () => {
       <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
         <h4 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Images</h4>
         <div className="space-y-3">
-          {[['logoUrl', 'Logo URL'], ['logoDarkUrl', 'Logo Dark URL'], ['faviconUrl', 'Favicon URL'], ['ogImageUrl', 'OG Image URL'], ['heroImageUrl', 'Hero Image URL']].map(([field, label]) => (
-            <div key={field}><label className="text-xs font-medium uppercase tracking-wide mb-1 block" style={{ color: 'var(--text-secondary)' }}>{label}</label><input type="url" value={branding[field] || ''} onChange={e => setBranding({ ...branding, [field]: e.target.value })} className="input-dark text-sm w-full" placeholder="https://..." aria-label={label} /></div>
+          {([['logoUrl', 'Logo URL'], ['logoDarkUrl', 'Logo Dark URL'], ['faviconUrl', 'Favicon URL'], ['ogImageUrl', 'OG Image URL'], ['heroImageUrl', 'Hero Image URL']] as [string, string][]).map(([field, label]) => (
+            <div key={field}><label className="text-xs font-medium uppercase tracking-wide mb-1 block" style={{ color: 'var(--text-secondary)' }}>{label}</label><input type="url" value={String(branding[field as keyof Branding] ?? '')} onChange={e => setBranding({ ...branding, [field]: e.target.value } as Branding)} className="input-dark text-sm w-full" placeholder="https://..." aria-label={label} /></div>
           ))}
         </div>
       </div>
@@ -170,7 +172,7 @@ const BrandingTab = () => {
       <div className="glass rounded-2xl p-6 border" style={{ borderColor: 'var(--border-base)' }}>
         <h4 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Social Links</h4>
         <div className="space-y-3">
-          {Object.keys(branding.socialLinks || {}).map(platform => (
+          {(Object.keys(branding.socialLinks || {}) as (keyof Branding['socialLinks'])[]).map(platform => (
             <div key={platform}><label className="text-xs font-medium uppercase tracking-wide mb-1 block" style={{ color: 'var(--text-secondary)' }}>{platform}</label><input type="url" value={branding.socialLinks[platform]} onChange={e => setBranding({ ...branding, socialLinks: { ...branding.socialLinks, [platform]: e.target.value } })} className="input-dark text-sm w-full" placeholder={`https://${platform}.com/...`} aria-label={`${platform} URL`} /></div>
           ))}
         </div>

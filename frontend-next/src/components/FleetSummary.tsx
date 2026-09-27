@@ -1,8 +1,9 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { Bike, Wrench, AlertTriangle, Activity, DollarSign, Calendar, BarChart3 } from 'lucide-react';
 
-const FleetSummary = ({ summary }) => {
+import type { FleetSummaryData } from '@/types';
+
+const FleetSummary = ({ summary }: { summary: FleetSummaryData }) => {
   const cards = [
     { label: 'Total Vehicles', value: summary.totalBikes, icon: Bike, color: 'var(--accent-text)', bg: 'var(--accent-bg)', border: 'var(--accent-border)' },
     { label: 'Active', value: summary.activeBikes, icon: Activity, color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },

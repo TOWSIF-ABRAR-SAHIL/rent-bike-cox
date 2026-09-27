@@ -1,13 +1,14 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { BarChart3 } from 'lucide-react';
 
-const HourlyDistribution = ({ data }) => {
-  const { hourlyDistribution } = data;
-  const maxCount = Math.max(...hourlyDistribution.map(h => h.count), 1);
+import type { HourlyData, HourCount } from '@/types';
+
+const HourlyDistribution = ({ data }: { data: HourlyData }) => {
+  const { hourlyDistribution = [] } = data;
+  const maxCount = Math.max(...hourlyDistribution.map((h: HourCount) => h.count ?? 0), 1);
 
   const hours = Array.from({ length: 24 }, (_, i) => {
-    const found = hourlyDistribution.find(h => h.hour === i);
+    const found = hourlyDistribution.find((h: HourCount) => h.hour === i);
     return { hour: i, count: found?.count || 0 };
   });
 

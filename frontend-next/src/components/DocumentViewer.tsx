@@ -1,8 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { FileText, ExternalLink, CheckCircle, AlertTriangle, Trash2 } from 'lucide-react';
 
-const TYPE_LABELS = {
+const TYPE_LABELS: Record<string, string> = {
   registration: 'Registration',
   insurance: 'Insurance',
   fitness: 'Fitness',
@@ -10,18 +9,20 @@ const TYPE_LABELS = {
   other: 'Other',
 };
 
-function getExpiryStatus(date) {
+import type { VehicleDocument } from '@/types';
+
+function getExpiryStatus(date: string | undefined): { label: string; color: string; bg: string } | null {
   if (!date) return null;
   const d = new Date(date);
   const now = new Date();
-  const diffDays = (d - now) / (1000 * 60 * 60 * 24);
+  const diffDays = (d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
   if (diffDays < 0) return { label: 'Expired', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' };
   if (diffDays <= 30) return { label: `${Math.ceil(diffDays)}d left`, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' };
   if (diffDays <= 90) return { label: `${Math.ceil(diffDays)}d left`, color: '#fb923c', bg: 'rgba(251,146,60,0.08)' };
   return null;
 }
 
-export default function DocumentViewer({ documents, onVerify, onDelete }) {
+export default function DocumentViewer({ documents, onVerify, onDelete }: { documents: VehicleDocument[]; onVerify?: (id: string) => void; onDelete?: (id: string) => void }) {
   if (!documents?.length) {
     return (
       <div className="text-center py-8 rounded-xl" style={{ color: 'var(--text-muted)', background: 'var(--card-bg)', border: '1px solid var(--border-base)' }}>
@@ -44,7 +45,7 @@ export default function DocumentViewer({ documents, onVerify, onDelete }) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
-                  {TYPE_LABELS[doc.type] || doc.type}
+                  {TYPE_LABELS[doc.type ?? ''] || doc.type}
                 </span>
                 {doc.verified && (
                   <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
@@ -78,12 +79,12 @@ export default function DocumentViewer({ documents, onVerify, onDelete }) {
                 <ExternalLink size={16} />
               </a>
               {onVerify && !doc.verified && (
-                <button onClick={() => onVerify(doc._id)} className="p-2 rounded-lg transition-colors hover:bg-emerald-500/10 text-emerald-400" title="Verify" aria-label="Verify document">
+                <button onClick={() => onVerify(doc._id ?? '')} className="p-2 rounded-lg transition-colors hover:bg-emerald-500/10 text-emerald-400" title="Verify" aria-label="Verify document">
                   <CheckCircle size={16} />
                 </button>
               )}
               {onDelete && (
-                <button onClick={() => { if (window.confirm('Delete this document?')) onDelete(doc._id); }} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" title="Delete" aria-label="Delete document">
+                <button onClick={() => { if (window.confirm('Delete this document?')) onDelete(doc._id ?? ''); }} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" title="Delete" aria-label="Delete document">
                   <Trash2 size={16} />
                 </button>
               )}

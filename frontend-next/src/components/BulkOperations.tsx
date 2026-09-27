@@ -1,14 +1,16 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState } from 'react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { Bike } from '@/types';
 import { X } from 'lucide-react';
 
-const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
+interface BulkMessage { type: string; text: string; }
+
+const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }: { selectedBikes: string[]; onClearSelection: () => void; onComplete: () => void }) => {
   const [action, setAction] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [message, setMessage] = useState<BulkMessage | null>(null);
 
   const [statusValue, setStatusValue] = useState('active');
   const [maintenanceType, setMaintenanceType] = useState('service');
@@ -66,7 +68,8 @@ const BulkOperations = ({ selectedBikes, onClearSelection, onComplete }) => {
       onComplete();
       setTimeout(() => { setMessage(null); setShowConfirm(false); setAction(''); }, 2000);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Operation failed' });
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setMessage({ type: 'error', text: data?.message || 'Operation failed' });
     } finally {
       setLoading(false);
     }

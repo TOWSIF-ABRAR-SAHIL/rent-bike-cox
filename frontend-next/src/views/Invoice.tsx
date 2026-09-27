@@ -1,9 +1,9 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { Booking } from '@/types';
 import { Bike, Printer, XCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../components/useToast';
@@ -13,7 +13,7 @@ const Invoice = () => {
   const { bookingId } = useParams();
   const { user } = useAuth();
   const { addToast } = useToast();
-  const [booking, setBooking] = useState(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [fetchError, setFetchError] = useState('');
@@ -44,7 +44,8 @@ const Invoice = () => {
       setBooking(res.data.booking);
       addToast('Booking cancelled successfully', 'success');
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to cancel booking', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to cancel booking', 'error');
     } finally {
       setCancelling(false);
     }
@@ -66,14 +67,14 @@ const Invoice = () => {
       <div className="text-center glass rounded-2xl p-8 max-w-md">
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Invoice Not Found</h2>
-        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>This invoice doesn't exist or has been removed.</p>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>This invoice doesn&apos;t exist or has been removed.</p>
         <button onClick={() => router.back()} className="btn-primary" aria-label="Go back">Go Back</button>
       </div>
     </div>
   );
 
   const canCancel = (booking.status === 'Pending' || booking.status === 'Confirmed') && user;
-  const serialNo = booking.invoiceNumber || `RBC-${new Date(booking.createdAt).getFullYear()}-${booking._id.slice(-4).toUpperCase()}`;
+  const serialNo = booking.invoiceNumber || `RBC-${new Date(booking.createdAt ?? '').getFullYear()}-${booking._id.slice(-4).toUpperCase()}`;
   const securityDeposit = booking.securityDeposit || 2000;
   const totalPrice = booking.totalPrice || 0;
   const advancePaid = booking.advancePaid || 0;
@@ -87,12 +88,12 @@ const Invoice = () => {
         <div className="text-center p-6 sm:p-8 border-b bg-gradient-to-r from-amber-500/10 to-orange-500/10" style={{ borderColor: 'var(--border-base)' }}>
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center justify-center">
             <Bike className="mr-2" style={{ color: 'var(--accent-text)' }} />
-            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Rent Bike Cox's Bazar</span>
+            <span className="bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Rent Bike Cox&apos;s Bazar</span>
           </h1>
           <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>Official Rental Invoice</p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
             <div><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Mobile:</span> 01891-154443, 01764-466757</div>
-            <div><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Date:</span> {new Date(booking.createdAt).toLocaleDateString('en-BD')}</div>
+            <div><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Date:</span> {new Date(booking.createdAt ?? '').toLocaleDateString('en-BD')}</div>
             <div><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Serial No:</span> {serialNo}</div>
           </div>
         </div>
@@ -108,7 +109,7 @@ const Invoice = () => {
               </div>
               <div className="space-y-1.5">
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Destination:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.destination || 'Not specified'}</span></p>
-                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Rental Date:</span> <span style={{ color: 'var(--text-primary)' }}>{new Date(booking.startTime).toLocaleDateString('en-BD', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></p>
+                <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Rental Date:</span> <span style={{ color: 'var(--text-primary)' }}>{new Date(booking.startTime ?? '').toLocaleDateString('en-BD', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></p>
                 <p><span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>Hourly Rate:</span> <span style={{ color: 'var(--text-primary)' }}>{booking.bike?.pricePerHour || 0} TK</span></p>
               </div>
             </div>
@@ -165,11 +166,11 @@ const Invoice = () => {
           <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row justify-between px-4 sm:px-8 gap-8">
             <div className="text-center">
               <div className="w-full max-w-48 border-t mb-2" style={{ borderColor: 'var(--border-strong)' }}></div>
-              <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>Owner's Signature</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>Owner&apos;s Signature</p>
             </div>
             <div className="text-center">
               <div className="w-full max-w-48 border-t mb-2" style={{ borderColor: 'var(--border-strong)' }}></div>
-              <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>Renter's (User) Signature</p>
+              <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>Renter&apos;s (User) Signature</p>
             </div>
           </div>
         </div>

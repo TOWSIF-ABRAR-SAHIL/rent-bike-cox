@@ -1,10 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Clock, CheckCircle, AlertTriangle, Minus, Plus, Loader2, Star, Shield, Phone, ShieldCheck } from 'lucide-react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { Bike, PreviewData, PricingInfo } from '@/types';
+import type { ReactNode } from 'react';
 
-const formatDateTime = (date) => {
+const formatDateTime = (date: string | Date): string => {
   const d = new Date(date);
   const offset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - offset * 60 * 1000);
@@ -22,14 +23,16 @@ const getDefaultStartTime = () => {
   return formatDateTime(target);
 };
 
-const formatDisplayDate = (dateStr) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
+const formatDisplayDate = (dateStr: string) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
 
-const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
+export interface ProceedArgs { duration: number; startTime: string | Date; endTime: string | Date; pricing: PricingInfo | undefined; }
+
+const BookingWidget = ({ bike, token, onProceed, headerActions }: { bike: Bike | null; token: string | null; onProceed: (args: ProceedArgs) => void; headerActions?: ReactNode }) => {
   const [duration, setDuration] = useState(1);
   const [startTime, setStartTime] = useState(() => getDefaultStartTime());
-  const [previewData, setPreviewData] = useState(null);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const controllerRef = useRef(null);
+  const controllerRef = useRef<AbortController | null>(null);
 
   const endTime = startTime && duration >= 1 ? (() => {
     const d = new Date(startTime);
@@ -52,7 +55,7 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
         }, { signal: controller.signal });
         setPreviewData(res.data);
       } catch (err) {
-        if (err.name !== 'AbortError') {
+        if ((err as ApiError).name !== 'AbortError') {
           setPreviewData(null);
         }
       } finally {
@@ -70,6 +73,8 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
     setDuration(prev => Math.max(prev - 1, 1));
   }, []);
 
+  if (!bike) return null;
+
   const pricing = previewData?.pricing;
   const isAvailable = previewData?.available !== false;
 
@@ -84,15 +89,17 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
     });
   };
 
-  const rating = bike.rating || {};
-  const avgRating = rating.avgRating ?? rating.average ?? 0;
-  const totalReviews = rating.total ?? rating.count ?? 0;
+  const ratingObj: { avgRating?: number; average?: number; total?: number; count?: number } =
+    typeof bike.rating === 'object' ? bike.rating ?? {} : {};
+  const avgRating = ratingObj.avgRating ?? ratingObj.average ?? 0;
+  const totalReviews = ratingObj.total ?? ratingObj.count ?? 0;
 
   const bikeFeatures = [
-    bike.engine && { label: 'Engine', value: bike.engine },
-    bike.mileage && { label: 'Mileage', value: `${bike.mileage} km/L` },
+    bike.engine ? { label: 'Engine', value: bike.engine } : null,
+    bike.mileage ? { label: 'Mileage', value: `${bike.mileage} km/L` } : null,
     { label: 'Capacity', value: `${bike.capacity || 2} Persons` },
-  ].filter(Boolean);
+  ].filter((f): f is { label: string; value: string } => f !== null);
+  const packages = bike.packages ?? [];
 
   return (
     <div className="glass rounded-3xl p-6 space-y-5" style={{ border: '1px solid var(--border-base)' }}>
@@ -104,7 +111,7 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
             <div className="flex items-center gap-1.5 flex-shrink-0">{headerActions}</div>
           )}
         </div>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{bike.brand} &bull; {bike.category?.name || 'Vehicle'}</p>
+        <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{bike.brand} &bull; {(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'Vehicle'}</p>
         <div className="mt-2">
           {bike.isUnderMaintenance ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }}>
@@ -145,11 +152,11 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }) => {
       )}
 
       {/* Pricing Tiers */}
-      {bike.packages?.length > 0 && (
+      {packages.length > 0 && (
         <div className="rounded-xl p-4" style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)' }}>
           <h3 className="text-xs font-bold mb-2 uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>Pricing Tiers</h3>
           <div className="space-y-1.5">
-            {bike.packages.map((tier, i) => (
+            {packages.map((tier, i) => (
               <div key={i} className="flex items-center justify-between text-sm">
                 <span style={{ color: 'var(--text-primary)' }}>{tier.label}</span>
                 <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</span>

@@ -1,14 +1,16 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { Calendar, Wrench, AlertTriangle, DollarSign, Clock, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 
-const eventIcons = {
+import type { LucideIcon } from 'lucide-react';
+import type { HistoryEventItem } from '@/types';
+
+const eventIcons: Record<string, { icon: LucideIcon; color: string; bg: string }> = {
   booking: { icon: Calendar, color: 'var(--accent-text)', bg: 'var(--accent-bg)' },
   maintenance: { icon: Wrench, color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
   status: { icon: AlertTriangle, color: 'var(--info-text)', bg: 'var(--info-bg)' },
 };
 
-const statusColors = {
+const statusColors: Record<string, { text: string; bg: string; icon: LucideIcon }> = {
   Confirmed: { text: 'var(--success-text)', bg: 'var(--success-bg)', icon: CheckCircle },
   Completed: { text: 'var(--success-text)', bg: 'var(--success-bg)', icon: CheckCircle },
   Cancelled: { text: 'var(--danger-text)', bg: 'var(--danger-bg)', icon: XCircle },
@@ -16,14 +18,14 @@ const statusColors = {
   Pending: { text: 'var(--warning-text)', bg: 'var(--warning-bg)', icon: Clock },
 };
 
-const HistoryTimeline = ({ events }) => {
+const HistoryTimeline = ({ events }: { events: HistoryEventItem[] }) => {
   return (
     <div className="relative">
       <div className="absolute left-5 top-0 bottom-0 w-px" style={{ background: 'var(--border-base)' }} />
 
       <div className="space-y-4">
-        {events.map((event, idx) => {
-          const iconConfig = eventIcons[event.type] || eventIcons.booking;
+        {events.map((event: HistoryEventItem, idx: number) => {
+          const iconConfig = eventIcons[event.type ?? ''] || eventIcons.booking;
           const Icon = iconConfig.icon;
 
           return (
@@ -40,8 +42,8 @@ const HistoryTimeline = ({ events }) => {
                     </span>
                     {event.type === 'booking' && event.data.status && (
                       <span className="text-xs px-2 py-0.5 rounded-md font-medium" style={{
-                        background: statusColors[event.data.status]?.bg || 'var(--input-bg)',
-                        color: statusColors[event.data.status]?.text || 'var(--text-muted)',
+                        background: statusColors[event.data.status ?? '']?.bg || 'var(--input-bg)',
+                        color: statusColors[event.data.status ?? '']?.text || 'var(--text-muted)',
                       }}>
                         {event.data.status}
                       </span>
@@ -53,7 +55,7 @@ const HistoryTimeline = ({ events }) => {
                     )}
                   </div>
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(event.date ?? '').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
 
@@ -68,15 +70,15 @@ const HistoryTimeline = ({ events }) => {
                       <span>{event.data.endTime ? new Date(event.data.endTime).toLocaleDateString() : 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-4 mt-1">
-                      {event.data.totalPrice > 0 && (
+                      {(event.data.totalPrice ?? 0) > 0 && (
                         <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-secondary)' }}>
                           <DollarSign size={10} /> {event.data.totalPrice} TK
                         </span>
                       )}
-                      {event.data.advancePaid > 0 && (
+                      {(event.data.advancePaid ?? 0) > 0 && (
                         <span className="text-xs" style={{ color: 'var(--success-text)' }}>Paid: {event.data.advancePaid} TK</span>
                       )}
-                      {event.data.refundAmount > 0 && (
+                      {(event.data.refundAmount ?? 0) > 0 && (
                         <span className="text-xs" style={{ color: 'var(--danger-text)' }}>Refund: {event.data.refundAmount} TK</span>
                       )}
                     </div>
@@ -93,13 +95,13 @@ const HistoryTimeline = ({ events }) => {
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{event.data.description}</p>
                     )}
                     <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <span>By: {event.data.performedBy}</span>
-                      {event.data.cost > 0 && (
+                      <span>By: {typeof event.data.performedBy === 'string' ? event.data.performedBy : event.data.performedBy?.name}</span>
+                      {(event.data.cost ?? 0) > 0 && (
                         <span className="inline-flex items-center gap-1">
                           <DollarSign size={10} /> {event.data.cost} TK
                         </span>
                       )}
-                      {event.data.mileage > 0 && (
+                      {(event.data.mileage ?? 0) > 0 && (
                         <span>{event.data.mileage} km</span>
                       )}
                     </div>
@@ -122,8 +124,8 @@ const HistoryTimeline = ({ events }) => {
                       </>
                     )}
                     <span className="px-2 py-0.5 rounded text-xs font-medium" style={{
-                      background: statusColors[event.data.status]?.bg || 'var(--input-bg)',
-                      color: statusColors[event.data.status]?.text || 'var(--text-muted)',
+                      background: statusColors[event.data.status ?? '']?.bg || 'var(--input-bg)',
+                      color: statusColors[event.data.status ?? '']?.text || 'var(--text-muted)',
                     }}>
                       {event.data.status}
                     </span>

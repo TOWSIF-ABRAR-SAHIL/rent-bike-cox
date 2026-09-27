@@ -1,30 +1,30 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import type { Bike, DateRange, TimeSlot } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const BUFFER_MS = 30 * 60 * 1000;
 
-function isSlotOverlapping(slotStart, slotEnd, dateStart, dateEnd, buffer) {
+function isSlotOverlapping(slotStart: string | number | Date, slotEnd: string | number | Date, dateStart: number, dateEnd: number, buffer: number): boolean {
   const s = new Date(slotStart).getTime() - buffer;
   const e = new Date(slotEnd).getTime() + buffer;
   return s < dateEnd && e > dateStart;
 }
 
-function isSlotOverlappingNoBuffer(slotStart, slotEnd, dateStart, dateEnd) {
+function isSlotOverlappingNoBuffer(slotStart: string | number | Date, slotEnd: string | number | Date, dateStart: number, dateEnd: number): boolean {
   return new Date(slotStart).getTime() < dateEnd && new Date(slotEnd).getTime() > dateStart;
 }
 
-function getCalendarDays(year, month) {
+function getCalendarDays(year: number, month: number): { firstDay: number; totalDays: number } {
   const firstDay = new Date(year, month, 1).getDay();
   const totalDays = new Date(year, month + 1, 0).getDate();
   return { firstDay, totalDays };
 }
 
-const DayCell = ({ day, year, month, bookedSlots, maintenanceSlots, selectedRange, onDayClick }) => {
+const DayCell = ({ day, year, month, bookedSlots, maintenanceSlots, selectedRange, onDayClick }: { day: number; year: number; month: number; bookedSlots: TimeSlot[]; maintenanceSlots: TimeSlot[]; selectedRange: DateRange | null; onDayClick: (date: Date) => void }) => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const date = new Date(year, month, day, 12, 0, 0);
@@ -79,10 +79,10 @@ const DayCell = ({ day, year, month, bookedSlots, maintenanceSlots, selectedRang
   );
 };
 
-const AvailabilityCalendar = ({ bikeId, onDateSelect, selectedRange }) => {
+const AvailabilityCalendar = ({ bikeId, onDateSelect, selectedRange }: { bikeId: string; onDateSelect?: (date: Date) => void; selectedRange?: DateRange | null }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [bookedSlots, setBookedSlots] = useState([]);
-  const [maintenanceSlots, setMaintenanceSlots] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState<TimeSlot[]>([]);
+  const [maintenanceSlots, setMaintenanceSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
   const year = currentMonth.getFullYear();
@@ -110,7 +110,7 @@ const AvailabilityCalendar = ({ bikeId, onDateSelect, selectedRange }) => {
     return () => { cancelled = true; };
   }, [bikeId, year, month]);
 
-  const handleDayClick = (date) => {
+  const handleDayClick = (date: Date): void => {
     if (onDateSelect) onDateSelect(date);
   };
 
@@ -157,7 +157,7 @@ const AvailabilityCalendar = ({ bikeId, onDateSelect, selectedRange }) => {
                 month={month}
                 bookedSlots={bookedSlots}
                 maintenanceSlots={maintenanceSlots}
-                selectedRange={selectedRange}
+                selectedRange={selectedRange ?? null}
                 onDayClick={handleDayClick}
               />
             );

@@ -1,11 +1,12 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useState, useEffect, useCallback } from 'react';
-import api from '../../api/axios';
+import { useState, useEffect, useCallback, type CSSProperties } from 'react';
+import api, { type ApiError } from '../../api/axios';
+import type { ContentItem } from '@/types';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useToast } from '../useToast';
 import { FileText, Save, RotateCcw, Download, Upload, ChevronDown, ChevronRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-function sanitizeHtml(html) {
+function sanitizeHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   doc.querySelectorAll('script, iframe, object, embed, form').forEach(el => el.remove());
   doc.querySelectorAll('*').forEach(el => {
@@ -32,7 +33,7 @@ const PAGES = [
   { value: 'global', label: 'Global' },
 ];
 
-const TYPE_BADGES = {
+const TYPE_BADGES: Record<string, { bg: string; text: string }> = {
   string: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
   richText: { bg: 'var(--purple-bg)', text: 'var(--purple-text)' },
   markdown: { bg: 'var(--success-bg)', text: 'var(--success-text)' },
@@ -44,17 +45,17 @@ const TYPE_BADGES = {
 
 const ContentEditor = () => {
   const { addToast } = useToast();
-  const [content, setContent] = useState({});
-  const [meta, setMeta] = useState({});
+  const [content, setContent] = useState<Record<string, string>>({});
+  const [meta, setMeta] = useState<Record<string, ContentItem>>({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(null);
+  const [saving, setSaving] = useState<string | null>(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [selectedPage, setSelectedPage] = useState('');
-  const [expanded, setExpanded] = useState({});
-  const [previews, setPreviews] = useState({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [previews, setPreviews] = useState<Record<string, boolean>>({});
   const [importing, setImporting] = useState(false);
   const [importData, setImportData] = useState('');
-  const [dirtyKeys, setDirtyKeys] = useState(new Set());
+  const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
 
   const fetchContent = useCallback(async () => {
     setLoading(true);
@@ -62,11 +63,11 @@ const ContentEditor = () => {
       const url = selectedPage ? `/content/page/${selectedPage}` : '/admin/content';
       const res = await api.get(url);
       if (selectedPage) {
-        const grouped = res.data;
-        const map = {};
-        const metaMap = {};
+        const grouped = res.data as Record<string, ContentItem[]>;
+        const map: Record<string, string> = {};
+        const metaMap: Record<string, ContentItem> = {};
         Object.entries(grouped).forEach(([, items]) => {
-          items.forEach(item => {
+          items.forEach((item: ContentItem) => {
             map[item.key] = item.value;
             metaMap[item.key] = item;
           });
@@ -75,16 +76,16 @@ const ContentEditor = () => {
         setMeta(metaMap);
         setExpanded(Object.keys(grouped).reduce((a, s) => ({ ...a, [s]: true }), {}));
       } else {
-        const map = {};
-        const metaMap = {};
-        res.data.forEach(item => {
+        const map: Record<string, string> = {};
+        const metaMap: Record<string, ContentItem> = {};
+        (res.data as ContentItem[]).forEach((item: ContentItem) => {
           map[item.key] = item.value;
           metaMap[item.key] = item;
         });
         setContent(map);
         setMeta(metaMap);
-        const sections = {};
-        res.data.forEach(item => {
+        const sections: Record<string, boolean> = {};
+        (res.data as ContentItem[]).forEach((item: ContentItem) => {
           if (item.section) sections[item.section] = true;
         });
         setExpanded(Object.keys(sections).reduce((a, s) => ({ ...a, [s]: true }), {}));
@@ -99,14 +100,14 @@ const ContentEditor = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchContent(); }, [fetchContent]);
 
-  const grouped = {};
-  Object.values(meta).forEach(item => {
+  const grouped: Record<string, ContentItem[]> = {};
+  Object.values(meta).forEach((item: ContentItem) => {
     const sec = item.section || 'Uncategorized';
     if (!grouped[sec]) grouped[sec] = [];
     grouped[sec].push(item);
   });
 
-  const handleSave = async (key) => {
+  const handleSave = async (key: string): Promise<void> => {
     setSaving(key);
     try {
       await api.put(`/admin/content/${key}`, { value: content[key] || '' });
@@ -136,7 +137,7 @@ const ContentEditor = () => {
     }
   };
 
-  const handleReset = async (key) => {
+  const handleReset = async (key: string): Promise<void> => {
     if (!window.confirm(`Reset "${key}" to default?`)) return;
     try {
       await api.post(`/admin/content/${key}/reset`);
@@ -175,19 +176,20 @@ const ContentEditor = () => {
       setImporting(false);
       fetchContent();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Invalid JSON', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Invalid JSON', 'error');
     }
   };
 
-  const handleFileImport = (e) => {
+  const handleFileImport = (e: ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setImportData(ev.target.result);
+    reader.onload = (ev: ProgressEvent<FileReader>): void => setImportData(typeof ev.target?.result === 'string' ? ev.target.result : '');
     reader.readAsText(file);
   };
 
-  const markDirty = (key, value) => {
+  const markDirty = (key: string, value: string): void => {
     setContent(prev => ({ ...prev, [key]: value }));
     setDirtyKeys(prev => new Set(prev).add(key));
   };
@@ -255,14 +257,14 @@ const ContentEditor = () => {
             {expanded[section] && (
               <div className="p-4 pt-0 space-y-3 border-t" style={{ borderColor: 'var(--border-base)' }}>
                 {items.map(item => {
-                  const label = item.label || item.key.split('.').pop().replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());
-                  const typeStyle = TYPE_BADGES[item.type] || TYPE_BADGES.string;
+                  const label = item.label || (item.key.split('.').pop() ?? item.key).replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase());
+                  const typeStyle = TYPE_BADGES[item.type ?? ''] || TYPE_BADGES.string;
                   const isDirty = dirtyKeys.has(item.key);
                   return (
                     <div key={item.key} className={`space-y-1 p-3 rounded-xl transition-colors ${isDirty ? 'ring-1 ring-amber-500/30' : ''}`} style={isDirty ? { background: 'var(--warning-bg)' } : {}}>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={typeStyle}>{item.type}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={typeStyle as CSSProperties}>{item.type}</span>
                         {item.validation?.required && <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>required</span>}
                         {isDirty && <span className="text-[10px] font-medium" style={{ color: 'var(--warning-text)' }}>unsaved</span>}
                       </div>

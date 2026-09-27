@@ -1,20 +1,21 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { Wrench, AlertTriangle, CheckCircle } from 'lucide-react';
 
-const VehicleHealthCard = ({ bike }) => {
+import type { Bike } from '@/types';
+
+const VehicleHealthCard = ({ bike }: { bike: Bike }) => {
   const now = new Date();
   const isOverdue = bike.nextServiceDue && new Date(bike.nextServiceDue) < now;
   const isDueSoon = bike.nextServiceDue && !isOverdue && new Date(bike.nextServiceDue) <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const conditionColors = {
+  const conditionColors: Record<string, { bg: string; text: string; border: string }> = {
     excellent: { bg: 'var(--success-bg)', text: 'var(--success-text)', border: 'var(--success-border)' },
     good: { bg: 'var(--info-bg, rgba(59,130,246,0.1))', text: 'var(--info-text, #3b82f6)', border: 'var(--info-border, rgba(59,130,246,0.2))' },
     fair: { bg: 'var(--warning-bg)', text: 'var(--warning-text)', border: 'var(--warning-border)' },
     poor: { bg: 'var(--danger-bg)', text: 'var(--danger-text)', border: 'var(--danger-border)' },
   };
 
-  const condition = conditionColors[bike.condition] || conditionColors.good;
+  const condition = conditionColors[bike.condition ?? ''] || conditionColors.good;
 
   return (
     <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>

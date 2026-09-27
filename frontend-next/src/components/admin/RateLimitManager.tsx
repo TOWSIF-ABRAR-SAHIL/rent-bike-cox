@@ -1,11 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import type { RateLimitInfo } from '@/types';
 import { useToast } from '../useToast';
 import { Shield, RefreshCw, Clock, Activity } from 'lucide-react';
 
-const SEVERITY_CONFIG = {
+const SEVERITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   auth: { label: 'Strict', color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
   booking: { label: 'Moderate', color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
   payment: { label: 'Strict', color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
@@ -18,7 +18,7 @@ const SEVERITY_CONFIG = {
 
 const RateLimitManager = () => {
   const { addToast } = useToast();
-  const [configs, setConfigs] = useState([]);
+  const [configs, setConfigs] = useState<RateLimitInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchConfigs = useCallback(async () => {
@@ -63,8 +63,8 @@ const RateLimitManager = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {configs.map((cfg, i) => {
-            const severity = SEVERITY_CONFIG[cfg.name] || { label: 'Custom', color: 'var(--text-primary)', bg: 'var(--bg-secondary)' };
+          {configs.map((cfg: RateLimitInfo, i: number) => {
+            const severity = SEVERITY_CONFIG[cfg.name ?? ''] || { label: 'Custom', color: 'var(--text-primary)', bg: 'var(--bg-secondary)' };
             return (
               <div key={i} className="glass rounded-2xl p-4 border transition-all hover:opacity-90" style={{ borderColor: 'var(--border-base)' }}>
                 <div className="flex items-center justify-between mb-3">
@@ -82,13 +82,13 @@ const RateLimitManager = () => {
                     <div className="flex items-center gap-1 mb-0.5" style={{ color: 'var(--text-muted)' }}>
                       <Clock size={10} /> Window
                     </div>
-                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{cfg.windowMinutes}m</p>
+                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{cfg.windowMinutes ?? ''}m</p>
                   </div>
                   <div className="p-2 rounded-lg" style={{ background: 'var(--bg-secondary)' }}>
                     <div className="flex items-center gap-1 mb-0.5" style={{ color: 'var(--text-muted)' }}>
                       <Shield size={10} /> Rate
                     </div>
-                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{(cfg.max / (cfg.windowMs / 60000)).toFixed(1)}/m</p>
+                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{((cfg.max ?? 0) / ((cfg.windowMs ?? 60000) / 60000)).toFixed(1)}/m</p>
                   </div>
                 </div>
               </div>

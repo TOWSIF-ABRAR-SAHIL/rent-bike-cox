@@ -1,9 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 
-const HistoryFilter = ({ filters, onFilterChange }) => {
+import type { HistoryFilters } from '@/types';
+
+const HistoryFilter = ({ filters, onFilterChange }: { filters: HistoryFilters; onFilterChange: (key: string, value: string) => void }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (

@@ -1,11 +1,12 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import type { AdminNotificationItem, SystemHealth } from '@/types';
+import type { LucideIcon } from 'lucide-react';
 import { useToast } from '../useToast';
 import { Activity, Server, Database, Cpu, HardDrive, RefreshCw, Bell, AlertTriangle, XCircle, Info, ChevronDown, ChevronUp } from 'lucide-react';
 
-const SEVERITY_STYLES = {
+const SEVERITY_STYLES: Record<string, { bg: string; color: string; border: string; icon: LucideIcon }> = {
   critical: { bg: 'var(--danger-bg)', color: 'var(--danger-text)', border: 'var(--danger-border)', icon: XCircle },
   error: { bg: 'var(--danger-bg)', color: 'var(--danger-text)', border: 'var(--danger-border)', icon: AlertTriangle },
   warning: { bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)', icon: AlertTriangle },
@@ -17,12 +18,12 @@ const SEVERITY_STYLES = {
 
 const SystemHealthTab = () => {
   const { addToast } = useToast();
-  const [health, setHealth] = useState(null);
-  const [alerts, setAlerts] = useState([]);
+  const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [alerts, setAlerts] = useState<AdminNotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [expandedAlert, setExpandedAlert] = useState(null);
+  const [expandedAlert, setExpandedAlert] = useState<string | null>(null);
 
   const fetchHealth = useCallback(async () => {
     setLoading(true);
@@ -54,19 +55,19 @@ const SystemHealthTab = () => {
     fetchAlerts();
   }, [fetchHealth, fetchAlerts]);
 
-  const statusColor = (s) => {
+  const statusColor = (s?: string): { bg: string; color: string; border: string } => {
     if (s === 'healthy' || s === 'connected') return { bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' };
     if (s === 'degraded') return { bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)' };
     return { bg: 'var(--danger-bg)', color: 'var(--danger-text)', border: 'var(--danger-border)' };
   };
 
-  const formatBytes = (bytes) => {
+  const formatBytes = (bytes?: number): string => {
     if (!bytes) return '0 B';
     const mb = bytes / (1024 * 1024);
     return mb > 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb.toFixed(1)} MB`;
   };
 
-  const formatUptime = (seconds) => {
+  const formatUptime = (seconds?: number): string => {
     if (!seconds) return '0s';
     const d = Math.floor(seconds / 86400);
     const h = Math.floor((seconds % 86400) / 3600);
@@ -145,12 +146,12 @@ const SystemHealthTab = () => {
                 <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{formatBytes(health.memory?.rss)}</p>
               </div>
             </div>
-            {health.memory?.heapTotal > 0 && (
+            {(health.memory?.heapTotal ?? 0) > 0 && (
               <div className="mt-3">
                 <div className="w-full h-2 rounded-full" style={{ background: 'var(--bg-tertiary)' }}>
-                  <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, (health.memory.heapUsed / health.memory.heapTotal) * 100)}%`, background: (health.memory.heapUsed / health.memory.heapTotal) > 0.8 ? 'var(--danger-text)' : 'var(--accent-text)' }} />
+                  <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(100, ((health.memory?.heapUsed ?? 0) / (health.memory?.heapTotal || 1)) * 100)}%`, background: ((health.memory?.heapUsed ?? 0) / (health.memory?.heapTotal || 1)) > 0.8 ? 'var(--danger-text)' : 'var(--accent-text)' }} />
                 </div>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{((health.memory.heapUsed / health.memory.heapTotal) * 100 || 0).toFixed(1)}% used</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{(((health.memory?.heapUsed ?? 0) / (health.memory?.heapTotal || 1)) * 100 || 0).toFixed(1)}% used</p>
               </div>
             )}
           </div>
@@ -223,7 +224,7 @@ const SystemHealthTab = () => {
         ) : (
           <div className="space-y-2">
             {alerts.slice(0, 10).map(a => {
-              const sev = SEVERITY_STYLES[a.severity] || SEVERITY_STYLES.info;
+              const sev = SEVERITY_STYLES[a.severity ?? ''] || SEVERITY_STYLES.info;
               const Icon = sev.icon;
               const isExpanded = expandedAlert === a._id;
               return (
@@ -236,7 +237,7 @@ const SystemHealthTab = () => {
                       <div className="min-w-0">
                         <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{a.title}</p>
                         <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                          {new Date(a.createdAt).toLocaleString('en-BD')}
+                          {new Date(a.createdAt ?? '').toLocaleString('en-BD')}
                         </p>
                       </div>
                     </div>
@@ -250,7 +251,7 @@ const SystemHealthTab = () => {
                   {isExpanded && (
                     <div className="px-3 pb-3" style={{ borderTop: `1px solid ${sev.border}` }}>
                       <p className="text-xs pt-2" style={{ color: 'var(--text-secondary)' }}>{a.message}</p>
-                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Type: {a.type} | ID: {a._id.slice(-8)}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Type: {a.type} | ID: {(a._id ?? '').slice(-8)}</p>
                     </div>
                   )}
                 </div>

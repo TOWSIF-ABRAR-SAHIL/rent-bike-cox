@@ -1,13 +1,13 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import type { CacheData, CacheKeyEntry } from '@/types';
 import { useToast } from '../useToast';
 import { Database, RefreshCw, Trash2, Search, X, Zap, Clock, BarChart3 } from 'lucide-react';
 
 const CacheManager = () => {
   const { addToast } = useToast();
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<CacheData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [flushing, setFlushing] = useState(false);
@@ -43,7 +43,7 @@ const CacheManager = () => {
     }
   };
 
-  const handleDeleteKey = async (key) => {
+  const handleDeleteKey = async (key: string): Promise<void> => {
     try {
       await api.delete(`/admin/cache/key/${encodeURIComponent(key)}`);
       addToast(`Deleted key: ${key}`, 'success');
@@ -53,7 +53,7 @@ const CacheManager = () => {
     }
   };
 
-  const filtered = data?.keys?.filter(k =>
+  const filtered = data?.keys?.filter((k: CacheKeyEntry) =>
     k.key.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
@@ -90,7 +90,7 @@ const CacheManager = () => {
             </div>
             <div className="p-3 rounded-xl" style={{ background: 'var(--bg-secondary)' }}>
               <div className="flex items-center gap-1.5 text-xs mb-1" style={{ color: 'var(--text-muted)' }}><Zap size={12} /> Hit Rate</div>
-              <p className="text-lg font-bold" style={{ color: data.stats.hitRate > 50 ? 'var(--success-text)' : 'var(--warning-text)' }}>{data.stats.hitRate}%</p>
+              <p className="text-lg font-bold" style={{ color: Number(data.stats.hitRate ?? 0) > 50 ? 'var(--success-text)' : 'var(--warning-text)' }}>{data.stats.hitRate}%</p>
             </div>
             <div className="p-3 rounded-xl" style={{ background: 'var(--bg-secondary)' }}>
               <div className="flex items-center gap-1.5 text-xs mb-1" style={{ color: 'var(--text-muted)' }}><Clock size={12} /> Hits/Misses</div>
@@ -127,7 +127,7 @@ const CacheManager = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((entry, i) => (
+                {filtered.map((entry: CacheKeyEntry, i: number) => (
                   <tr key={i} className="border-b transition-colors" style={{ borderColor: 'var(--border-base)' }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
@@ -138,8 +138,8 @@ const CacheManager = () => {
                         {entry.valueType}
                       </span>
                     </td>
-                    <td className="p-2" style={{ color: entry.ttl < 30 ? 'var(--warning-text)' : 'var(--text-secondary)' }}>
-                      {entry.ttl > 3600 ? `${Math.round(entry.ttl / 3600)}h` : entry.ttl > 60 ? `${Math.round(entry.ttl / 60)}m` : `${entry.ttl}s`}
+                    <td className="p-2" style={{ color: (entry.ttl ?? 0) < 30 ? 'var(--warning-text)' : 'var(--text-secondary)' }}>
+                      {(entry.ttl ?? 0) > 3600 ? `${Math.round((entry.ttl ?? 0) / 3600)}h` : (entry.ttl ?? 0) > 60 ? `${Math.round((entry.ttl ?? 0) / 60)}m` : `${entry.ttl ?? 0}s`}
                     </td>
                     <td className="p-2">
                       <button onClick={() => handleDeleteKey(entry.key)} className="p-1 rounded hover:opacity-80" style={{ color: 'var(--danger-text)' }} aria-label={`Delete key ${entry.key}`}>

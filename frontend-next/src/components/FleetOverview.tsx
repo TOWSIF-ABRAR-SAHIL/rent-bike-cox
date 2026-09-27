@@ -1,22 +1,23 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import type { Bike, FleetStats } from '@/types';
+import type { LucideIcon } from 'lucide-react';
 import { Bike as BikeIcon, Wrench, AlertTriangle, CheckCircle } from 'lucide-react';
 
-const FleetOverview = ({ bikes = [] }) => {
-  const [stats, setStats] = useState(null);
+const FleetOverview = ({ bikes = [] }: { bikes?: Bike[] }) => {
+  const [stats, setStats] = useState<FleetStats | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const res = await api.get('/dashboard/my-bikes');
-        const bikeList = res.data;
+        const bikeList = res.data as Bike[];
         const total = bikeList.length;
-        const active = bikeList.filter(b => b.availability && !b.isUnderMaintenance).length;
-        const unavailable = bikeList.filter(b => !b.availability && !b.isUnderMaintenance).length;
-        const underMaintenance = bikeList.filter(b => b.isUnderMaintenance).length;
-        const needsService = bikeList.filter(b => {
+        const active = bikeList.filter((b: Bike) => b.availability && !b.isUnderMaintenance).length;
+        const unavailable = bikeList.filter((b: Bike) => !b.availability && !b.isUnderMaintenance).length;
+        const underMaintenance = bikeList.filter((b: Bike) => b.isUnderMaintenance).length;
+        const needsService = bikeList.filter((b: Bike) => {
           if (!b.nextServiceDue) return false;
           return new Date(b.nextServiceDue) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
         }).length;

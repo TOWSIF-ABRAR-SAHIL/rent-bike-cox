@@ -1,11 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import type { LogEntry } from '@/types';
 import { useToast } from '../useToast';
 import { FileText, RefreshCw, Download, Search, X, ChevronDown, ChevronUp } from 'lucide-react';
 
-const LOG_LEVEL_COLORS = {
+const LOG_LEVEL_COLORS: Record<string, { color: string; bg: string }> = {
   error: { color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
   warn: { color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
   info: { color: 'var(--info-text)', bg: 'var(--info-bg)' },
@@ -14,12 +14,12 @@ const LOG_LEVEL_COLORS = {
 
 const LogsViewer = () => {
   const { addToast } = useToast();
-  const [entries, setEntries] = useState([]);
+  const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [logType, setLogType] = useState('app');
   const [lineCount, setLineCount] = useState(200);
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedEntry, setExpandedEntry] = useState(null);
+  const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   const fetchLogs = useCallback(async () => {
@@ -61,8 +61,9 @@ const LogsViewer = () => {
     URL.revokeObjectURL(url);
   };
 
-  const getLevelStyle = (entry) => {
-    const level = entry.content?.level || entry.content?.severity || '';
+  const getLevelStyle = (entry: LogEntry): { color: string; bg: string } => {
+    const content = typeof entry.content === 'string' ? {} as { level?: string; severity?: string } : entry.content;
+    const level = content?.level || content?.severity || '';
     return LOG_LEVEL_COLORS[level] || { color: 'var(--text-primary)', bg: 'transparent' };
   };
 
@@ -136,7 +137,8 @@ const LogsViewer = () => {
               <tbody>
                 {filtered.map((entry, i) => {
                   const levelStyle = getLevelStyle(entry);
-                  const content = entry.content || {};
+                  const raw = entry.content;
+                  const content = (typeof raw === 'string' ? {} : raw) || {};
                   const isExpanded = expandedEntry === i;
                   return (
                     <tr key={i} className="border-b transition-colors cursor-pointer" style={{ borderColor: 'var(--border-base)' }}
@@ -150,7 +152,7 @@ const LogsViewer = () => {
                           {content.level || '—'}
                         </span>
                       </td>
-                      <td className="p-2 truncate max-w-[200px] sm:max-w-[300px]" style={{ color: 'var(--text-primary)' }}>{content.message || (typeof content === 'string' ? content : '')}</td>
+                      <td className="p-2 truncate max-w-[200px] sm:max-w-[300px]" style={{ color: 'var(--text-primary)' }}>{content.message || (typeof raw === 'string' ? raw : '')}</td>
                       <td className="p-2">
                         {isExpanded ? <ChevronUp size={12} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />}
                       </td>

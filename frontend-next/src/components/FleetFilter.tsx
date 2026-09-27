@@ -1,9 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 
-const FleetFilter = ({ filters, onFilterChange }) => {
+import type { FleetFilters } from '@/types';
+
+const FleetFilter = ({ filters, onFilterChange }: { filters: FleetFilters; onFilterChange: (key: string, value: string) => void }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (

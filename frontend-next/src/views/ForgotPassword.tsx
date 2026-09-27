@@ -1,10 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { setNavState } from '../lib/navState';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { FormEvent } from 'react';
 import { Mail, Lock, KeyRound, ArrowLeft } from 'lucide-react';
 
 const ForgotPassword = () => {
@@ -17,7 +17,7 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleEmailSubmit = async (e) => {
+  const handleEmailSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -25,13 +25,14 @@ const ForgotPassword = () => {
       await api.post('/auth/forgot-password', { email });
       setStep('otp');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send OTP');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setError(data?.message || 'Failed to send OTP');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOtpSubmit = async (e) => {
+  const handleOtpSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -40,13 +41,14 @@ const ForgotPassword = () => {
       setResetToken(res.data.resetToken);
       setStep('reset');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setError(data?.message || 'Invalid OTP');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetSubmit = async (e) => {
+  const handleResetSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -55,7 +57,8 @@ const ForgotPassword = () => {
       setNavState('login', { message: 'Password reset successful. Please login.' });
       router.push('/login');
     } catch (err) {
-      setError(err.response?.data?.message || 'Password reset failed');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setError(data?.message || 'Password reset failed');
     } finally {
       setLoading(false);
     }

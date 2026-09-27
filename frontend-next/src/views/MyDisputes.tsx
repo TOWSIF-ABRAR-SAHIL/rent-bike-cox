@@ -1,20 +1,21 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { Dispute } from '@/types';
+import type { FormEvent } from 'react';
 import { AlertTriangle, Loader2, ChevronDown, ChevronUp, MessageSquare, CheckCircle } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { SkeletonPage } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
-const STATUS_STYLES = {
+const STATUS_STYLES: Record<string, { bg: string; color: string; border: string }> = {
   'Open': { bg: 'var(--danger-bg)', color: 'var(--danger-text)', border: 'var(--danger-border)' },
   'Under Review': { bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)' },
   'Resolved': { bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' },
   'Rejected': { bg: 'var(--hover-bg)', color: 'var(--text-muted)', border: 'var(--border-base)' },
 };
 
-const REASON_LABELS = {
+const REASON_LABELS: Record<string, string> = {
   refund: 'Refund Issue',
   damage: 'Vehicle Damage',
   overcharge: 'Overcharged',
@@ -27,9 +28,9 @@ const REASON_LABELS = {
 
 const MyDisputes = () => {
   const { addToast } = useToast();
-  const [disputes, setDisputes] = useState([]);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -39,7 +40,7 @@ const MyDisputes = () => {
 
   const fetchDisputes = useCallback(() => {
     setLoading(true);
-    const params = new URLSearchParams({ page, limit: '10' });
+    const params = new URLSearchParams({ page: String(page), limit: '10' });
     if (statusFilter) params.set('status', statusFilter);
     api.get(`/disputes/my?${params}`)
       .then(({ data }) => {
@@ -53,7 +54,7 @@ const MyDisputes = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchDisputes(); }, [fetchDisputes]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     if (!form.bookingId || !form.reason || !form.description) {
       addToast('All fields are required', 'error');
@@ -67,7 +68,8 @@ const MyDisputes = () => {
       setForm({ bookingId: '', reason: 'other', description: '' });
       fetchDisputes();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to create dispute', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to create dispute', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -135,7 +137,7 @@ const MyDisputes = () => {
       ) : (
         <div className="space-y-3">
           {disputes.map(d => {
-            const st = STATUS_STYLES[d.status] || STATUS_STYLES.Open;
+            const st = STATUS_STYLES[d.status ?? ''] || STATUS_STYLES.Open;
             const isExpanded = expanded === d._id;
             return (
               <div key={d._id} className="glass rounded-xl overflow-hidden" style={{ border: '1px solid var(--border-base)' }}>
@@ -144,14 +146,14 @@ const MyDisputes = () => {
                   aria-label="Toggle dispute details">
                   <div className="flex items-center gap-3 min-w-0">
                     {d.bike?.images?.[0] && (
-                      <img src={d.bike.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={e => { e.target.style.display = 'none'; }} />
+                      <img src={d.bike.images[0]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
-                        {REASON_LABELS[d.reason] || d.reason}
+                        {REASON_LABELS[d.reason ?? ''] || d.reason}
                       </p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {d.bike?.model || 'Unknown'} — {new Date(d.createdAt).toLocaleDateString('en-BD')}
+                        {d.bike?.model || 'Unknown'} — {new Date(d.createdAt ?? '').toLocaleDateString('en-BD')}
                       </p>
                     </div>
                   </div>
@@ -169,8 +171,8 @@ const MyDisputes = () => {
                       <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{d.description}</p>
                     </div>
                     <div className="flex flex-wrap gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <span>Booking: {d.booking?._id?.slice(-8) || 'N/A'}</span>
-                      <span>Raised: {new Date(d.createdAt).toLocaleString('en-BD')}</span>
+                      <span>Booking: {(typeof d.booking === 'string' ? d.booking : d.booking?._id)?.slice(-8) || 'N/A'}</span>
+                      <span>Raised: {new Date(d.createdAt ?? '').toLocaleString('en-BD')}</span>
                     </div>
                     {d.resolution && (
                       <div className="p-3 rounded-xl" style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
@@ -180,7 +182,7 @@ const MyDisputes = () => {
                         <p className="text-sm" style={{ color: 'var(--success-text)' }}>{d.resolution}</p>
                         {d.resolvedBy && (
                           <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                            Resolved by {d.resolvedBy.name || 'Admin'} on {new Date(d.resolvedAt).toLocaleDateString('en-BD')}
+                            Resolved by {(typeof d.resolvedBy === 'string' ? d.resolvedBy : d.resolvedBy?.name) || 'Admin'} on {new Date(d.resolvedAt ?? '').toLocaleDateString('en-BD')}
                           </p>
                         )}
                       </div>

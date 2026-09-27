@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
@@ -18,7 +17,11 @@ const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
   loading: () => <div className="skeleton rounded-2xl" style={{ height: 400 }} />,
 });
 
-function generateDefaultTiers(pricePerHour) {
+import type { CSSProperties, FormEvent } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import type { Bike, BikeCategory, BikePackage, MaintenanceOverview, NewBikeForm, NewBikePayload } from '@/types';
+
+function generateDefaultTiers(pricePerHour: number): BikePackage[] {
   if (!pricePerHour || pricePerHour <= 0) return [];
   return [
     { label: '1-2 Hours', minHours: 1, maxHours: 2, hourlyRate: pricePerHour },
@@ -27,21 +30,21 @@ function generateDefaultTiers(pricePerHour) {
   ];
 }
 
-const TierBuilder = ({ packages, onChange, basePrice }) => {
+const TierBuilder = ({ packages, onChange, basePrice }: { packages: BikePackage[]; onChange: (pkgs: BikePackage[]) => void; basePrice: number }) => {
   const addTier = () => {
     onChange([...packages, { label: '', minHours: 1, maxHours: null, hourlyRate: 0 }]);
   };
 
-  const updateTier = (index, field, value) => {
+  const updateTier = (index: number, field: string, value: string | number | null): void => {
     const updated = packages.map((tier, i) => i === index ? { ...tier, [field]: value } : tier);
     onChange(updated);
   };
 
-  const removeTier = (index) => {
+  const removeTier = (index: number): void => {
     onChange(packages.filter((_, i) => i !== index));
   };
 
-  const autoGenerate = (base) => {
+  const autoGenerate = (base: number): void => {
     onChange(generateDefaultTiers(base));
   };
 
@@ -101,16 +104,16 @@ const TierBuilder = ({ packages, onChange, basePrice }) => {
   );
 };
 
-const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, submitting }) => {
+const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, submitting }: { open: boolean; onClose: () => void; categories: BikeCategory[]; initialCategory?: string; onSubmit: (data: NewBikePayload) => void; submitting: boolean }) => {
   const [newBike, setNewBike] = useState({
     model: '', brand: '', category: initialCategory || '', description: '', pricePerHour: 200, videoUrl: '',
   });
-  const [bikePackages, setBikePackages] = useState([]);
-  const [bikeFiles, setBikeFiles] = useState([]);
+  const [bikePackages, setBikePackages] = useState<BikePackage[]>([]);
+  const [bikeFiles, setBikeFiles] = useState<File[]>([]);
 
   if (!open) return null;
 
-  const fieldStyle = {
+  const fieldStyle: CSSProperties = {
     background: '#ffffff',
     border: '1px solid #E5E7EB',
     color: '#111827',
@@ -126,7 +129,7 @@ const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, su
     boxShadow: '0 0 0 3px rgba(249,115,22,0.15)',
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent): void => {
     e.preventDefault();
     onSubmit({ newBike, bikePackages, bikeFiles });
   };
@@ -176,7 +179,7 @@ const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, su
             <label className="block text-xs font-medium uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>Description</label>
             <textarea rows={3} placeholder="Describe the vehicle..." required
               value={newBike.description} onChange={e => setNewBike({ ...newBike, description: e.target.value })}
-              style={{ ...fieldStyle, resize: 'none' }} onFocus={e => Object.assign(e.target.style, focusStyle)} onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+              style={{ ...fieldStyle, resize: 'none' as const }} onFocus={e => Object.assign(e.target.style, focusStyle)} onBlur={e => e.target.style.borderColor = '#E5E7EB'}
               aria-label="Description" />
           </div>
           <div className="md:col-span-2">
@@ -203,7 +206,7 @@ const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, su
                   e.target.value = '';
                   return;
                 }
-                setBikeFiles(e.target.files);
+                setBikeFiles(Array.from(e.target.files || []));
               }}
               aria-label="Upload vehicle photos" />
           </div>
@@ -226,7 +229,7 @@ const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, su
   );
 };
 
-const KpiCard = ({ icon: Icon, label, value, color }) => (
+const KpiCard = ({ icon: Icon, label, value, color }: { icon: LucideIcon; label: string; value: React.ReactNode; color: string }) => (
   <div className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
     <div className="flex items-center gap-2 mb-1">
       <Icon size={14} style={{ color }} />
@@ -236,14 +239,14 @@ const KpiCard = ({ icon: Icon, label, value, color }) => (
   </div>
 );
 
-const STATUS_LABELS = {
+const STATUS_LABELS: Record<string, string> = {
   completed: 'Completed',
   in_progress: 'In Progress',
   scheduled: 'Scheduled',
   cancelled: 'Cancelled',
 };
 
-const STATUS_STYLES = {
+const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   completed: { bg: 'var(--success-bg)', text: 'var(--success-text)' },
   in_progress: { bg: 'var(--warning-bg)', text: 'var(--warning-text)' },
   scheduled: { bg: 'rgba(59,130,246,0.1)', text: '#3b82f6' },
@@ -252,15 +255,15 @@ const STATUS_STYLES = {
 
 const RenterDashboard = () => {
   const { addToast } = useToast();
-  const [bikes, setBikes] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [categories, setCategories] = useState<BikeCategory[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('vehicles');
-  const [selectedBikeId, setSelectedBikeId] = useState(null);
+  const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [fetchError, setFetchError] = useState('');
-  const [maintOverview, setMaintOverview] = useState(null);
+  const [maintOverview, setMaintOverview] = useState<MaintenanceOverview | null>(null);
 
   const fetchDashboard = useCallback((silent = false) => {
     if (!silent) setLoading(true);
@@ -293,15 +296,15 @@ const RenterDashboard = () => {
     }
   }, [activeTab, fetchMaintenanceOverview]);
 
-  const handleSubmitNew = useCallback(async ({ newBike, bikePackages, bikeFiles }) => {
+  const handleSubmitNew = useCallback(async ({ newBike, bikePackages, bikeFiles }: NewBikePayload): Promise<void> => {
     setSubmitting(true);
     const formDataToSend = new FormData();
-    Object.keys(newBike).forEach(key => { if (newBike[key]) formDataToSend.append(key, newBike[key]); });
+    (Object.keys(newBike) as (keyof NewBikeForm)[]).forEach(key => { const v = newBike[key]; if (v) formDataToSend.append(key, String(v)); });
     if (bikePackages.length > 0) {
       const cleanPackages = bikePackages.map(({ label, minHours, maxHours, hourlyRate }) => ({ label, minHours, maxHours, hourlyRate }));
       formDataToSend.append('packages', JSON.stringify(cleanPackages));
     }
-    Array.from(bikeFiles).forEach(file => formDataToSend.append('bikeImages', file));
+    bikeFiles.forEach(file => formDataToSend.append('bikeImages', file));
     try {
       await api.post('/dashboard/bikes', formDataToSend, { headers: { 'Content-Type': 'multipart/form-data' } });
       setShowForm(false);
@@ -315,7 +318,7 @@ const RenterDashboard = () => {
     }
   }, [addToast]);
 
-  const toggleAvailability = useCallback(async (bikeId) => {
+  const toggleAvailability = useCallback(async (bikeId: string): Promise<void> => {
     try {
       const res = await api.put(`/dashboard/bikes/${bikeId}/availability`);
       setBikes(prev => prev.map(bike => bike._id === bikeId ? { ...bike, availability: res.data.bike.availability } : bike));
@@ -325,7 +328,7 @@ const RenterDashboard = () => {
     }
   }, [addToast]);
 
-  const title = (bike) => {
+  const title = (bike: Bike): string => {
     const model = bike.model || '';
     const brand = bike.brand || '';
     if (model && brand && model.toLowerCase().startsWith(brand.toLowerCase())) return model;
@@ -421,18 +424,18 @@ const RenterDashboard = () => {
                   <div key={bike._id} className="glass rounded-2xl overflow-hidden card-hover">
                     <img src={image} alt={title(bike)} width="400" height="300" loading="lazy"
                       className="w-full h-48 object-cover"
-                      onError={(e) => { e.target.src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/1a1a2e/666?text=No+Image'; }} />
                     <div className="p-5">
                       <div className="mb-3">
                         <h3 className="font-bold text-lg truncate" style={{ color: 'var(--text-primary)' }}>{title(bike)}</h3>
-                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{bike.category?.name || 'N/A'}</p>
+                        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'N/A'}</p>
                         <p className="font-semibold text-sm mt-1" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour} TK/hr</p>
-                        {bike.packages?.length > 0 && (
-                          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{bike.packages.length} pricing tiers</p>
+                        {(bike.packages ?? []).length > 0 && (
+                          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{(bike.packages ?? []).length} pricing tiers</p>
                         )}
                         {bike.zone && (
                           <div className="flex items-center gap-1 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                            <span>{bike.zone.name}</span>
+                            <span>{typeof bike.zone === 'string' ? bike.zone : bike.zone?.name}</span>
                           </div>
                         )}
                       </div>
@@ -524,13 +527,13 @@ const RenterDashboard = () => {
                     {maintOverview.logs.map(log => (
                       <tr key={log._id} style={{ borderBottom: '1px solid var(--border-base)' }}>
                         <td className="py-3 px-2 font-medium" style={{ color: 'var(--text-primary)' }}>{log.vehicle}</td>
-                        <td className="py-3 px-2" style={{ color: 'var(--text-secondary)' }}>{new Date(log.serviceDate).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                        <td className="py-3 px-2" style={{ color: 'var(--text-secondary)' }}>{new Date(log.serviceDate ?? '').toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                         <td className="py-3 px-2" style={{ color: 'var(--text-secondary)' }}>{log.issueDescription}</td>
                         <td className="py-3 px-2 text-right font-semibold" style={{ color: 'var(--text-primary)' }}>{(log.cost || 0).toLocaleString()} TK</td>
                         <td className="py-3 px-2">
                           <span className="px-2 py-1 rounded-lg text-xs font-medium capitalize"
-                            style={{ background: (STATUS_STYLES[log.status] || STATUS_STYLES.completed).bg, color: (STATUS_STYLES[log.status] || STATUS_STYLES.completed).text }}>
-                            {STATUS_LABELS[log.status] || log.status}
+                            style={{ background: (STATUS_STYLES[log.status ?? ''] || STATUS_STYLES.completed).bg, color: (STATUS_STYLES[log.status ?? ''] || STATUS_STYLES.completed).text }}>
+                            {STATUS_LABELS[log.status ?? ''] || log.status}
                           </span>
                         </td>
                       </tr>

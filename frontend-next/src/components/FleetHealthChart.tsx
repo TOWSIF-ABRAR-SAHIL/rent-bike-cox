@@ -1,6 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-const FleetHealthChart = ({ conditionMap }) => {
+import type { ConditionMap } from '@/types';
+
+const FleetHealthChart = ({ conditionMap }: { conditionMap: ConditionMap }) => {
   const conditions = [
     { key: 'excellent', label: 'Excellent', color: '#22c55e' },
     { key: 'good', label: 'Good', color: '#3b82f6' },
@@ -8,7 +9,7 @@ const FleetHealthChart = ({ conditionMap }) => {
     { key: 'poor', label: 'Poor', color: '#ef4444' },
   ];
 
-  const total = Object.values(conditionMap).reduce((a, b) => a + b, 0);
+  const total: number = Object.values(conditionMap).reduce((a: number, b: number) => a + b, 0);
 
   return (
     <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>

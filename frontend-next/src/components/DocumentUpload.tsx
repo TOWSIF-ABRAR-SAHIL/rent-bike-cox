@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useRef } from 'react';
 import { Upload, FileText, X, Check } from 'lucide-react';
@@ -11,17 +10,20 @@ const TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-export default function DocumentUpload({ bikeId, onUploaded }) {
+import type { ChangeEvent, DragEvent, FormEvent } from 'react';
+import type { DocumentFormState } from '@/types';
+
+export default function DocumentUpload({ bikeId, onUploaded }: { bikeId: string; onUploaded?: () => void }) {
   const [form, setForm] = useState({
     type: 'registration', name: '', documentNumber: '',
     issueDate: '', expiryDate: '', issuingAuthority: '', notes: '',
   });
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     if (!file || !form.name) return;
     setSaving(true);
@@ -39,7 +41,7 @@ export default function DocumentUpload({ bikeId, onUploaded }) {
     } catch (err) { console.error('Upload failed:', err); } finally { setSaving(false); }
   };
 
-  const onDrop = (e) => {
+  const onDrop = (e: DragEvent): void => {
     e.preventDefault();
     setDragOver(false);
     const f = e.dataTransfer.files?.[0];

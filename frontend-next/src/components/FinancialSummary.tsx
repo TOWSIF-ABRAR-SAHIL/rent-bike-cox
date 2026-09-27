@@ -1,8 +1,9 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { DollarSign, TrendingUp, ArrowDownRight, Shield, Percent, RotateCcw } from 'lucide-react';
 
-const FinancialSummary = ({ data }) => {
+import type { FinancialData } from '@/types';
+
+const FinancialSummary = ({ data }: { data: FinancialData }) => {
   const totalRevenue = data.totalRevenue ?? 0;
   const totalAdvanceCollected = data.totalAdvanceCollected ?? 0;
   const totalRemainingCollected = data.totalRemainingCollected ?? 0;

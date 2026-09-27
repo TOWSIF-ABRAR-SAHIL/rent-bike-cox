@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState } from 'react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { MaintenanceFormState } from '@/types';
 import { useToast } from './useToast';
 import { Wrench, Loader2 } from 'lucide-react';
 
@@ -16,10 +16,10 @@ const MAINTENANCE_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-const MaintenanceLogForm = ({ bikeId, onCreated }) => {
+const MaintenanceLogForm = ({ bikeId, onCreated }: { bikeId: string; onCreated?: () => void }) => {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<MaintenanceFormState>({
     type: 'service',
     title: '',
     description: '',
@@ -30,11 +30,11 @@ const MaintenanceLogForm = ({ bikeId, onCreated }) => {
     notes: '',
   });
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: keyof MaintenanceFormState, value: string): void => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -55,7 +55,8 @@ const MaintenanceLogForm = ({ bikeId, onCreated }) => {
       setForm({ type: 'service', title: '', description: '', cost: '', mileage: '', nextServiceDue: '', nextServiceMileage: '', notes: '' });
       if (onCreated) onCreated();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to create maintenance log', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to create maintenance log', 'error');
     } finally {
       setLoading(false);
     }

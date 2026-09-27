@@ -1,7 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
+import type { ContactMessage, ConversationEntry, MessageStats } from '@/types';
+import type { CSSProperties } from 'react';
 import { useToast } from '../useToast';
 import { Reply, Inbox, BarChart3, UserPlus } from 'lucide-react';
 
@@ -9,14 +10,14 @@ const STATUS_OPTIONS = ['new', 'open', 'inProgress', 'waitingReply', 'resolved',
 const CATEGORY_OPTIONS = ['general', 'booking', 'payment', 'technical', 'complaint', 'suggestion', 'partnership', 'emergency', 'other'];
 const PRIORITY_OPTIONS = ['low', 'medium', 'high', 'urgent'];
 
-const PRIORITY_STYLE = {
+const PRIORITY_STYLE: Record<string, { bg: string; text: string }> = {
   low: { bg: 'var(--bg-tertiary)', text: 'var(--text-muted)' },
   medium: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
   high: { bg: 'var(--warning-bg)', text: 'var(--warning-text)' },
   urgent: { bg: 'var(--danger-bg)', text: 'var(--danger-text)' },
 };
 
-const STATUS_COLOR = {
+const STATUS_COLOR: Record<string, { bg: string; text: string }> = {
   new: { bg: 'var(--info-bg)', text: 'var(--info-text)' },
   open: { bg: 'var(--warning-bg)', text: 'var(--warning-text)' },
   inProgress: { bg: 'var(--accent-bg)', text: 'var(--accent-text)' },
@@ -27,7 +28,7 @@ const STATUS_COLOR = {
 
 const MessageInbox = () => {
   const { addToast } = useToast();
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -35,17 +36,17 @@ const MessageInbox = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterPriority, setFilterPriority] = useState('');
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState<ContactMessage | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<MessageStats | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [assignInput, setAssignInput] = useState('');
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 15 };
+      const params: Record<string, string | number> = { page, limit: 15 };
       if (filterStatus) params.status = filterStatus;
       if (filterCategory) params.category = filterCategory;
       if (filterPriority) params.priority = filterPriority;
@@ -76,7 +77,7 @@ const MessageInbox = () => {
     } catch { addToast('Failed to load stats', 'error'); }
   };
 
-  const markRead = async (id) => {
+  const markRead = async (id: string): Promise<void> => {
     try {
       await api.put(`/admin/messages/${id}/read`);
       setMessages(prev => prev.map(m => m._id === id ? { ...m, status: 'open' } : m));
@@ -84,7 +85,7 @@ const MessageInbox = () => {
     } catch { /* silent */ }
   };
 
-  const openMessage = async (msg) => {
+  const openMessage = async (msg: ContactMessage): Promise<void> => {
     setSelected(msg);
     if (msg.status === 'new') markRead(msg._id);
   };
@@ -105,25 +106,25 @@ const MessageInbox = () => {
     }
   };
 
-  const updateStatus = async (id, status) => {
+  const updateStatus = async (id: string, status: string): Promise<void> => {
     try {
       await api.put(`/admin/messages/${id}/status`, { status });
       setMessages(prev => prev.map(m => m._id === id ? { ...m, status } : m));
-      if (selected?._id === id) setSelected(prev => ({ ...prev, status }));
+      if (selected?._id === id) setSelected(prev => (prev ? { ...prev, status } : prev));
       addToast('Status updated', 'success');
     } catch { addToast('Failed', 'error'); }
   };
 
-  const updatePriority = async (id, priority) => {
+  const updatePriority = async (id: string, priority: string): Promise<void> => {
     try {
       await api.put(`/admin/messages/${id}/priority`, { priority });
       setMessages(prev => prev.map(m => m._id === id ? { ...m, priority } : m));
-      if (selected?._id === id) setSelected(prev => ({ ...prev, priority }));
+      if (selected?._id === id) setSelected(prev => (prev ? { ...prev, priority } : prev));
       addToast('Priority updated', 'success');
     } catch { addToast('Failed', 'error'); }
   };
 
-  const assignMessage = async (id) => {
+  const assignMessage = async (id: string): Promise<void> => {
     if (!assignInput.trim()) return;
     try {
       await api.put(`/admin/messages/${id}/assign`, { assignedTo: assignInput.trim() });
@@ -133,8 +134,8 @@ const MessageInbox = () => {
     } catch { addToast('Failed to assign', 'error'); }
   };
 
-  const formatDate = (d) => d ? new Date(d).toLocaleString() : '';
-  const formatShortDate = (d) => d ? new Date(d).toLocaleDateString() : '';
+  const formatDate = (d?: string): string => d ? new Date(d).toLocaleString() : '';
+  const formatShortDate = (d?: string): string => d ? new Date(d).toLocaleDateString() : '';
 
   return (
     <div className="space-y-6">
@@ -188,8 +189,8 @@ const MessageInbox = () => {
                     {msg.status === 'new' && <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />}
                     <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{msg.name}</span>
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>&lt;{msg.email}&gt;</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={STATUS_COLOR[msg.status] || STATUS_COLOR.new}>{msg.status}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={PRIORITY_STYLE[msg.priority] || PRIORITY_STYLE.medium}>{msg.priority}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={(STATUS_COLOR[msg.status ?? ''] || STATUS_COLOR.new) as CSSProperties}>{msg.status}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={(PRIORITY_STYLE[msg.priority ?? ''] || PRIORITY_STYLE.medium) as CSSProperties}>{msg.priority}</span>
                     <span className="px-2 py-0.5 rounded text-[10px]" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{msg.category}</span>
                     {msg.ticketId && <span className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>{msg.ticketId}</span>}
                   </div>
@@ -224,8 +225,8 @@ const MessageInbox = () => {
 
             <div className="space-y-3 mb-4">
               <div className="flex flex-wrap gap-2">
-                <span className="px-2 py-1 rounded text-xs font-medium" style={STATUS_COLOR[selected.status] || STATUS_COLOR.new}>{selected.status}</span>
-                <span className="px-2 py-1 rounded text-xs font-medium" style={PRIORITY_STYLE[selected.priority] || PRIORITY_STYLE.medium}>{selected.priority}</span>
+                <span className="px-2 py-1 rounded text-xs font-medium" style={(STATUS_COLOR[selected.status ?? ''] || STATUS_COLOR.new) as CSSProperties}>{selected.status}</span>
+                <span className="px-2 py-1 rounded text-xs font-medium" style={(PRIORITY_STYLE[selected.priority ?? ''] || PRIORITY_STYLE.medium) as CSSProperties}>{selected.priority}</span>
                 <span className="px-2 py-1 rounded text-xs" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{selected.category}</span>
               </div>
               <p className="text-sm"><span style={{ color: 'var(--text-muted)' }}>From:</span> <span style={{ color: 'var(--text-primary)' }}>{selected.name} &lt;{selected.email}&gt;</span></p>
@@ -235,7 +236,7 @@ const MessageInbox = () => {
             </div>
 
             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-              {(selected.conversation || [selected]).map((entry, i) => {
+              {((selected.conversation || [selected]) as ConversationEntry[]).map((entry: ConversationEntry, i: number) => {
                 const isCustomer = entry.sender === 'customer';
                 return (
                   <div key={i} className={`p-3 rounded-xl text-sm ${isCustomer ? '' : 'border ml-6'}`}
@@ -247,7 +248,7 @@ const MessageInbox = () => {
                     <p className="text-[10px] font-medium mb-1" style={{ color: isCustomer ? 'var(--text-muted)' : 'var(--success-text)' }}>
                       {isCustomer ? selected.name : 'Admin'} · {formatDate(entry.sentAt || selected.createdAt)}
                     </p>
-                    {entry.message || entry.reply || entry}
+                    {entry.message || entry.reply || ''}
                   </div>
                 );
               })}
@@ -258,7 +259,7 @@ const MessageInbox = () => {
               {STATUS_OPTIONS.map(s => (
                 <button key={s} onClick={() => updateStatus(selected._id, s)}
                   className={`px-2 py-1 rounded text-xs font-medium border transition-all ${selected.status === s ? 'opacity-100' : 'opacity-50'}`}
-                  style={selected.status === s ? STATUS_COLOR[s] : { borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}
+                  style={(selected.status === s ? STATUS_COLOR[s] : { borderColor: 'var(--border-base)', color: 'var(--text-muted)' }) as CSSProperties}
                   aria-label={`Set status to ${s}`}>
                   {s}
                 </button>
@@ -270,7 +271,7 @@ const MessageInbox = () => {
               {PRIORITY_OPTIONS.map(p => (
                 <button key={p} onClick={() => updatePriority(selected._id, p)}
                   className={`px-2 py-1 rounded text-xs font-medium border transition-all ${selected.priority === p ? 'opacity-100' : 'opacity-50'}`}
-                  style={selected.priority === p ? PRIORITY_STYLE[p] : { borderColor: 'var(--border-base)', color: 'var(--text-muted)' }}
+                  style={(selected.priority === p ? PRIORITY_STYLE[p] : { borderColor: 'var(--border-base)', color: 'var(--text-muted)' }) as CSSProperties}
                   aria-label={`Set priority to ${p}`}>
                   {p}
                 </button>

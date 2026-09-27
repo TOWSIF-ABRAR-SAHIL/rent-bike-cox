@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import api from '../../api/axios';
+import api, { type ApiError } from '../../api/axios';
+import type { AnnouncementForm, AnnouncementItem } from '@/types';
 import { useToast } from '../useToast';
 import { Megaphone, Trash2, BarChart3 } from 'lucide-react';
 
@@ -12,17 +12,17 @@ const FREQUENCY_OPTIONS = ['always', 'once', 'daily', 'weekly'];
 
 const AnnouncementManager = () => {
   const { addToast } = useToast();
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<AnnouncementItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<AnnouncementForm>({
     title: '', message: '', type: 'banner', position: 'top', pages: ['all'],
     audience: 'all', isActive: true, isDismissible: true, priority: 10,
     style: { bgColor: '#f59e0b', textColor: '#000000', borderColor: '', icon: '' },
     schedule: { startDate: '', endDate: '', showOnce: false, frequency: 'always' },
     actions: { ctaText: '', ctaUrl: '', ctaNewTab: false },
   });
-  const [editing, setEditing] = useState(null);
-  const [showAnalytics, setShowAnalytics] = useState(null);
+  const [editing, setEditing] = useState<AnnouncementItem | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -51,7 +51,7 @@ const AnnouncementManager = () => {
 
   const handleCreate = async () => {
     try {
-      const payload = { ...form };
+      const payload: Record<string, unknown> = { ...form };
       payload.schedule = {
         ...form.schedule,
         startDate: form.schedule.startDate ? new Date(form.schedule.startDate) : new Date(),
@@ -62,29 +62,31 @@ const AnnouncementManager = () => {
       resetForm();
       fetchItems();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed', 'error');
     }
   };
 
   const handleUpdate = async () => {
     try {
-      const payload = { ...form };
+      const payload: Record<string, unknown> = { ...form };
       payload.schedule = {
         ...form.schedule,
         startDate: form.schedule.startDate ? new Date(form.schedule.startDate) : new Date(),
         endDate: form.schedule.endDate ? new Date(form.schedule.endDate) : null,
       };
-      await api.put(`/admin/announcements/${editing._id}`, payload);
+      await api.put(`/admin/announcements/${editing?._id ?? ''}`, payload);
       addToast('Announcement updated!', 'success');
       setEditing(null);
       resetForm();
       fetchItems();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed', 'error');
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!window.confirm('Delete this announcement?')) return;
     try {
       await api.delete(`/admin/announcements/${id}`);
@@ -95,12 +97,12 @@ const AnnouncementManager = () => {
     }
   };
 
-  const openEdit = (item) => {
+  const openEdit = (item: AnnouncementItem): void => {
     setEditing(item);
     setForm({
-      title: item.title, message: item.message, type: item.type, position: item.position,
-      pages: item.pages || ['all'], audience: item.audience,
-      isActive: item.isActive, isDismissible: item.isDismissible !== false, priority: item.priority || 10,
+      title: item.title ?? '', message: item.message ?? '', type: item.type ?? 'banner', position: item.position ?? 'top',
+      pages: item.pages || ['all'], audience: item.audience ?? 'all',
+      isActive: item.isActive !== false, isDismissible: item.isDismissible !== false, priority: item.priority || 10,
       style: {
         bgColor: item.style?.bgColor || '#f59e0b', textColor: item.style?.textColor || '#000000',
         borderColor: item.style?.borderColor || '', icon: item.style?.icon || '',
@@ -117,14 +119,14 @@ const AnnouncementManager = () => {
     });
   };
 
-  const togglePage = (page) => {
+  const togglePage = (page: string): void => {
     setForm(prev => {
       const pages = prev.pages.includes(page) ? prev.pages.filter(p => p !== page) : [...prev.pages, page];
       return { ...prev, pages: pages.length === 0 ? ['all'] : pages };
     });
   };
 
-  const activeCount = items.filter(i => i.isActive).length;
+  const activeCount = items.filter((i: AnnouncementItem) => i.isActive).length;
 
   if (loading) return <div className="space-y-3">{[...Array(3)].map((_, i) => <div key={i} className="skeleton h-24 rounded-xl" />)}</div>;
 
@@ -261,7 +263,7 @@ const AnnouncementManager = () => {
                 <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={{ background: `${item.style?.bgColor || '#f59e0b'}30`, color: item.style?.bgColor || '#f59e0b' }}>{item.type}</span>
                 <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.pages?.join(', ')}</span>
                 <span className={`w-2 h-2 rounded-full ${item.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-                {item.schedule?.frequency !== 'always' && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.schedule.frequency}</span>}
+                {item.schedule?.frequency !== 'always' && <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{item.schedule?.frequency}</span>}
               </div>
               <p className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{item.style?.icon ? `${item.style.icon} ` : ''}{item.title}</p>
               <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{item.message}</p>

@@ -1,11 +1,12 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import api from '../api/axios';
 
-export default function SeasonalBadge({ startTime }) {
-  const [rate, setRate] = useState(null);
+import type { SeasonalRate } from '@/types';
+
+export default function SeasonalBadge({ startTime }: { startTime?: string }) {
+  const [rate, setRate] = useState<SeasonalRate | null>(null);
 
   useEffect(() => {
     if (!startTime) return;
@@ -22,7 +23,7 @@ export default function SeasonalBadge({ startTime }) {
 
   if (!rate) return null;
 
-  const isHigher = rate.multiplier > 1;
+  const isHigher = (rate.multiplier ?? 1) > 1;
 
   return (
     <div
@@ -38,8 +39,8 @@ export default function SeasonalBadge({ startTime }) {
   );
 }
 
-export function CurrentSeasonalInfo() {
-  const [info, setInfo] = useState(null);
+export function CurrentSeasonalInfo(): React.ReactNode {
+  const [info, setInfo] = useState<SeasonalRate | null>(null);
 
   useEffect(() => {
     api.get('/seasonal-rates').then(({ data }) => {
@@ -59,9 +60,9 @@ export function CurrentSeasonalInfo() {
     <div
       className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium"
       style={{
-        background: info.multiplier > 1 ? 'rgba(234, 88, 12, 0.08)' : 'rgba(16, 185, 129, 0.08)',
-        color: info.multiplier > 1 ? '#fb923c' : '#34d399',
-        border: `1px solid ${info.multiplier > 1 ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+        background: (info.multiplier ?? 1) > 1 ? 'rgba(234, 88, 12, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+        color: (info.multiplier ?? 1) > 1 ? '#fb923c' : '#34d399',
+        border: `1px solid ${(info.multiplier ?? 1) > 1 ? 'rgba(234, 88, 12, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
       }}
     >
       <Calendar size={16} />

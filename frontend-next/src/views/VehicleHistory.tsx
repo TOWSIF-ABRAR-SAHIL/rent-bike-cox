@@ -1,22 +1,22 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
+import type { Bike, HistoryEventItem, HistoryFilters, HistoryStatsData } from '@/types';
 import HistoryTimeline from '../components/HistoryTimeline';
 import HistoryFilter from '../components/HistoryFilter';
 import HistoryStats from '../components/HistoryStats';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 
-const VehicleHistory = ({ bikeId, onClose }) => {
-  const [bike, setBike] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [stats, setStats] = useState(null);
+const VehicleHistory = ({ bikeId, onClose }: { bikeId?: string; onClose?: () => void }) => {
+  const [bike, setBike] = useState<Bike | null>(null);
+  const [events, setEvents] = useState<HistoryEventItem[]>([]);
+  const [stats, setStats] = useState<HistoryStatsData | null>(null);
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
-  const [filters, setFilters] = useState({ type: 'all', from: '', to: '' });
+  const [filters, setFilters] = useState<HistoryFilters>({ type: 'all', from: '', to: '' });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchHistory = useCallback(async (page = 1) => {
+  const fetchHistory = useCallback(async (page: number = 1): Promise<void> => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -57,11 +57,11 @@ const VehicleHistory = ({ bikeId, onClose }) => {
     fetchHistory(1);
   }, [fetchHistory]);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = (page: number): void => {
     fetchHistory(page);
   };
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (key: string, value: string): void => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
@@ -90,7 +90,7 @@ const VehicleHistory = ({ bikeId, onClose }) => {
           {bike && (
             <div className="flex items-center gap-3 mt-1">
               {bike.category && (
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category.name}</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{typeof bike.category === 'string' ? bike.category : bike.category.name}</span>
               )}
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.pricePerHour} TK/hr</span>
             </div>

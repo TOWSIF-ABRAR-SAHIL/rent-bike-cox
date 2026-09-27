@@ -1,9 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, memo } from 'react';
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 
-const Lightbox = ({ images, initialIndex = 0, onClose }) => {
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+
+const Lightbox = ({ images, initialIndex = 0, onClose }: { images: string[]; initialIndex?: number; onClose: () => void }) => {
   const [index, setIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
 
@@ -18,7 +19,7 @@ const Lightbox = ({ images, initialIndex = 0, onClose }) => {
   }, [images.length]);
 
   useEffect(() => {
-    const handler = (e) => {
+    const handler = (e: ReactKeyboardEvent | KeyboardEvent): void => {
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') prev();
       if (e.key === 'ArrowRight') next();
@@ -77,7 +78,7 @@ const Lightbox = ({ images, initialIndex = 0, onClose }) => {
       {/* Thumbnails */}
       {images.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 p-2 rounded-xl glass">
-          {images.map((img, i) => (
+          {images.map((img: string, i: number) => (
             <button key={i} onClick={(e) => { e.stopPropagation(); setIndex(i); setZoom(1); }}
               className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${i === index ? 'border-amber-400 scale-110' : 'opacity-60 hover:opacity-100'}`}
               aria-label={`View photo ${i + 1}`}>

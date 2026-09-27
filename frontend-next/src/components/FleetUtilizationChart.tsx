@@ -1,7 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-const FleetUtilizationChart = ({ data }) => {
-  const { fleetUtilization, bikes, days } = data;
+import type { UtilizationData, UtilizationBike } from '@/types';
+
+const FleetUtilizationChart = ({ data }: { data: UtilizationData }) => {
+  const { fleetUtilization, bikes = [], days } = data;
   const topBikes = bikes.slice(0, 8);
 
   return (
@@ -16,8 +17,8 @@ const FleetUtilizationChart = ({ data }) => {
         <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>No utilization data</p>
       ) : (
         <div className="space-y-3">
-          {topBikes.map(bike => {
-            const pct = Math.min(100, parseFloat(bike.utilization));
+          {topBikes.map((bike: UtilizationBike) => {
+            const pct = Math.min(100, parseFloat(String(bike.utilization ?? 0)));
             return (
               <div key={bike.bikeId}>
                 <div className="flex items-center justify-between mb-1">

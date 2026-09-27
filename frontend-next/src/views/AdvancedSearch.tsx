@@ -1,9 +1,9 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import api from '../api/axios';
+import type { Bike, BikeCategory, PriceRange, SearchFilterState, Suggestion } from '@/types';
 import SearchFilters from '../components/SearchFilters';
 import SearchResults from '../components/SearchResults';
 import SearchAutocomplete from '../components/SearchAutocomplete';
@@ -15,18 +15,18 @@ const AdvancedSearch = () => {
   // Next: useSearchParams() returns the params object directly (no setter tuple).
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [results, setResults] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [zones, setZones] = useState([]);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [results, setResults] = useState<Bike[]>([]);
+  const [categories, setCategories] = useState<BikeCategory[]>([]);
+  const [zones, setZones] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 0, max: 1000 });
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchRef = useRef(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<SearchFilterState>({
     category: searchParams.get('category') || '',
     zone: searchParams.get('zone') || '',
     minPrice: searchParams.get('minPrice') || '',
@@ -65,9 +65,9 @@ const AdvancedSearch = () => {
       if (filters.zone) sp.set('zone', filters.zone);
       if (filters.minPrice) sp.set('minPrice', filters.minPrice);
       if (filters.maxPrice) sp.set('maxPrice', filters.maxPrice);
-      if (filters.availability !== 'all') sp.set('availability', filters.availability);
-      if (filters.condition !== 'all') sp.set('condition', filters.condition);
-      if (filters.sort !== 'newest') sp.set('sort', filters.sort);
+      if (filters.availability !== 'all') sp.set('availability', filters.availability ?? 'all');
+      if (filters.condition !== 'all') sp.set('condition', filters.condition ?? 'all');
+      if (filters.sort !== 'newest') sp.set('sort', filters.sort ?? 'newest');
       const qs = sp.toString();
       router.replace(qs ? `/search?${qs}` : '/search', { scroll: false });
     } catch (err) {
@@ -82,7 +82,7 @@ const AdvancedSearch = () => {
     fetchResults(1);
   }, [fetchResults]);
 
-  const fetchSuggestions = useCallback(async (q) => {
+  const fetchSuggestions = useCallback(async (q: string): Promise<void> => {
     if (!q || q.length < 2) { setSuggestions([]); return; }
     try {
       const { data } = await api.get(`/search/suggestions?q=${encodeURIComponent(q)}`);
@@ -98,15 +98,15 @@ const AdvancedSearch = () => {
   }, [query, fetchSuggestions]);
 
   useEffect(() => {
-    const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+    const handler = (e: MouseEvent): void => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSuggestions(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleFilterChange = (key: string, value: string): void => {
+    setFilters(prev => ({ ...prev, [key]: value } as SearchFilterState));
   };
 
   const handleClearFilters = () => {
@@ -114,7 +114,7 @@ const AdvancedSearch = () => {
     setQuery('');
   };
 
-  const handleSuggestionClick = (suggestion) => {
+  const handleSuggestionClick = (suggestion: Suggestion): void => {
     if (suggestion.type === 'vehicle') {
       router.push(`/bike/${suggestion.id}`);
     } else if (suggestion.type === 'category') {
@@ -131,7 +131,7 @@ const AdvancedSearch = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Search Vehicles</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Find the perfect ride for your Cox's Bazar adventure</p>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Find the perfect ride for your Cox&apos;s Bazar adventure</p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6" ref={searchRef}>

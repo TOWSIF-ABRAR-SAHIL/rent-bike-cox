@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 
 import { useEffect } from 'react';

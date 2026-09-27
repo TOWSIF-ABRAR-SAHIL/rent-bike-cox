@@ -1,7 +1,6 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { io as socketIO } from 'socket.io-client';
+import { useState, useEffect, useRef, useCallback, useMemo, type MutableRefObject } from 'react';
+import { io as socketIO, type Socket } from 'socket.io-client';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,27 +9,51 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import 'leaflet.markercluster';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import api from '../api/axios';
+import { API_BASE } from '@/lib/serverApi';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+export interface LiveMarker {
+  _id: string;
+  model?: string;
+  brand?: string;
+  category?: string;
+  image?: string | null;
+  coordinates?: [number, number];
+  speed?: number;
+  heading?: number;
+  battery?: number;
+  accuracy?: number;
+  updatedAt?: string;
+}
+
+export interface TrailPoint {
+  bikeId: string;
+  lat: number;
+  lng: number;
+  color: string;
+  ts: number;
+}
+
+const API = API_BASE || 'http://localhost:5000';
 const WS_URL = API.replace('/api', '');
-const COX_BAZAR = [21.4200, 92.0100];
+const COX_BAZAR: [number, number] = [21.4200, 92.0100];
 
-delete L.Icon.Default.prototype._getIconUrl;
+const defaultProto = L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown };
+delete defaultProto._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const CATEGORY_STYLES = {
+const CATEGORY_STYLES: Record<string, { icon: string; bg: string; trail: string }> = {
   Bike: { icon: '🏍', bg: '#f59e0b', trail: '#f59e0b' },
   Car: { icon: '🚗', bg: '#3b82f6', trail: '#3b82f6' },
   Jeep: { icon: '🛻', bg: '#22c55e', trail: '#22c55e' },
   default: { icon: '📍', bg: '#8b5cf6', trail: '#8b5cf6' },
 };
 
-function createVehicleIcon(category, speed = 0, battery = 100) {
-  const style = CATEGORY_STYLES[category] || CATEGORY_STYLES.default;
+function createVehicleIcon(category: string | undefined, speed = 0, battery = 100): L.DivIcon {
+  const style = CATEGORY_STYLES[category ?? ''] || CATEGORY_STYLES.default;
   const batteryColor = battery > 50 ? '#22c55e' : battery > 20 ? '#f59e0b' : '#ef4444';
   const speedClass = speed > 0 ? 'animate-pulse' : '';
   return L.divIcon({
@@ -45,9 +68,10 @@ function createVehicleIcon(category, speed = 0, battery = 100) {
   });
 }
 
-const popupTemplate = (b) => {
-  const style = CATEGORY_STYLES[b.category] || CATEGORY_STYLES.default;
-  const batteryColor = b.battery > 50 ? '#22c55e' : b.battery > 20 ? '#f59e0b' : '#ef4444';
+const popupTemplate = (b: LiveMarker): string => {
+  const style = CATEGORY_STYLES[b.category ?? ''] || CATEGORY_STYLES.default;
+  const battery = b.battery ?? 0;
+  const batteryColor = battery > 50 ? '#22c55e' : battery > 20 ? '#f59e0b' : '#ef4444';
   return `<div class="tracking-popup">
     <div class="popup-header" style="border-left:3px solid ${style.bg};">
       <strong>${b.brand} ${b.model}</strong>
@@ -55,25 +79,25 @@ const popupTemplate = (b) => {
     </div>
     <div class="popup-stats">
       ${b.speed ? `<div class="stat"><span class="stat-label">Speed</span><span class="stat-value">${(b.speed * 3.6).toFixed(0)} km/h</span></div>` : ''}
-      <div class="stat"><span class="stat-label">Battery</span><span class="stat-value" style="color:${batteryColor}">${b.battery}%</span></div>
+      <div class="stat"><span class="stat-label">Battery</span><span class="stat-value" style="color:${batteryColor}">${battery}%</span></div>
       ${b.heading ? `<div class="stat"><span class="stat-label">Heading</span><span class="stat-value">${b.heading}°</span></div>` : ''}
-      <div class="stat"><span class="stat-label">Updated</span><span class="stat-value">${new Date(b.updatedAt).toLocaleTimeString()}</span></div>
+      <div class="stat"><span class="stat-label">Updated</span><span class="stat-value">${new Date(b.updatedAt ?? '').toLocaleTimeString()}</span></div>
     </div>
     ${b.image ? `<img src="${b.image}" class="popup-image" />` : ''}
   </div>`;
 };
 
-function TrailLayer({ trailData }) {
+function TrailLayer({ trailData }: { trailData: TrailPoint[] }): null {
   const map = useMap();
-  const layerRef = useRef(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     if (layerRef.current) map.removeLayer(layerRef.current);
     if (!trailData || trailData.length < 2) return;
 
-    const polylines = [];
-    const grouped = {};
-    trailData.forEach(p => {
+    const polylines: L.Polyline[] = [];
+    const grouped: Record<string, { latlngs: [number, number][]; color: string }> = {};
+    trailData.forEach((p: TrailPoint) => {
       if (!grouped[p.bikeId]) grouped[p.bikeId] = { latlngs: [], color: p.color || '#8b5cf6' };
       grouped[p.bikeId].latlngs.push([p.lat, p.lng]);
     });
@@ -89,19 +113,21 @@ function TrailLayer({ trailData }) {
     const group = L.layerGroup(polylines);
     layerRef.current = group;
 
-    return () => { polylines.forEach(p => map.removeLayer(p)); };
+    return () => { polylines.forEach(p => { map.removeLayer(p); }); };
   }, [trailData, map]);
 
   return null;
 }
 
-function FitBounds({ markers }) {
+function FitBounds({ markers }: { markers: LiveMarker[] }): null {
   const map = useMap();
   const fitted = useRef(false);
 
   useEffect(() => {
     if (markers.length > 0 && !fitted.current) {
-      const bounds = L.latLngBounds(markers.map(m => [m.coordinates[1], m.coordinates[0]]));
+      const bounds = L.latLngBounds(
+        markers.map(m => L.latLng(m.coordinates?.[1] ?? 0, m.coordinates?.[0] ?? 0))
+      );
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       fitted.current = true;
     }
@@ -110,12 +136,12 @@ function FitBounds({ markers }) {
   return null;
 }
 
-function CenterOnMarker({ target }) {
+function CenterOnMarker({ target }: { target: LiveMarker | null }): null {
   const map = useMap();
-  const lastTargetRef = useRef(null);
+  const lastTargetRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!target) return;
+    if (!target?.coordinates) return;
     if (lastTargetRef.current === target.coordinates[0] + ',' + target.coordinates[1]) return;
     lastTargetRef.current = target.coordinates[0] + ',' + target.coordinates[1];
     map.flyTo([target.coordinates[1], target.coordinates[0]], Math.max(map.getZoom(), 15), { duration: 0.7 });
@@ -124,9 +150,9 @@ function CenterOnMarker({ target }) {
   return null;
 }
 
-function LegendOverlay() {
+function LegendOverlay(): null {
   const map = useMap();
-  const legendRef = useRef(null);
+  const legendRef = useRef<L.Control | null>(null);
 
   useEffect(() => {
     const Legend = L.Control.extend({
@@ -141,13 +167,13 @@ function LegendOverlay() {
     const legend = new Legend({ position: 'bottomleft' });
     legend.addTo(map);
     legendRef.current = legend;
-    return () => legend.remove();
+    return () => { legend.remove(); };
   }, [map]);
 
   return null;
 }
 
-function ConnectionStatus({ connected }) {
+function ConnectionStatus({ connected }: { connected: boolean }): React.JSX.Element {
   return (
     <div className="leaflet-top leaflet-left" style={{ marginTop: '10px', marginLeft: '50px', zIndex: 1000 }}>
       <div className="connection-badge" style={{
@@ -166,28 +192,37 @@ function ConnectionStatus({ connected }) {
   );
 }
 
-const categoryIcons = { Bike: '🏍', Car: '🚗', Jeep: '🛻' };
+const categoryIcons: Record<string, string> = { Bike: '🏍', Car: '🚗', Jeep: '🛻' };
 
-const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fullHeight = false, sidePanel = false } = {}) => {
-  const [markers, setMarkers] = useState([]);
-  const [trailData, setTrailData] = useState([]);
+export interface LiveFleetMapProps {
+  height?: string;
+  showRecenter?: boolean;
+  filterBikeIds?: string[];
+  fullHeight?: boolean;
+  sidePanel?: boolean;
+}
+
+const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fullHeight = false, sidePanel = false }: LiveFleetMapProps = {}) => {
+  const [markers, setMarkers] = useState<LiveMarker[]>([]);
+  const [trailData, setTrailData] = useState<TrailPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedBike, setSelectedBike] = useState(null);
-  const [centeredBike, setCenteredBike] = useState(null);
+  const [selectedBike, setSelectedBike] = useState<LiveMarker | null>(null);
+  const [centeredBike, setCenteredBike] = useState<LiveMarker | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
   const [connected, setConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
-  const socketRef = useRef(null);
-  const markerMapRef = useRef({});
-  const clusterRef = useRef(null);
+  const socketRef = useRef<Socket | null>(null);
+  const markerMapRef = useRef<Record<string, L.Marker> | null>(null);
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
 
   useEffect(() => {
     api.get('/tracking').then(res => {
+      const all = res.data as LiveMarker[];
       const data = filterBikeIds
-        ? res.data.filter(b => filterBikeIds.includes(b._id))
-        : res.data;
+        ? all.filter((b: LiveMarker) => filterBikeIds.includes(b._id))
+        : all;
       setMarkers(data);
     }).catch(() => setError('Failed to load live locations'))
       .finally(() => setLoading(false));
@@ -206,7 +241,7 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
     ws.on('location:update', (data) => {
       setMarkers(prev => {
         const idx = prev.findIndex(m => m._id === data.bikeId);
-        const updated = {
+        const updated: LiveMarker = {
           _id: data.bikeId, model: data.model, brand: data.brand,
           category: data.category || prev[idx]?.category || 'Vehicle',
           image: data.image || prev[idx]?.image || null,
@@ -224,7 +259,7 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
       });
 
       setTrailData(prev => {
-        const point = {
+        const point: TrailPoint = {
           bikeId: data.bikeId, lat: data.coordinates[1], lng: data.coordinates[0],
           color: (CATEGORY_STYLES[data.category] || CATEGORY_STYLES.default).trail,
           ts: Date.now(),
@@ -235,15 +270,15 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
       });
     });
 
-    return () => ws.disconnect();
+    return () => { ws.disconnect(); };
   }, []);
 
-  const handleMarkerClick = useCallback((bike) => {
+  const handleMarkerClick = useCallback((bike: LiveMarker): void => {
     setSelectedBike(bike);
     setCenteredBike(bike);
   }, []);
 
-  const handlePanelSelect = useCallback((bike) => {
+  const handlePanelSelect = useCallback((bike: LiveMarker): void => {
     setSelectedBike(bike);
     setCenteredBike(bike);
   }, []);
@@ -252,7 +287,7 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
     let result = markers;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(m => m.model.toLowerCase().includes(q) || m.brand.toLowerCase().includes(q));
+      result = result.filter(m => (m.model ?? '').toLowerCase().includes(q) || (m.brand ?? '').toLowerCase().includes(q));
     }
     if (categoryFilter !== 'All') {
       result = result.filter(m => m.category === categoryFilter);
@@ -261,12 +296,12 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
   }, [markers, searchQuery, categoryFilter]);
 
   const categories = useMemo(() => {
-    const set = new Set(markers.map(m => m.category));
+    const set = new Set(markers.map(m => m.category ?? 'Vehicle'));
     return ['All', ...Array.from(set)];
   }, [markers]);
 
-  const center = markers.length > 0
-    ? [markers[0].coordinates[1], markers[0].coordinates[0]]
+  const center: [number, number] = markers.length > 0
+    ? [markers[0].coordinates?.[1] ?? COX_BAZAR[1], markers[0].coordinates?.[0] ?? COX_BAZAR[0]]
     : COX_BAZAR;
 
   return (
@@ -412,9 +447,14 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
   );
 };
 
-function MarkerCluster({ markers, markerMapRef, clusterRef, onMarkerClick }) {
+function MarkerCluster({ markers, markerMapRef, clusterRef, onMarkerClick }: {
+  markers: LiveMarker[];
+  markerMapRef: MutableRefObject<Record<string, L.Marker> | null>;
+  clusterRef: MutableRefObject<L.MarkerClusterGroup | null>;
+  onMarkerClick: (bike: LiveMarker) => void;
+}): null {
   const map = useMap();
-  const clusterGroupRef = useRef(null);
+  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
 
   useEffect(() => {
     if (clusterGroupRef.current) {
@@ -426,7 +466,7 @@ function MarkerCluster({ markers, markerMapRef, clusterRef, onMarkerClick }) {
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
       showCoverageOnHover: false,
-      iconCreateFunction: (cluster) => {
+      iconCreateFunction: (cluster: L.MarkerCluster) => {
         const count = cluster.getChildCount();
         let bg = '#f59e0b';
         if (count > 10) bg = '#ef4444';
@@ -438,9 +478,9 @@ function MarkerCluster({ markers, markerMapRef, clusterRef, onMarkerClick }) {
       },
     });
 
-    const newMarkers = {};
-    markers.forEach(m => {
-      const pos = [m.coordinates[1], m.coordinates[0]];
+    const newMarkers: Record<string, L.Marker> = {};
+    markers.forEach((m: LiveMarker) => {
+      const pos: [number, number] = [m.coordinates?.[1] ?? 0, m.coordinates?.[0] ?? 0];
       if (newMarkers[m._id]) {
         newMarkers[m._id].setLatLng(pos);
         return;
@@ -457,15 +497,22 @@ function MarkerCluster({ markers, markerMapRef, clusterRef, onMarkerClick }) {
     clusterGroupRef.current = mcg;
     clusterRef.current = mcg;
 
-    return () => map.removeLayer(mcg);
+    return () => { map.removeLayer(mcg); };
   }, [markers, map, onMarkerClick, markerMapRef, clusterRef]);
 
   return null;
 }
 
-const batteryTone = (battery) => battery > 50 ? '#22c55e' : battery > 20 ? '#f59e0b' : '#ef4444';
+const batteryTone = (battery: number): string =>
+  battery > 50 ? '#22c55e' : battery > 20 ? '#f59e0b' : '#ef4444';
 
-function SidePanel({ open, onToggle, markers, selectedId, onSelect }) {
+function SidePanel({ open, onToggle, markers, selectedId, onSelect }: {
+  open: boolean;
+  onToggle: () => void;
+  markers: LiveMarker[];
+  selectedId?: string;
+  onSelect: (m: LiveMarker) => void;
+}): React.JSX.Element {
   return (
     <>
       <button
@@ -494,7 +541,7 @@ function SidePanel({ open, onToggle, markers, selectedId, onSelect }) {
             {markers.length === 0 && (
               <p style={{ fontSize: 12, color: '#999', padding: 8, textAlign: 'center' }}>No active vehicles</p>
             )}
-            {markers.map(m => {
+            {markers.map((m: LiveMarker) => {
               const active = selectedId === m._id;
               return (
                 <button
@@ -506,7 +553,7 @@ function SidePanel({ open, onToggle, markers, selectedId, onSelect }) {
                     background: active ? '#f59e0b14' : 'transparent', cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>{categoryIcons[m.category] || '📍'}</span>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{categoryIcons[m.category ?? ''] || '📍'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 12, fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#111' }}>
                       {m.brand} {m.model}
@@ -527,14 +574,15 @@ function SidePanel({ open, onToggle, markers, selectedId, onSelect }) {
   );
 }
 
-function RecenterButton() {
+function RecenterButton(): React.JSX.Element {
   const map = useMap();
   return (
     <div className="leaflet-top leaflet-right" style={{ marginTop: '10px', marginRight: '10px' }}>
       <button
         onClick={() => {
-          if (map._layers && Object.keys(map._layers).length > 0) {
-            const bounds = [];
+          const layers = (map as unknown as { _layers?: Record<string, unknown> })._layers;
+          if (layers && Object.keys(layers).length > 0) {
+            const bounds: L.LatLng[] = [];
             map.eachLayer(l => {
               if (l instanceof L.Marker) bounds.push(l.getLatLng());
             });

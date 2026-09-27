@@ -1,10 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useToast } from '../components/useToast';
 import { Lock, Eye, EyeOff, Save, CheckCircle, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const ChangePassword = () => {
   });
   const [strength, setStrength] = useState({ score: 0, label: '', color: '' });
 
-  const checkStrength = (pw) => {
+  const checkStrength = (pw: string): void => {
     let score = 0;
     if (pw.length >= 8) score++;
     if (/[A-Z]/.test(pw)) score++;
@@ -39,7 +39,7 @@ const ChangePassword = () => {
     });
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
     setForm(f => {
       const updated = { ...f, [name]: value };
@@ -80,7 +80,7 @@ const ChangePassword = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
     if (!validate()) return;
@@ -96,7 +96,8 @@ const ChangePassword = () => {
       setStrength({ score: 0, label: '', color: '' });
       setTimeout(() => router.push('/login'), 3000);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to change password';
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      const msg = data?.message || 'Failed to change password';
       setError(msg);
       addToast(msg, 'error');
     } finally {

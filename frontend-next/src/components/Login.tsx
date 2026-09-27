@@ -81,7 +81,7 @@ const Login = () => {
           </form>
 
           <p className="text-center text-sm mt-6" style={{ color: 'var(--text-secondary)' }}>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="font-semibold" style={{ color: 'var(--accent-text)' }} onMouseEnter={e => e.currentTarget.style.filter = 'brightness(1.2)'} onMouseLeave={e => e.currentTarget.style.filter = ''}>Create one</Link>
           </p>
         </div>

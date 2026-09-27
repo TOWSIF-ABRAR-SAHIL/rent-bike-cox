@@ -1,16 +1,16 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, memo } from 'react';
 import { HelpCircle, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Search } from 'lucide-react';
 import api from '../api/axios';
+import type { Faq } from '@/types';
 
 const FAQPage = () => {
-  const [faqs, setFaqs] = useState([]);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [expanded, setExpanded] = useState({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
-  const [helpfulMap, setHelpfulMap] = useState({});
+  const [helpfulMap, setHelpfulMap] = useState<Record<string, boolean>>({});
 
   const fetchFaqs = useCallback(async () => {
     setLoading(true);
@@ -18,15 +18,15 @@ const FAQPage = () => {
     try {
       const res = await api.get('/faqs');
       const data = res.data || {};
-      const cats = Array.isArray(data.categories) ? data.categories : [];
-      const faqMap = (data.faqs && !Array.isArray(data.faqs)) ? data.faqs : {};
-      const flat = [];
+      const cats = (Array.isArray(data.categories) ? data.categories : []) as string[];
+      const faqMap = ((data.faqs && !Array.isArray(data.faqs)) ? data.faqs : {}) as Record<string, Faq[]>;
+      const flat: Faq[] = [];
       cats.forEach(cat => {
         const items = Array.isArray(faqMap[cat]) ? faqMap[cat] : [];
         items.forEach(f => flat.push({ ...f, category: cat }));
       });
       setFaqs(flat);
-      const catsObj = {};
+      const catsObj: Record<string, boolean> = {};
       cats.forEach(c => { catsObj[c] = true; });
       setExpanded(catsObj);
     } catch {
@@ -39,7 +39,7 @@ const FAQPage = () => {
   useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFaqs(); }, [fetchFaqs]);
 
-  const trackHelpful = async (id, helpful) => {
+  const trackHelpful = async (id: string, helpful: boolean): Promise<void> => {
     if (helpfulMap[id]) return;
     try {
       await api.post(`/faqs/${id}/helpful`, { helpful });
@@ -47,14 +47,15 @@ const FAQPage = () => {
     } catch { /* silent */ }
   };
 
-  const grouped = {};
+  const grouped: Record<string, Faq[]> = {};
   faqs.forEach(f => {
-    if (!grouped[f.category]) grouped[f.category] = [];
-    grouped[f.category].push(f);
+    const key = f.category ?? '';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(f);
   });
 
   const filtered = search
-    ? faqs.filter(f => f.question.toLowerCase().includes(search.toLowerCase()) || f.answer.toLowerCase().includes(search.toLowerCase()))
+    ? faqs.filter(f => (f.question ?? '').toLowerCase().includes(search.toLowerCase()) || (f.answer ?? '').toLowerCase().includes(search.toLowerCase()))
     : null;
 
   if (loading) return (
@@ -125,7 +126,7 @@ const FAQPage = () => {
   );
 };
 
-const FAQItem = ({ faq, helpfulMap, trackHelpful }) => {
+const FAQItem = ({ faq, helpfulMap, trackHelpful }: { faq: Faq; helpfulMap: Record<string, boolean>; trackHelpful: (id: string, helpful: boolean) => void }) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -144,17 +145,17 @@ const FAQItem = ({ faq, helpfulMap, trackHelpful }) => {
           <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{faq.answer}</p>
           <div className="flex items-center gap-3 mt-3 pt-3 border-t" style={{ borderColor: 'var(--border-base)' }}>
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Was this helpful?</span>
-            <button onClick={() => trackHelpful(faq._id, true)}
-              disabled={!!helpfulMap[faq._id]}
+            <button onClick={() => trackHelpful(faq._id ?? '', true)}
+              disabled={!!helpfulMap[faq._id ?? '']}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-all disabled:opacity-40"
-              style={{ color: helpfulMap[faq._id] === true ? 'var(--success-text)' : 'var(--text-muted)' }}
+              style={{ color: helpfulMap[faq._id ?? ''] === true ? 'var(--success-text)' : 'var(--text-muted)' }}
               aria-label="Yes, helpful">
               <ThumbsUp size={12} /> {faq.helpfulCount || 0}
             </button>
-            <button onClick={() => trackHelpful(faq._id, false)}
-              disabled={!!helpfulMap[faq._id]}
+            <button onClick={() => trackHelpful(faq._id ?? '', false)}
+              disabled={!!helpfulMap[faq._id ?? '']}
               className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-all disabled:opacity-40"
-              style={{ color: helpfulMap[faq._id] === false ? 'var(--danger-text)' : 'var(--text-muted)' }}
+              style={{ color: helpfulMap[faq._id ?? ''] === false ? 'var(--danger-text)' : 'var(--text-muted)' }}
               aria-label="Not helpful">
               <ThumbsDown size={12} /> {faq.notHelpfulCount || 0}
             </button>

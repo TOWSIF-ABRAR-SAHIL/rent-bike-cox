@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../api/axios';
@@ -61,7 +60,10 @@ const FORMATS = [
   { value: 'xlsx', label: 'XLSX', icon: FileSpreadsheet, desc: 'Excel workbook' },
 ];
 
-const HistoryItem = ({ item, onDownload, onDelete, catColor }) => (
+import type { CSSProperties } from 'react';
+import type { ReportHistoryItem, ReportTypeInfo } from '@/types';
+
+const HistoryItem = ({ item, onDownload, onDelete, catColor }: { item: ReportHistoryItem; onDownload: (item: ReportHistoryItem) => void; onDelete: (id: string) => void; catColor: string }) => (
   <div className="flex items-center justify-between p-3 rounded-xl transition-all duration-200 hover:shadow-md group"
     style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
     <div className="flex items-center gap-3 min-w-0">
@@ -81,7 +83,7 @@ const HistoryItem = ({ item, onDownload, onDelete, catColor }) => (
         style={{ color: 'var(--text-muted)' }} aria-label="Download">
         <Download size= {15} />
       </button>
-      <button onClick={() => onDelete(item._id)} className="p-2 rounded-lg transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+      <button onClick={() => onDelete(item._id ?? '')} className="p-2 rounded-lg transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
         style={{ color: 'var(--text-muted)' }} aria-label="Delete">
         <X size={15} />
       </button>
@@ -89,7 +91,7 @@ const HistoryItem = ({ item, onDownload, onDelete, catColor }) => (
   </div>
 );
 
-const PreviewModal = ({ report, format, fromDate, toDate, onClose, onConfirm }) => {
+const PreviewModal = ({ report, format, fromDate, toDate, onClose, onConfirm }: { report: ReportTypeInfo; format: string; fromDate: string; toDate: string; onClose: () => void; onConfirm: (format: string) => void }) => {
   const [selectedFormat, setSelectedFormat] = useState(format);
 
   return (
@@ -123,7 +125,7 @@ const PreviewModal = ({ report, format, fromDate, toDate, onClose, onConfirm }) 
                     selectedFormat === f.value ? 'ring-2 text-white' : 'hover:bg-black/5 dark:hover:bg-white/5'
                   }`}
                   style={selectedFormat === f.value
-                    ? { background: 'var(--accent-text)', ringColor: 'var(--accent-text)' }
+                    ? { background: 'var(--accent-text)', ringColor: 'var(--accent-text)' } as CSSProperties
                     : { background: 'var(--input-bg)', color: 'var(--text-secondary)' }}>
                   {f.label}
                 </button>
@@ -164,15 +166,15 @@ const PreviewModal = ({ report, format, fromDate, toDate, onClose, onConfirm }) 
 const ReportsTab = () => {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(null);
+  const [generating, setGenerating] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [format, setFormat] = useState('pdf');
   const [showFormatDropdown, setShowFormatDropdown] = useState(false);
-  const [previewReport, setPreviewReport] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [previewReport, setPreviewReport] = useState<ReportTypeInfo | null>(null);
+  const [history, setHistory] = useState<ReportHistoryItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const formatRef = useRef(null);
+  const formatRef = useRef<HTMLDivElement>(null);
 
   const fetchTypes = useCallback(async () => {
     try {
@@ -192,24 +194,24 @@ const ReportsTab = () => {
   }, []);
 
   useEffect(() => {
-    const handleClick = (e) => {
-      if (formatRef.current && !formatRef.current.contains(e.target)) setShowFormatDropdown(false);
+    const handleClick = (e: MouseEvent): void => {
+      if (formatRef.current && !formatRef.current.contains(e.target as Node)) setShowFormatDropdown(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const getCatConfig = (groupId) => CATEGORIES.find(c => c.key === groupId) || CATEGORIES[0];
+  const getCatConfig = (groupId: string): (typeof CATEGORIES)[number] => CATEGORIES.find(c => c.key === groupId) || CATEGORIES[0];
 
-  const downloadReport = async (type, fmt) => {
+  const downloadReport = async (type: string, fmt: string): Promise<void> => {
     setGenerating(type);
     try {
-      const params = { type, format: fmt };
+      const params: Record<string, string> = { type, format: fmt };
       if (fromDate) params.from = fromDate;
       if (toDate) params.to = toDate;
 
-      const extMap = { csv: 'csv', json: 'json', pdf: 'pdf', xlsx: 'xlsx' };
-      const mimeMap = {
+      const extMap: Record<string, string> = { csv: 'csv', json: 'json', pdf: 'pdf', xlsx: 'xlsx' };
+      const mimeMap: Record<string, string> = {
         csv: 'text/csv', json: 'application/json',
         pdf: 'application/pdf', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       };
@@ -246,11 +248,11 @@ const ReportsTab = () => {
     }
   };
 
-  const handleDownloadHistory = async (item) => {
-    downloadReport(item.reportType, item.format);
+  const handleDownloadHistory = async (item: ReportHistoryItem): Promise<void> => {
+    downloadReport(item.reportType ?? '', item.format ?? 'csv');
   };
 
-  const handleDeleteHistory = async (id) => {
+  const handleDeleteHistory = async (id: string): Promise<void> => {
     try {
       await api.delete(`/admin/reports/history/${id}`);
       setHistory(prev => prev.filter(h => h._id !== id));
@@ -357,7 +359,7 @@ const ReportsTab = () => {
           <div className="space-y-2">
             {history.map(item => {
               const report = REPORT_TYPES.find(r => r.id === item.reportType);
-              const cat = getCatConfig(report?.group);
+              const cat = getCatConfig(report?.group ?? '');
               return (
                 <HistoryItem key={item._id} item={item}
                   onDownload={handleDownloadHistory}

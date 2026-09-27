@@ -1,12 +1,13 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { BarChart3 } from 'lucide-react';
 
-const BookingTrendChart = ({ data }) => {
-  const { statusBreakdown, bookingsByDay } = data;
-  const maxTotal = Math.max(...bookingsByDay.map(d => d.total), 1);
+import type { BookingTrendData, StatusCount, TrendDay } from '@/types';
 
-  const statusColors = {
+const BookingTrendChart = ({ data }: { data: BookingTrendData }) => {
+  const { statusBreakdown = [], bookingsByDay = [] } = data;
+  const maxTotal = Math.max(...bookingsByDay.map((d: TrendDay) => d.total ?? 0), 1);
+
+  const statusColors: Record<string, string> = {
     Confirmed: 'var(--success-text)',
     Completed: 'var(--info-text)',
     Cancelled: 'var(--danger-text)',
@@ -18,8 +19,8 @@ const BookingTrendChart = ({ data }) => {
   const completionRate = statusBreakdown.length > 0
     ? (() => {
       const completed = statusBreakdown.find(s => s.status === 'Completed')?.count || 0;
-      const total = statusBreakdown.reduce((sum, s) => sum + s.count, 0);
-      return total > 0 ? ((completed / total) * 100).toFixed(1) : 0;
+      const total = statusBreakdown.reduce((sum: number, s: StatusCount) => sum + (s.count ?? 0), 0);
+      return total > 0 ? Number(((completed / total) * 100).toFixed(1)) : 0;
     })()
     : 0;
 
@@ -39,7 +40,7 @@ const BookingTrendChart = ({ data }) => {
       <div className="flex flex-wrap gap-3 mb-4">
         {statusBreakdown.map(s => (
           <div key={s.status} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ background: statusColors[s.status] || 'var(--text-muted)' }} />
+            <div className="w-2 h-2 rounded-full" style={{ background: statusColors[s.status ?? ''] || 'var(--text-muted)' }} />
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.status}</span>
             <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{s.count}</span>
           </div>
@@ -55,11 +56,11 @@ const BookingTrendChart = ({ data }) => {
               <div className="absolute bottom-full mb-2 hidden group-hover:block z-10 px-2 py-1 rounded text-xs whitespace-nowrap" style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}>
                 {d.date}: {d.total} total, {d.completed} completed, {d.cancelled} cancelled
               </div>
-              <div className="w-full flex flex-col gap-px rounded-t overflow-hidden" style={{ height: `${(d.total / maxTotal) * 100}%` }}>
-                {d.completed > 0 && <div className="w-full" style={{ flex: d.completed, background: 'var(--info-text)' }} />}
-                {d.cancelled > 0 && <div className="w-full" style={{ flex: d.cancelled, background: 'var(--danger-text)' }} />}
-                {d.total - d.completed - d.cancelled > 0 && (
-                  <div className="w-full" style={{ flex: d.total - d.completed - d.cancelled, background: 'var(--accent-text)', opacity: 0.5 }} />
+              <div className="w-full flex flex-col gap-px rounded-t overflow-hidden" style={{ height: `${((d.total ?? 0) / maxTotal) * 100}%` }}>
+                {(d.completed ?? 0) > 0 && <div className="w-full" style={{ flex: d.completed ?? 0, background: 'var(--info-text)' }} />}
+                {(d.cancelled ?? 0) > 0 && <div className="w-full" style={{ flex: d.cancelled ?? 0, background: 'var(--danger-text)' }} />}
+                {(d.total ?? 0) - (d.completed ?? 0) - (d.cancelled ?? 0) > 0 && (
+                  <div className="w-full" style={{ flex: (d.total ?? 0) - (d.completed ?? 0) - (d.cancelled ?? 0), background: 'var(--accent-text)', opacity: 0.5 }} />
                 )}
               </div>
             </div>

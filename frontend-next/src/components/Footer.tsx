@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 
@@ -52,7 +51,7 @@ const Footer = () => {
             </li>
             <li className="flex items-center text-sm" style={{ color: 'var(--footer-text)' }}>
               <MapPin size={14} className="mr-3 flex-shrink-0" style={{ color: 'var(--accent-text)' }} />
-              Cox's Bazar, Bangladesh
+              Cox&apos;s Bazar, Bangladesh
             </li>
           </ul>
         </div>

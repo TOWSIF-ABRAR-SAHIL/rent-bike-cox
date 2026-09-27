@@ -107,7 +107,7 @@ const BikeDetails = () => {
   }, [bike]);
 
   const handleProceed = ({ duration, startTime, endTime, pricing }: {
-    duration: number; startTime: string; endTime: string; pricing: unknown;
+    duration: number; startTime: string | Date; endTime: string | Date; pricing: unknown;
   }): void => {
     if (!bike) return;
     if (!token) { router.push('/login'); return; }
@@ -144,7 +144,7 @@ const BikeDetails = () => {
       <div className="text-center glass rounded-2xl p-8 max-w-md">
         <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
         <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Vehicle Not Found</h2>
-        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>The vehicle you're looking for doesn't exist or has been removed.</p>
+        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>The vehicle you&apos;re looking for doesn&apos;t exist or has been removed.</p>
         <button onClick={() => router.back()} className="btn-primary" aria-label="Go back">Go Back</button>
       </div>
     </div>
@@ -353,7 +353,7 @@ const BikeDetails = () => {
           </div>
         ) : (
           <ReviewList
-            stats={reviewStats}
+            stats={reviewStats ?? { avgRating: 0, total: 0 }}
             reviews={reviews}
             page={reviewPage}
             pages={reviewPages}

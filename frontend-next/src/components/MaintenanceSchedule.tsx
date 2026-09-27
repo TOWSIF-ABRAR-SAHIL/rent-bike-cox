@@ -1,28 +1,28 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import type { Bike, ScheduledBike } from '@/types';
 import { Calendar, Wrench, AlertTriangle, Clock } from 'lucide-react';
 
-const MaintenanceSchedule = ({ bikes = [] }) => {
-  const [upcoming, setUpcoming] = useState([]);
+const MaintenanceSchedule = ({ bikes = [] }: { bikes?: Bike[] }) => {
+  const [upcoming, setUpcoming] = useState<ScheduledBike[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUpcoming = async () => {
       try {
-        const bikeList = bikes.length > 0 ? bikes : (await api.get('/dashboard/my-bikes')).data;
+        const bikeList = (bikes.length > 0 ? bikes : (await api.get('/dashboard/my-bikes')).data) as Bike[];
         const now = new Date();
         const twoWeeks = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
-        const schedule = bikeList
-          .filter(b => b.nextServiceDue && new Date(b.nextServiceDue) <= twoWeeks)
-          .map(b => ({
+        const schedule: ScheduledBike[] = bikeList
+          .filter((b: Bike) => b.nextServiceDue && new Date(b.nextServiceDue) <= twoWeeks)
+          .map((b: Bike) => ({
             ...b,
-            daysUntil: Math.ceil((new Date(b.nextServiceDue) - now) / (1000 * 60 * 60 * 24)),
-            isOverdue: new Date(b.nextServiceDue) < now,
+            daysUntil: Math.ceil((new Date(b.nextServiceDue ?? '').getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+            isOverdue: new Date(b.nextServiceDue ?? '') < now,
           }))
-          .sort((a, b) => new Date(a.nextServiceDue) - new Date(b.nextServiceDue));
+          .sort((a, b) => new Date(a.nextServiceDue ?? '').getTime() - new Date(b.nextServiceDue ?? '').getTime());
 
         setUpcoming(schedule);
       } catch {
@@ -71,7 +71,7 @@ const MaintenanceSchedule = ({ bikes = [] }) => {
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {bike.isOverdue ? 'OVERDUE' : `Due in ${bike.daysUntil} days`}
                     {' — '}
-                    {new Date(bike.nextServiceDue).toLocaleDateString()}
+                    {new Date(bike.nextServiceDue ?? '').toLocaleDateString()}
                   </p>
                 </div>
               </div>

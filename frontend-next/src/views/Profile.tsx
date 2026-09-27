@@ -1,7 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { ProfileFormState, StoredUser } from '@/types';
+import type { ChangeEvent, FormEvent } from 'react';
 import { useAuth } from '../context/useAuth';
 import { useToast } from '../components/useToast';
 import { User, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertCircle, Loader2, Calendar, Heart, Users } from 'lucide-react';
@@ -9,17 +10,17 @@ import { User, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertCircle, Lo
 const Profile = () => {
   const { refreshProfile } = useAuth();
   const { addToast } = useToast();
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState<StoredUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [nidPreview, setNidPreview] = useState('');
   const [licensePreview, setLicensePreview] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('');
-  const nidInputRef = useRef(null);
-  const licenseInputRef = useRef(null);
-  const avatarInputRef = useRef(null);
-  const [form, setForm] = useState({
+  const nidInputRef = useRef<HTMLInputElement>(null);
+  const licenseInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState<ProfileFormState>({
     name: '',
     phoneNumber: '',
     address: '',
@@ -45,9 +46,9 @@ const Profile = () => {
           phoneNumber: user.phoneNumber || '',
           address: user.address || '',
           bio: user.bio || '',
-          emergencyName: user.emergencyContact?.name || '',
-          emergencyPhone: user.emergencyContact?.phone || '',
-          emergencyRelation: user.emergencyContact?.relation || '',
+          emergencyName: (typeof user.emergencyContact === 'object' ? user.emergencyContact?.name : undefined) || '',
+          emergencyPhone: (typeof user.emergencyContact === 'object' ? user.emergencyContact?.phone : undefined) || '',
+          emergencyRelation: (typeof user.emergencyContact === 'object' ? user.emergencyContact?.relation : undefined) || '',
         }));
         setNidPreview(user.nidImage || '');
         setLicensePreview(user.licenseImage || '');
@@ -60,13 +61,13 @@ const Profile = () => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+    setForm(f => ({ ...f, [name]: value } as ProfileFormState));
   };
 
-  const handleFileChange = (e, field) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, field: 'nidImage' | 'licenseImage' | 'avatar'): void => {
+    const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       addToast('Please select an image file', 'error');
@@ -78,15 +79,17 @@ const Profile = () => {
     }
     setForm(f => ({ ...f, [field]: file }));
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      if (field === 'nidImage') setNidPreview(ev.target.result);
-      else if (field === 'licenseImage') setLicensePreview(ev.target.result);
-      else if (field === 'avatar') setAvatarPreview(ev.target.result);
+    reader.onload = (ev): void => {
+      const result = ev.target?.result;
+      const url = typeof result === 'string' ? result : '';
+      if (field === 'nidImage') setNidPreview(url);
+      else if (field === 'licenseImage') setLicensePreview(url);
+      else if (field === 'avatar') setAvatarPreview(url);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setSaving(true);
     setError('');
@@ -111,7 +114,8 @@ const Profile = () => {
       await refreshProfile();
       addToast('Profile updated successfully', 'success');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to update profile';
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      const msg = data?.message || 'Failed to update profile';
       setError(msg);
       addToast(msg, 'error');
     } finally {
@@ -160,7 +164,7 @@ const Profile = () => {
           <div className="flex items-center gap-4">
             {avatarPreview && (
               <img src={avatarPreview} alt="Avatar" className="w-20 h-20 rounded-full object-cover border flex-shrink-0"
-                style={{ borderColor: 'var(--border-color)' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                style={{ borderColor: 'var(--border-color)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             )}
             {!avatarPreview && (
               <div className="w-20 h-20 rounded-full flex items-center justify-center border flex-shrink-0"
@@ -301,7 +305,7 @@ const Profile = () => {
             <div className="flex items-center gap-4">
               {nidPreview && (
                 <img src={nidPreview} alt="NID preview" className="w-24 h-24 rounded-xl object-cover border flex-shrink-0"
-                  style={{ borderColor: 'var(--border-color)' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                  style={{ borderColor: 'var(--border-color)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               )}
               <div className="flex-1">
                 <input type="file" ref={nidInputRef} accept="image/jpeg,image/png,image/jpg"
@@ -317,7 +321,7 @@ const Profile = () => {
             <div className="flex items-center gap-4">
               {licensePreview && (
                 <img src={licensePreview} alt="License preview" className="w-24 h-24 rounded-xl object-cover border flex-shrink-0"
-                  style={{ borderColor: 'var(--border-color)' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                  style={{ borderColor: 'var(--border-color)' }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               )}
               <div className="flex-1">
                 <input type="file" ref={licenseInputRef} accept="image/jpeg,image/png,image/jpg"

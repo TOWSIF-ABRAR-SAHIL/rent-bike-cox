@@ -1,9 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState, useEffect, useCallback, memo } from 'react';
 
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
 import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download, Database, MapPin } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import TabErrorBoundary from '../components/TabErrorBoundary';
@@ -33,7 +32,11 @@ const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
   loading: () => <div className="skeleton rounded-2xl" style={{ height: 400 }} />,
 });
 
-const TabButton = ({ active, onClick, icon: Icon, children }) => (
+import type { CSSProperties, FormEvent, ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import type { Bike as BikeType, BikeCategory, BikePackage, Coupon, FinancialData, StoredUser, AdminFinance, AdminSettings } from '@/types';
+
+const TabButton = ({ active, onClick, icon: Icon, children }: { active: boolean; onClick: () => void; icon: LucideIcon; children: ReactNode }) => (
   <button onClick={onClick}
     className={`flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap snap-start ${
       active ? 'gradient-primary shadow-lg shadow-amber-500/25' : 'glass'
@@ -47,7 +50,7 @@ const TabButton = ({ active, onClick, icon: Icon, children }) => (
   </button>
 );
 
-const StatCard = ({ label, value, colorStyle }) => (
+const StatCard = ({ label, value, colorStyle }: { label: string; value: ReactNode; colorStyle?: CSSProperties }) => (
   <div className="glass rounded-2xl p-5 border" style={{ borderColor: 'var(--border-base)' }}>
     <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
     <p className="text-2xl font-bold" style={colorStyle}>{value}</p>
@@ -56,11 +59,11 @@ const StatCard = ({ label, value, colorStyle }) => (
 
 const AdminDashboard = () => {
   const { addToast } = useToast();
-  const [settings, setSettings] = useState({ basePricePerHour: 200, packages: [] });
-  const [bikes, setBikes] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [coupons, setCoupons] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [settings, setSettings] = useState<AdminSettings>({ basePricePerHour: 200, packages: [] });
+  const [bikes, setBikes] = useState<BikeType[]>([]);
+  const [users, setUsers] = useState<StoredUser[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [categories, setCategories] = useState<BikeCategory[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
@@ -68,12 +71,12 @@ const AdminDashboard = () => {
   const [fetchError, setFetchError] = useState('');
   const [walkIn, setWalkIn] = useState({ bikeId: '', startTime: '', endTime: '', customerName: '', customerPhone: '', customerNid: '', destination: '' });
   const [walkInSubmitting, setWalkInSubmitting] = useState(false);
-  const [finance, setFinance] = useState(null);
+  const [finance, setFinance] = useState<AdminFinance | null>(null);
   const [financeLoading, setFinanceLoading] = useState(false);
-  const [editingBike, setEditingBike] = useState(null);
-  const [editPackages, setEditPackages] = useState([]);
+  const [editingBike, setEditingBike] = useState<BikeType | null>(null);
+  const [editPackages, setEditPackages] = useState<BikePackage[]>([]);
   const [editSaving, setEditSaving] = useState(false);
-  const [selectedBikeId, setSelectedBikeId] = useState(null);
+  const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
 
   const fetchDashboard = useCallback(() => {
     setLoading(true);
@@ -137,7 +140,7 @@ const AdminDashboard = () => {
     } catch { addToast('Failed to unlock', 'error'); }
   }, [addToast, fetchFinance]);
 
-  const handleUpdateSettings = useCallback(async (e) => {
+  const handleUpdateSettings = useCallback(async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       await api.put('/dashboard/admin/settings', settings);
@@ -145,7 +148,7 @@ const AdminDashboard = () => {
     } catch { addToast('Failed to update settings', 'error'); }
   }, [settings, addToast]);
 
-  const toggleBikeVerification = useCallback(async (bikeId) => {
+  const toggleBikeVerification = useCallback(async (bikeId: string): Promise<void> => {
     try {
       await api.put(`/dashboard/admin/bikes/${bikeId}/verify`);
       setBikes(prev => prev.map(b => b._id === bikeId ? { ...b, isVerified: !b.isVerified } : b));
@@ -153,7 +156,7 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
-  const openEditPackages = useCallback((bike) => {
+  const openEditPackages = useCallback((bike: BikeType): void => {
     setEditingBike(bike);
     setEditPackages(bike.packages ? bike.packages.map(p => ({ ...p })) : []);
   }, []);
@@ -175,14 +178,14 @@ const AdminDashboard = () => {
   const addEditPackage = () => {
     setEditPackages(prev => [...prev, { label: '', minHours: 1, maxHours: null, hourlyRate: 0 }]);
   };
-  const updateEditPackage = (index, field, value) => {
+  const updateEditPackage = (index: number, field: string, value: string | number | null): void => {
     setEditPackages(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p));
   };
-  const removeEditPackage = (index) => {
+  const removeEditPackage = (index: number): void => {
     setEditPackages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const toggleUserVerification = useCallback(async (userId) => {
+  const toggleUserVerification = useCallback(async (userId: string): Promise<void> => {
     try {
       await api.put(`/dashboard/admin/users/${userId}/verify`);
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u));
@@ -190,17 +193,17 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
-  const handleCreateCoupon = useCallback(async (e) => {
+  const handleCreateCoupon = useCallback(async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       const res = await api.post('/coupons', newCoupon);
       setCoupons(prev => [res.data, ...prev]);
       setNewCoupon({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
       addToast('Coupon created!', 'success');
-    } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
+    } catch (err) { const data = (err as ApiError).response?.data as { message?: string } | undefined; addToast(data?.message || 'Failed', 'error'); }
   }, [newCoupon, addToast]);
 
-  const handleDeleteCoupon = useCallback(async (id) => {
+  const handleDeleteCoupon = useCallback(async (id: string): Promise<void> => {
     if (!window.confirm('Delete this coupon?')) return;
     try {
       await api.delete(`/coupons/${id}`);
@@ -209,7 +212,7 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
-  const toggleCouponActive = useCallback(async (id, isActive) => {
+  const toggleCouponActive = useCallback(async (id: string, isActive?: boolean): Promise<void> => {
     try {
       await api.put(`/coupons/${id}`, { isActive: !isActive });
       setCoupons(prev => prev.map(c => c._id === id ? { ...c, isActive: !isActive } : c));
@@ -217,26 +220,26 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
-  const handleCreateCategory = useCallback(async (e) => {
+  const handleCreateCategory = useCallback(async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       const res = await api.post('/dashboard/admin/categories', { name: newCategory });
       setCategories(prev => [...prev, res.data]);
       setNewCategory('');
       addToast('Category added!', 'success');
-    } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
+    } catch (err) { const data = (err as ApiError).response?.data as { message?: string } | undefined; addToast(data?.message || 'Failed', 'error'); }
   }, [newCategory, addToast]);
 
-  const handleDeleteCategory = useCallback(async (id) => {
+  const handleDeleteCategory = useCallback(async (id: string): Promise<void> => {
     if (!window.confirm('Delete?')) return;
     try {
       await api.delete(`/dashboard/admin/categories/${id}`);
       setCategories(prev => prev.filter(c => c._id !== id));
       addToast('Deleted', 'success');
-    } catch (err) { addToast(err.response?.data?.message || 'Failed', 'error'); }
+    } catch (err) { const data = (err as ApiError).response?.data as { message?: string } | undefined; addToast(data?.message || 'Failed', 'error'); }
   }, [addToast]);
 
-  const toggleCategoryActive = useCallback(async (id, isActive) => {
+  const toggleCategoryActive = useCallback(async (id: string, isActive?: boolean): Promise<void> => {
     try {
       const res = await api.put(`/dashboard/admin/categories/${id}`, { isActive: !isActive });
       setCategories(prev => prev.map(c => c._id === id ? res.data : c));
@@ -244,7 +247,7 @@ const AdminDashboard = () => {
     } catch { addToast('Failed', 'error'); }
   }, [addToast]);
 
-  const handleWalkIn = useCallback(async (e) => {
+  const handleWalkIn = useCallback(async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setWalkInSubmitting(true);
     try {
@@ -252,7 +255,8 @@ const AdminDashboard = () => {
       addToast('Walk-in booking created!', 'success');
       setWalkIn({ bikeId: '', startTime: '', endTime: '', customerName: '', customerPhone: '', customerNid: '', destination: '' });
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to create walk-in booking', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to create walk-in booking', 'error');
     } finally {
       setWalkInSubmitting(false);
     }
@@ -429,7 +433,7 @@ const AdminDashboard = () => {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-                    <span>{bike.category?.name || 'N/A'}</span>
+                    <span>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'N/A'}</span>
                     <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</span>
                   </div>
                   <div className="pt-1">
@@ -465,8 +469,8 @@ const AdminDashboard = () => {
                       onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover-bg)'; }}
                       onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
                       <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.model}</td>
-                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.category?.name || 'N/A'}</td>
-                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{bike.renter?.name}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'N/A'}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{typeof bike.renter === 'string' ? undefined : bike.renter?.name}</td>
                       <td className="p-4 font-medium" style={{ color: 'var(--text-primary)' }}>{bike.pricePerHour} TK</td>
                       <td className="p-4">
                         <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
@@ -533,7 +537,7 @@ const AdminDashboard = () => {
                   <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.email}</div>
                   <div className="flex justify-between items-center pt-1">
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</span>
-                    <button onClick={() => toggleUserVerification(user._id)}
+                    <button onClick={() => toggleUserVerification(user._id ?? '')}
                       className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
                       style={{
                         background: user.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
@@ -578,7 +582,7 @@ const AdminDashboard = () => {
                       </td>
                       <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{user.phoneNumber}</td>
                       <td className="p-4">
-                        <button onClick={() => toggleUserVerification(user._id)}
+                        <button onClick={() => toggleUserVerification(user._id ?? '')}
                           className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border transition-all"
                           style={{
                             background: user.isVerified ? 'var(--warning-bg)' : 'var(--success-bg)',
@@ -638,10 +642,10 @@ const AdminDashboard = () => {
                   </div>
                   <div className="flex justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
                     <span>{c.discountPercent}% off</span>
-                    <span>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''} uses</span>
+                    <span>{c.usedCount}{(c.maxUses ?? 0) > 0 ? `/${c.maxUses}` : ''} uses</span>
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <button onClick={() => toggleCouponActive(c._id, c.isActive)}
+                    <button onClick={() => toggleCouponActive(c._id ?? '', c.isActive)}
                       className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
                       style={{
                         background: c.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
@@ -679,7 +683,7 @@ const AdminDashboard = () => {
                       onMouseLeave={e => { e.currentTarget.style.background = ''; }}>
                       <td className="p-4 font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{c.code}</td>
                       <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.discountPercent}%</td>
-                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.usedCount}{c.maxUses > 0 ? `/${c.maxUses}` : ''}</td>
+                      <td className="p-4" style={{ color: 'var(--text-secondary)' }}>{c.usedCount}{(c.maxUses ?? 0) > 0 ? `/${c.maxUses}` : ''}</td>
                       <td className="p-4">
                         <span className="px-2.5 py-1 rounded-lg text-xs font-medium border"
                           style={{
@@ -692,7 +696,7 @@ const AdminDashboard = () => {
                       </td>
                       <td className="p-4" style={{ color: 'var(--text-muted)' }}>{c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : 'Never'}</td>
                       <td className="p-4 space-x-2">
-                        <button onClick={() => toggleCouponActive(c._id, c.isActive)}
+                        <button onClick={() => toggleCouponActive(c._id ?? '', c.isActive)}
                           className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
                           style={{
                             background: c.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
@@ -752,7 +756,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{cat.slug}</div>
                   <div className="flex gap-2 pt-1">
-                    <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
+                    <button onClick={() => toggleCategoryActive(cat._id ?? '', cat.isActive)}
                       className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
                       style={{
                         background: cat.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
@@ -761,7 +765,7 @@ const AdminDashboard = () => {
                       }} aria-label="Toggle category active status">
                       {cat.isActive ? 'Deactivate' : 'Activate'}
                     </button>
-                    <button onClick={() => handleDeleteCategory(cat._id)}
+                    <button onClick={() => handleDeleteCategory(cat._id ?? '')}
                       className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
                       style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }} aria-label="Delete category">
                       <Trash2 size={14} />
@@ -799,7 +803,7 @@ const AdminDashboard = () => {
                         </span>
                       </td>
                       <td className="p-4 space-x-2">
-                        <button onClick={() => toggleCategoryActive(cat._id, cat.isActive)}
+                        <button onClick={() => toggleCategoryActive(cat._id ?? '', cat.isActive)}
                           className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs font-medium border"
                           style={{
                             background: cat.isActive ? 'var(--warning-bg)' : 'var(--success-bg)',
@@ -808,7 +812,7 @@ const AdminDashboard = () => {
                           }} aria-label="Toggle category active status">
                           {cat.isActive ? 'Deactivate' : 'Activate'}
                         </button>
-                        <button onClick={() => handleDeleteCategory(cat._id)}
+                        <button onClick={() => handleDeleteCategory(cat._id ?? '')}
                           className="px-3 py-2.5 min-h-11 min-w-11 flex items-center justify-center rounded-lg text-xs border"
                           style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' }} aria-label="Delete category">
                           <Trash2 size={14} />
@@ -931,7 +935,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {finance.fraudEvents?.events?.length > 0 && (
+            {(finance.fraudEvents?.events?.length ?? 0) > 0 && (
               <div className="glass p-6 rounded-2xl">
                 <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                   <AlertTriangle size={18} className="text-red-400" /> Recent Fraud Events
@@ -948,9 +952,9 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {finance.fraudEvents.events.map(ev => (
+                      {(finance.fraudEvents?.events ?? []).map(ev => (
                         <tr key={ev._id} style={{ borderBottom: '1px solid var(--border-base)' }}>
-                          <td className="py-2 px-3" style={{ color: 'var(--text-secondary)' }}>{new Date(ev.createdAt).toLocaleString()}</td>
+                          <td className="py-2 px-3" style={{ color: 'var(--text-secondary)' }}>{new Date(ev.createdAt ?? '').toLocaleString()}</td>
                           <td className="py-2 px-3" style={{ color: 'var(--text-primary)' }}>{ev.eventType}</td>
                           <td className="py-2 px-3 font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>{ev.ip}</td>
                           <td className="py-2 px-3">

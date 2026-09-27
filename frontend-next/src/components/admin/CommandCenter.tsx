@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axios';
@@ -15,8 +14,14 @@ const QUICK_ACTIONS = [
   { tab: 'health', icon: Activity, label: 'System Health', color: '#06b6d4', bg: '#06b6d410' },
 ];
 
-const CommandCenter = ({ onNavigate, stats }) => {
-  const [health, setHealth] = useState(null);
+import type { HealthData } from '@/types';
+import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from 'react';
+
+export interface PlatformStats { bikes?: number; users?: number; coupons?: number; categories?: number; }
+
+const CommandCenter = ({ onNavigate, stats }: { onNavigate: (tab: string) => void; stats?: PlatformStats }) => {
+  const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchHealth = useCallback(async () => {
@@ -34,7 +39,7 @@ const CommandCenter = ({ onNavigate, stats }) => {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchHealth(); }, [fetchHealth]);
 
-  const statusDot = (status) => {
+  const statusDot = (status?: string): ReactNode => {
     if (status === 'healthy' || status === 'connected') return <span className="inline-block w-2 h-2 rounded-full bg-green-500" />;
     if (status === 'degraded') return <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" />;
     return <span className="inline-block w-2 h-2 rounded-full bg-red-500" />;
@@ -79,7 +84,7 @@ const CommandCenter = ({ onNavigate, stats }) => {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: 'var(--text-secondary)' }}>Memory</span>
-                <span style={{ color: 'var(--text-primary)' }}>{health.memory ? `${((health.memory.heapUsed / health.memory.heapTotal) * 100).toFixed(1)}%` : 'N/A'}</span>
+                <span style={{ color: 'var(--text-primary)' }}>{health.memory ? `${(((health.memory.heapUsed ?? 0) / (health.memory.heapTotal || 1)) * 100).toFixed(1)}%` : 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: 'var(--text-secondary)' }}>Uptime</span>

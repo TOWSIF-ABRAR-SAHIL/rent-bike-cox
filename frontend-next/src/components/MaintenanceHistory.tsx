@@ -1,38 +1,39 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useToast } from './useToast';
 import { History, Trash2, Filter, Loader2 } from 'lucide-react';
 
-const TYPE_LABELS = {
+const TYPE_LABELS: Record<string, string> = {
   service: 'Service', repair: 'Repair', inspection: 'Inspection',
   oil_change: 'Oil Change', tire_replacement: 'Tire Replacement',
   brake_service: 'Brake Service', battery: 'Battery', other: 'Other',
 };
 
-const STATUS_COLORS = {
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   completed: { bg: 'var(--success-bg)', text: 'var(--success-text)' },
   in_progress: { bg: 'var(--warning-bg)', text: 'var(--warning-text)' },
   scheduled: { bg: 'var(--info-bg, rgba(59,130,246,0.1))', text: 'var(--info-text, #3b82f6)' },
   cancelled: { bg: 'var(--danger-bg)', text: 'var(--danger-text)' },
 };
 
-const MaintenanceHistory = ({ bikeId }) => {
+import type { MaintenanceLog } from '@/types';
+
+const MaintenanceHistory = ({ bikeId }: { bikeId: string }) => {
   const { addToast } = useToast();
-  const [logs, setLogs] = useState([]);
+  const [logs, setLogs] = useState<MaintenanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [typeFilter, setTypeFilter] = useState('');
-  const [deleting, setDeleting] = useState(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ page, limit: 10 });
+        const params = new URLSearchParams({ page: String(page), limit: '10' });
         if (typeFilter) params.append('type', typeFilter);
         const res = await api.get(`/maintenance/bike/${bikeId}?${params}`);
         if (!cancelled) {
@@ -49,7 +50,7 @@ const MaintenanceHistory = ({ bikeId }) => {
     return () => { cancelled = true; };
   }, [bikeId, page, typeFilter, addToast]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!window.confirm('Delete this maintenance log?')) return;
     setDeleting(id);
     try {
@@ -99,14 +100,14 @@ const MaintenanceHistory = ({ bikeId }) => {
       ) : (
         <div className="space-y-3">
           {logs.map(log => {
-            const sc = STATUS_COLORS[log.status] || STATUS_COLORS.completed;
+            const sc = STATUS_COLORS[log.status ?? ''] || STATUS_COLORS.completed;
             return (
               <div key={log._id} className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'var(--hover-bg)', color: 'var(--text-secondary)' }}>
-                        {TYPE_LABELS[log.type] || log.type}
+                        {TYPE_LABELS[log.type ?? ''] || log.type}
                       </span>
                       <span className="px-2 py-0.5 rounded text-xs font-medium" style={{ background: sc.bg, color: sc.text }}>
                         {log.status}
@@ -115,10 +116,10 @@ const MaintenanceHistory = ({ bikeId }) => {
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{log.title}</p>
                     {log.description && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{log.description}</p>}
                     <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <span>{new Date(log.performedAt).toLocaleDateString()}</span>
-                      {log.cost > 0 && <span>{log.cost} TK</span>}
+                      <span>{new Date(log.performedAt ?? '').toLocaleDateString()}</span>
+                      {(log.cost ?? 0) > 0 && <span>{log.cost} TK</span>}
                       {log.mileage && <span>{log.mileage.toLocaleString()} km</span>}
-                      {log.performedBy && <span>by {log.performedBy.name}</span>}
+                      {log.performedBy && <span>by {typeof log.performedBy === 'string' ? log.performedBy : log.performedBy?.name}</span>}
                     </div>
                     {log.notes && <p className="text-xs mt-1 italic" style={{ color: 'var(--text-muted)' }}>{log.notes}</p>}
                   </div>

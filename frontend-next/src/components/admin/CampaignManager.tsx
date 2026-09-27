@@ -1,7 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import api from '../../api/axios';
+import api, { type ApiError } from '../../api/axios';
+import type { Campaign, CampaignAnalytics, CampaignForm } from '@/types';
+import type { CSSProperties } from 'react';
 import { useToast } from '../useToast';
 import { Send, BarChart3, Plus, Trash2, X, PauseCircle, PlayCircle, Clock } from 'lucide-react';
 
@@ -9,14 +10,14 @@ const AUDIENCE_OPTIONS = ['all', 'users', 'renters', 'admins'];
 
 const CampaignManager = () => {
   const { addToast } = useToast();
-  const [campaigns, setCampaigns] = useState([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', subject: '', body: '', audience: 'all', scheduledAt: '', timezone: 'Asia/Dhaka', batchSize: 50, batchDelay: 5000 });
-  const [editing, setEditing] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
-  const [sending, setSending] = useState(null);
-  const [audienceCount, setAudienceCount] = useState(null);
+  const [form, setForm] = useState<CampaignForm>({ name: '', subject: '', body: '', audience: 'all', scheduledAt: '', timezone: 'Asia/Dhaka', batchSize: 50, batchDelay: 5000 });
+  const [editing, setEditing] = useState<Campaign | null>(null);
+  const [analytics, setAnalytics] = useState<CampaignAnalytics | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
+  const [audienceCount, setAudienceCount] = useState<number | null>(null);
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -35,7 +36,7 @@ const CampaignManager = () => {
 
   const handleCreate = async () => {
     try {
-      const payload = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
+      const payload: { name: string; subject: string; body: string; audience: { filter: string }; scheduledAt?: string } = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
       if (form.scheduledAt) payload.scheduledAt = form.scheduledAt;
       await api.post('/admin/campaigns', payload);
       addToast('Campaign created!', 'success');
@@ -43,25 +44,27 @@ const CampaignManager = () => {
       setShowForm(false);
       fetchCampaigns();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed', 'error');
     }
   };
 
   const handleUpdate = async () => {
     try {
-      const payload = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
+      const payload: { name: string; subject: string; body: string; audience: { filter: string }; scheduledAt?: string } = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
       if (form.scheduledAt) payload.scheduledAt = form.scheduledAt;
-      await api.put(`/admin/campaigns/${editing._id}`, payload);
+      await api.put(`/admin/campaigns/${editing?._id ?? ''}`, payload);
       addToast('Campaign updated!', 'success');
       setEditing(null);
       setShowForm(false);
       fetchCampaigns();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed', 'error');
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!window.confirm('Delete this campaign?')) return;
     try {
       await api.delete(`/admin/campaigns/${id}`);
@@ -72,7 +75,7 @@ const CampaignManager = () => {
     }
   };
 
-  const handleSend = async (id) => {
+  const handleSend = async (id: string): Promise<void> => {
     if (!window.confirm('Send this campaign now?')) return;
     setSending(id);
     try {
@@ -80,13 +83,14 @@ const CampaignManager = () => {
       addToast('Campaign queued!', 'success');
       fetchCampaigns();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed to send', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed to send', 'error');
     } finally {
       setSending(null);
     }
   };
 
-  const handlePause = async (id) => {
+  const handlePause = async (id: string): Promise<void> => {
     try {
       await api.put(`/admin/campaigns/${id}`, { status: 'paused' });
       addToast('Campaign paused', 'success');
@@ -94,7 +98,7 @@ const CampaignManager = () => {
     } catch { addToast('Failed', 'error'); }
   };
 
-  const handleCancel = async (id) => {
+  const handleCancel = async (id: string): Promise<void> => {
     if (!window.confirm('Cancel this campaign?')) return;
     try {
       await api.put(`/admin/campaigns/${id}`, { status: 'cancelled' });
@@ -112,7 +116,7 @@ const CampaignManager = () => {
     }
   };
 
-  const viewAnalytics = async (id) => {
+  const viewAnalytics = async (id: string): Promise<void> => {
     try {
       const res = await api.get(`/admin/campaigns/${id}/analytics`);
       setAnalytics(res.data);
@@ -121,11 +125,11 @@ const CampaignManager = () => {
     }
   };
 
-  const openEdit = (c) => {
+  const openEdit = (c: Campaign): void => {
     setEditing(c);
     setForm({
-      name: c.name, subject: c.subject, body: c.body,
-      audience: c.audience?.filter || 'all',
+      name: c.name ?? '', subject: c.subject ?? '', body: c.body ?? '',
+      audience: (typeof c.audience === 'string' ? undefined : c.audience?.filter) || 'all',
       scheduledAt: c.scheduledAt ? c.scheduledAt.split('.')[0] : '',
       timezone: c.scheduling?.timezone || 'Asia/Dhaka',
       batchSize: c.batchSize || 50,
@@ -134,7 +138,7 @@ const CampaignManager = () => {
     setShowForm(true);
   };
 
-  const statusStyle = (s) => {
+  const statusStyle = (s?: string): { bg: string; text: string } => {
     switch (s) {
       case 'sent': return { bg: 'var(--success-bg)', text: 'var(--success-text)' };
       case 'sending': return { bg: 'var(--info-bg)', text: 'var(--info-text)' };
@@ -195,17 +199,18 @@ const CampaignManager = () => {
 
       <div className="space-y-3">
         {campaigns.map(c => {
-          const total = c.progress?.total || c.sentCount + c.failedCount || 0;
-          const sent = c.progress?.sent || c.sentCount || 0;
-          const failed = c.progress?.failed || c.failedCount || 0;
+          const prog = typeof c.progress === 'object' ? c.progress : undefined;
+          const total = prog?.total || (c.sentCount ?? 0) + (c.failedCount ?? 0) || 0;
+          const sent = prog?.sent || c.sentCount || 0;
+          const failed = prog?.failed || c.failedCount || 0;
           return (
             <div key={c._id} className="glass rounded-xl p-4 border" style={{ borderColor: 'var(--border-base)' }}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{c.name}</span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={statusStyle(c.status)}>{c.status}</span>
-                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{c.audience?.filter}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-medium" style={statusStyle(c.status) as CSSProperties}>{c.status}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{typeof c.audience === 'string' ? c.audience : c.audience?.filter}</span>
                     {c.scheduling?.sendAt && (
                       <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
                         <Clock size={10} /> {new Date(c.scheduling.sendAt).toLocaleString()}
@@ -218,9 +223,9 @@ const CampaignManager = () => {
                     <div className="mt-2 flex items-center gap-3 text-[10px]" style={{ color: 'var(--text-muted)' }}>
                       <span>Sent: <strong style={{ color: 'var(--success-text)' }}>{sent}</strong></span>
                       <span>Failed: <strong style={{ color: 'var(--danger-text)' }}>{failed}</strong></span>
-                      {c.progress?.bounced > 0 && <span>Bounced: <strong style={{ color: 'var(--warning-text)' }}>{c.progress.bounced}</strong></span>}
-                      {c.progress?.opened > 0 && <span>Opened: <strong style={{ color: 'var(--info-text)' }}>{c.progress.opened}</strong></span>}
-                      {c.progress?.clicked > 0 && <span>Clicked: <strong style={{ color: 'var(--accent-text)' }}>{c.progress.clicked}</strong></span>}
+                      {(prog?.bounced ?? 0) > 0 && <span>Bounced: <strong style={{ color: 'var(--warning-text)' }}>{prog?.bounced}</strong></span>}
+                      {(prog?.opened ?? 0) > 0 && <span>Opened: <strong style={{ color: 'var(--info-text)' }}>{prog?.opened}</strong></span>}
+                      {(prog?.clicked ?? 0) > 0 && <span>Clicked: <strong style={{ color: 'var(--accent-text)' }}>{prog?.clicked}</strong></span>}
                     </div>
                   )}
                   {c.status === 'sending' && (

@@ -1,29 +1,31 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState } from 'react';
 
 import { LayoutGrid, List } from 'lucide-react';
 
-const conditionColors = {
+const conditionColors: Record<string, { text: string; bg: string }> = {
   excellent: { text: 'var(--success-text)', bg: 'var(--success-bg)' },
   good: { text: 'var(--info-text)', bg: 'var(--info-bg)' },
   fair: { text: 'var(--warning-text)', bg: 'var(--warning-bg)' },
   poor: { text: 'var(--danger-text)', bg: 'var(--danger-bg)' },
 };
 
-const SearchResults = ({ bikes }) => {
-  const [viewMode, setViewMode] = useState('grid');
+import type { Bike } from '@/types';
 
-  if (viewMode === 'list') {
+const SearchResults = ({ bikes }: { bikes: Bike[] }) => {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const isList = viewMode === 'list';
+
+  if (isList) {
     return (
       <div>
         <div className="flex justify-end mb-3">
           <div className="flex gap-1 p-1 rounded-lg" style={{ background: 'var(--input-bg)' }}>
-            <button onClick={() => setViewMode('grid')} className="p-1.5 rounded-md" style={{ color: viewMode === 'grid' ? 'var(--accent-text)' : 'var(--text-muted)' }} aria-label="Grid view">
+            <button onClick={() => setViewMode('grid')} className="p-1.5 rounded-md" style={{ color: isList ? 'var(--text-muted)' : 'var(--accent-text)' }} aria-label="Grid view">
               <LayoutGrid size={16} />
             </button>
-            <button onClick={() => setViewMode('list')} className="p-1.5 rounded-md" style={{ color: viewMode === 'list' ? 'var(--accent-text)' : 'var(--text-muted)', background: 'var(--bg-card)' }} aria-label="List view">
+            <button onClick={() => setViewMode('list')} className="p-1.5 rounded-md" style={{ color: isList ? 'var(--accent-text)' : 'var(--text-muted)', background: 'var(--bg-card)' }} aria-label="List view">
               <List size={16} />
             </button>
           </div>
@@ -41,15 +43,15 @@ const SearchResults = ({ bikes }) => {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name}</span>
-                  <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ background: conditionColors[bike.condition]?.bg, color: conditionColors[bike.condition]?.text }}>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || ''}</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ background: conditionColors[bike.condition ?? '']?.bg, color: conditionColors[bike.condition ?? '']?.text }}>
                     {bike.condition}
                   </span>
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-bold" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour} TK/hr</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.renter?.name || 'N/A'}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{(typeof bike.renter === 'string' ? bike.renter : bike.renter?.name) || 'N/A'}</p>
               </div>
             </Link>
           ))}
@@ -62,10 +64,10 @@ const SearchResults = ({ bikes }) => {
     <div>
       <div className="flex justify-end mb-3">
         <div className="flex gap-1 p-1 rounded-lg" style={{ background: 'var(--input-bg)' }}>
-          <button onClick={() => setViewMode('grid')} className="p-1.5 rounded-md" style={{ color: viewMode === 'grid' ? 'var(--accent-text)' : 'var(--text-muted)', background: 'var(--bg-card)' }} aria-label="Grid view">
+          <button onClick={() => setViewMode('grid')} className="p-1.5 rounded-md" style={{ color: isList ? 'var(--text-muted)' : 'var(--accent-text)', background: 'var(--bg-card)' }} aria-label="Grid view">
             <LayoutGrid size={16} />
           </button>
-          <button onClick={() => setViewMode('list')} className="p-1.5 rounded-md" style={{ color: viewMode === 'list' ? 'var(--accent-text)' : 'var(--text-muted)' }} aria-label="List view">
+          <button onClick={() => setViewMode('list')} className="p-1.5 rounded-md" style={{ color: isList ? 'var(--accent-text)' : 'var(--text-muted)' }} aria-label="List view">
             <List size={16} />
           </button>
         </div>
@@ -80,7 +82,7 @@ const SearchResults = ({ bikes }) => {
                 <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>No Image</div>
               )}
               <div className="absolute top-2 right-2">
-                <span className="text-xs px-2 py-1 rounded-md font-medium" style={{ background: conditionColors[bike.condition]?.bg, color: conditionColors[bike.condition]?.text }}>
+                <span className="text-xs px-2 py-1 rounded-md font-medium" style={{ background: conditionColors[bike.condition ?? '']?.bg, color: conditionColors[bike.condition ?? '']?.text }}>
                   {bike.condition}
                 </span>
               </div>
@@ -88,16 +90,16 @@ const SearchResults = ({ bikes }) => {
             <div className="p-4">
               <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name}</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || ''}</span>
                 {bike.zone && (
                   <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {bike.zone.name}
+                    {typeof bike.zone === 'string' ? bike.zone : bike.zone?.name}
                   </span>
                 )}
               </div>
               <div className="flex items-center justify-between mt-3">
                 <p className="text-sm font-bold" style={{ color: 'var(--accent-text)' }}>{bike.pricePerHour} TK/hr</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.renter?.name || 'N/A'}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{(typeof bike.renter === 'string' ? bike.renter : bike.renter?.name) || 'N/A'}</p>
               </div>
             </div>
           </Link>

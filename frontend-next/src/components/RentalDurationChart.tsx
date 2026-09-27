@@ -1,10 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { Clock } from 'lucide-react';
 
-const RentalDurationChart = ({ data }) => {
-  const { buckets, avgHours, medianHours, totalBookings } = data;
-  const maxCount = Math.max(...buckets.map(b => b.count), 1);
+import type { DurationData, DurationBucket } from '@/types';
+
+const RentalDurationChart = ({ data }: { data: DurationData }) => {
+  const { buckets = [], avgHours, medianHours, totalBookings } = data;
+  const maxCount = Math.max(...buckets.map((b: DurationBucket) => b.count ?? 0), 1);
 
   const bucketColors = ['#22c55e', '#3b82f6', '#f59e0b', '#f97316', '#ef4444'];
 
@@ -42,7 +43,7 @@ const RentalDurationChart = ({ data }) => {
               <div className="h-3 rounded-full overflow-hidden" style={{ background: 'var(--border-base)' }}>
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${(bucket.count / maxCount) * 100}%`, background: bucketColors[i] }}
+                  style={{ width: `${((bucket.count ?? 0) / maxCount) * 100}%`, background: bucketColors[i] }}
                 />
               </div>
             </div>

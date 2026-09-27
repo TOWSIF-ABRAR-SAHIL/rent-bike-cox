@@ -1,8 +1,8 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, memo } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { ChangeEvent, FormEvent } from 'react';
 
 const CATEGORIES = ['general', 'booking', 'payment', 'technical', 'complaint', 'suggestion', 'other'];
 
@@ -12,11 +12,11 @@ const Contact = () => {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setSending(true);
     setError('');
@@ -24,7 +24,8 @@ const Contact = () => {
       await api.post('/contact', form);
       setSent(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send message. Please try again.');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setError(data?.message || 'Failed to send message. Please try again.');
     } finally {
       setSending(false);
     }

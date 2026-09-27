@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
+import type { BookingTrendData, CategoryPerf, CustomerInsightsData, DurationData, FinancialData, HourlyData, RevenueData, TopBikeItem } from '@/types';
 import RevenueChart from '../components/RevenueChart';
 import BookingTrendChart from '../components/BookingTrendChart';
 import CategoryPerformance from '../components/CategoryPerformance';
@@ -15,13 +15,13 @@ import { Calendar, Download, RefreshCw } from 'lucide-react';
 
 const AnalyticsDashboard = () => {
   const [days, setDays] = useState(30);
-  const [revenue, setRevenue] = useState(null);
-  const [trends, setTrends] = useState(null);
-  const [categories, setCategories] = useState(null);
-  const [topBikes, setTopBikes] = useState(null);
-  const [customers, setCustomers] = useState(null);
-  const [duration, setDuration] = useState(null);
-  const [financial, setFinancial] = useState(null);
+  const [revenue, setRevenue] = useState<RevenueData | null>(null);
+  const [trends, setTrends] = useState<(BookingTrendData & HourlyData) | null>(null);
+  const [categories, setCategories] = useState<CategoryPerf[] | null>(null);
+  const [topBikes, setTopBikes] = useState<TopBikeItem[] | null>(null);
+  const [customers, setCustomers] = useState<CustomerInsightsData | null>(null);
+  const [duration, setDuration] = useState<DurationData | null>(null);
+  const [financial, setFinancial] = useState<FinancialData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
@@ -122,8 +122,8 @@ const AnalyticsDashboard = () => {
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Revenue</p>
                   <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{revenue?.totalRevenue?.toLocaleString() || 0} TK</p>
-                  <p className="text-xs mt-1" style={{ color: revenue.revenueGrowth >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
-                    {revenue?.revenueGrowth >= 0 ? '+' : ''}{revenue?.revenueGrowth || 0}% vs prev period
+                  <p className="text-xs mt-1" style={{ color: (revenue.revenueGrowth ?? 0) >= 0 ? 'var(--success-text)' : 'var(--danger-text)' }}>
+                    {(revenue?.revenueGrowth ?? 0) >= 0 ? '+' : ''}{revenue?.revenueGrowth || 0}% vs prev period
                   </p>
                 </div>
                 <div className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>

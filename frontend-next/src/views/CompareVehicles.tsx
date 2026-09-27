@@ -1,15 +1,15 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState, useEffect, memo } from 'react';
 
 import { ArrowLeft, Plus, X } from 'lucide-react';
 import api from '../api/axios';
+import type { Bike } from '@/types';
 import { useCompare } from '../context/useCompare';
 
 const CompareVehicles = () => {
   const { items, remove, add } = useCompare();
-  const [allBikes, setAllBikes] = useState([]);
+  const [allBikes, setAllBikes] = useState<Bike[]>([]);
   const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
@@ -20,13 +20,13 @@ const CompareVehicles = () => {
 
   const availableToAdd = allBikes.filter(b => !items.find(i => i._id === b._id));
 
-  const specs = [
-    { label: 'Price', key: 'pricePerHour', format: (v) => `${v || 0} TK/hr` },
-    { label: 'Category', key: 'category', format: (v) => v?.name || '—' },
-    { label: 'Brand', key: 'brand', format: (v) => v || '—' },
+  const specs: { label: string; key: string; format: (v: unknown) => string }[] = [
+    { label: 'Price', key: 'pricePerHour', format: (v) => `${(v as number) || 0} TK/hr` },
+    { label: 'Category', key: 'category', format: (v) => (v as Bike['category'] && typeof v === 'object' ? (v as { name?: string }).name : undefined) || '—' },
+    { label: 'Brand', key: 'brand', format: (v) => (v as string) || '—' },
     { label: 'Availability', key: 'availability', format: (v) => v !== false ? 'Available' : 'Unavailable' },
     { label: 'Maintenance', key: 'isUnderMaintenance', format: (v) => v ? 'Under Maintenance' : 'OK' },
-    { label: 'Description', key: 'description', format: (v) => v || '—' },
+    { label: 'Description', key: 'description', format: (v) => (v as string) || '—' },
   ];
 
   if (items.length === 0) {
@@ -89,7 +89,7 @@ const CompareVehicles = () => {
                   </div>
                   {items.map(bike => (
                     <div key={bike._id} className="flex-1 px-4 py-3 text-sm" style={{ color: 'var(--text-primary)' }}>
-                      {spec.format(bike[spec.key])}
+                      {spec.format((bike as unknown as Record<string, unknown>)[spec.key])}
                     </div>
                   ))}
                 </div>
@@ -102,9 +102,9 @@ const CompareVehicles = () => {
                 </div>
                 {items.map(bike => (
                   <div key={bike._id} className="flex-1 px-4 py-3">
-                    {bike.packages?.length > 0 ? (
+                    {(bike.packages ?? []).length > 0 ? (
                       <div className="space-y-1">
-                        {bike.packages.map((tier, j) => (
+                        {(bike.packages ?? []).map((tier, j) => (
                           <div key={j} className="text-xs flex justify-between" style={{ color: 'var(--text-secondary)' }}>
                             <span>{tier.label}</span>
                             <span className="font-medium" style={{ color: 'var(--accent-text)' }}>{tier.hourlyRate} TK/hr</span>

@@ -1,8 +1,9 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { Star, MessageSquare } from 'lucide-react';
 
-const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortChange }) => {
+import type { Review, ReviewStats } from '@/types';
+
+const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortChange }: { stats: ReviewStats; reviews: Review[]; page: number; pages: number; onPageChange: (page: number) => void; sort: string; onSortChange: (sort: string) => void }) => {
   const ratingBars = [
     { stars: 5, count: stats.five || 0 },
     { stars: 4, count: stats.four || 0 },
@@ -31,7 +32,7 @@ const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortCha
               <span className="text-xs w-3" style={{ color: 'var(--text-muted)' }}>{bar.stars}</span>
               <Star size={10} fill="var(--accent-text)" style={{ color: 'var(--accent-text)' }} />
               <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-base)' }}>
-                <div className="h-full rounded-full" style={{ width: `${stats.total > 0 ? (bar.count / stats.total) * 100 : 0}%`, background: 'var(--accent-text)' }} />
+                <div className="h-full rounded-full" style={{ width: `${(stats.total ?? 0) > 0 ? (bar.count / (stats.total ?? 1)) * 100 : 0}%`, background: 'var(--accent-text)' }} />
               </div>
               <span className="text-xs w-4 text-right" style={{ color: 'var(--text-muted)' }}>{bar.count}</span>
             </div>
@@ -63,7 +64,7 @@ const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortCha
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews.map(review => (
+          {reviews.map((review: Review) => (
             <div key={review._id} className="p-4 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -74,13 +75,13 @@ const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortCha
                     <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{review.user?.name || 'Anonymous'}</p>
                     <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map(s => (
-                        <Star key={s} size={10} fill={s <= review.rating ? 'var(--accent-text)' : 'none'} style={{ color: 'var(--accent-text)' }} />
+                        <Star key={s} size={10} fill={s <= (typeof review.rating === 'number' ? review.rating : 0) ? 'var(--accent-text)' : 'none'} style={{ color: 'var(--accent-text)' }} />
                       ))}
                     </div>
                   </div>
                 </div>
                 <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-                  {new Date(review.createdAt).toLocaleDateString()}
+                  {new Date(review.createdAt ?? '').toLocaleDateString()}
                 </span>
               </div>
               {review.title && <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>{review.title}</p>}
@@ -88,7 +89,7 @@ const ReviewList = ({ stats, reviews, page, pages, onPageChange, sort, onSortCha
               {review.response && (
                 <div className="mt-3 p-3 rounded-lg" style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)' }}>
                   <p className="text-[10px] font-medium mb-1" style={{ color: 'var(--accent-text)' }}>
-                    Response from {review.respondedBy?.name || 'Owner'}
+                    Response from {typeof review.respondedBy === 'string' ? review.respondedBy : (review.respondedBy?.name || 'Owner')}
                   </p>
                   <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{review.response}</p>
                 </div>

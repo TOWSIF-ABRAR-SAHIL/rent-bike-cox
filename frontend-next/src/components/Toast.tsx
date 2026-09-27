@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap note: this file IS fully typed (rewritten for Next).
 "use client";
 
 import {

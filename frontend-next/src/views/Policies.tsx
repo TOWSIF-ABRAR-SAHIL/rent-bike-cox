@@ -1,9 +1,13 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { ShieldCheck, AlertTriangle, Phone, FileText, CreditCard, Fuel, Scale, RotateCcw, Shield } from 'lucide-react';
 
-const PolicySection = ({ icon: Icon, title, children, color = 'primary' }) => {
-  const colorStyles = {
+import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
+
+type PolicyColor = 'primary' | 'red' | 'amber' | 'green' | 'blue' | 'purple';
+
+const PolicySection = ({ icon: Icon, title, children, color = 'primary' }: { icon: LucideIcon; title: string; children: ReactNode; color?: PolicyColor }) => {
+  const colorStyles: Record<PolicyColor, { background: string; color: string; borderColor: string }> = {
     primary: { background: 'var(--info-bg)', color: 'var(--info-text)', borderColor: 'var(--info-border)' },
     red: { background: 'var(--danger-bg)', color: 'var(--danger-text)', borderColor: 'var(--danger-border)' },
     amber: { background: 'var(--warning-bg)', color: 'var(--warning-text)', borderColor: 'var(--warning-border)' },
@@ -32,7 +36,7 @@ const Policies = () => (
         <FileText size={28} style={{ color: 'var(--text-primary)' }} />
       </div>
       <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Rental Policies & Terms</h1>
-      <p style={{ color: 'var(--text-secondary)' }}>Rent Bike Cox's Bazar — All rules and regulations</p>
+      <p style={{ color: 'var(--text-secondary)' }}>Rent Bike Cox&apos;s Bazar — All rules and regulations</p>
     </div>
 
     <div className="space-y-4">
@@ -107,7 +111,7 @@ const Policies = () => (
 
       <PolicySection icon={Scale} title="Legal Complications" color="purple">
         <ul className="space-y-2 text-sm list-disc ml-5" style={{ color: 'var(--text-secondary)' }}>
-          <li>All traffic fines/challans are <strong style={{ color: 'var(--text-primary)' }}>renter's responsibility</strong>.</li>
+          <li>All traffic fines/challans are <strong style={{ color: 'var(--text-primary)' }}>renter&apos;s responsibility</strong>.</li>
           <li>No illegal activity with the vehicle.</li>
           <li>No border crossings without written permission.</li>
           <li>No sub-renting to third parties.</li>
@@ -128,7 +132,7 @@ const Policies = () => (
       <PolicySection icon={Shield} title="Insurance Disclaimer" color="amber">
         <ul className="space-y-2 text-sm list-disc ml-5" style={{ color: 'var(--text-secondary)' }}>
           <li>Most rental bikes are <strong style={{ color: 'var(--text-primary)' }}>not insured</strong>.</li>
-          <li>RentBike Cox's Bazar does not provide insurance.</li>
+          <li>RentBike Cox&apos;s Bazar does not provide insurance.</li>
           <li>Renters advised to have personal accident insurance.</li>
           <li>Security deposit is not insurance — partial damage coverage only.</li>
         </ul>

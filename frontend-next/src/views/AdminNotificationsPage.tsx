@@ -1,11 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import type { AdminNotificationItem } from '@/types';
 import { useState, useEffect, useCallback, memo } from 'react';
 import api from '../api/axios';
 import { Bell, CheckCheck } from 'lucide-react';
 
 const AdminNotificationsPage = () => {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<AdminNotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -17,7 +17,7 @@ const AdminNotificationsPage = () => {
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 20 };
+      const params: Record<string, string | number> = { page, limit: 20 };
       if (filterType) params.type = filterType;
       if (filterSeverity) params.severity = filterSeverity;
       if (filterRead) params.isRead = filterRead;
@@ -37,7 +37,7 @@ const AdminNotificationsPage = () => {
   useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications(); }, [fetchNotifications]);
 
-  const markRead = async (id) => {
+  const markRead = async (id: string): Promise<void> => {
     try {
       await api.put(`/admin/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
@@ -53,7 +53,7 @@ const AdminNotificationsPage = () => {
     } catch { /* silent */ }
   };
 
-  const severityColor = (s) => {
+  const severityColor = (s: string): { bg: string; text: string; border: string } => {
     switch (s) {
       case 'critical': return { bg: 'var(--danger-bg)', text: 'var(--danger-text)', border: 'var(--danger-border)' };
       case 'high': return { bg: 'var(--warning-bg)', text: 'var(--warning-text)', border: 'var(--warning-border)' };
@@ -116,15 +116,15 @@ const AdminNotificationsPage = () => {
           {notifications.map(n => (
             <div key={n._id} className={`glass rounded-xl p-4 border flex items-start gap-3 transition-all ${!n.isRead ? 'border-l-2' : ''}`}
               style={{ borderColor: !n.isRead ? 'var(--accent-border)' : 'var(--border-base)' }}>
-              <span className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ background: severityColor(n.severity).text }} />
+              <span className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ background: severityColor(n.severity ?? '').text }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{n.title}</span>
-                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={severityColor(n.severity)}>{n.severity}</span>
+                  <span className="px-2 py-0.5 rounded text-xs font-medium" style={severityColor(n.severity ?? '')}>{n.severity}</span>
                   <span className="px-2 py-0.5 rounded text-xs" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{n.type}</span>
                 </div>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{n.message}</p>
-                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{new Date(n.createdAt).toLocaleString()}</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{new Date(n.createdAt ?? '').toLocaleString()}</p>
               </div>
               {!n.isRead && (
                 <button onClick={() => markRead(n._id)} className="px-3 py-1.5 rounded-lg text-xs font-medium border shrink-0 transition-all hover:opacity-80" style={{ borderColor: 'var(--border-base)', color: 'var(--accent-text)' }} aria-label="Mark as read">

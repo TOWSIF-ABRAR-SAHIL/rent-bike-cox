@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useRouter } from 'next/navigation';
 import { useState, Suspense } from 'react';
@@ -8,17 +7,19 @@ import PageSpinner from './PageSpinner';
 
 import VehicleHistory from '../views/VehicleHistory';
 
-const conditionColors = {
+const conditionColors: Record<string, { text: string; bg: string; border: string }> = {
   excellent: { text: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success-border)' },
   good: { text: 'var(--info-text)', bg: 'var(--info-bg)', border: 'var(--info-border)' },
   fair: { text: 'var(--warning-text)', bg: 'var(--warning-bg)', border: 'var(--warning-border)' },
   poor: { text: 'var(--danger-text)', bg: 'var(--danger-bg)', border: 'var(--danger-border)' },
 };
 
-const FleetBikeRow = ({ bike, selected, onToggle }) => {
+import type { Bike } from '@/types';
+
+const FleetBikeRow = ({ bike, selected, onToggle }: { bike: Bike; selected?: boolean; onToggle?: (id: string) => void }) => {
   const router = useRouter();
   const [showHistory, setShowHistory] = useState(false);
-  const colors = conditionColors[bike.condition] || conditionColors.good;
+  const colors = conditionColors[bike.condition ?? ''] || conditionColors.good;
 
   const statusLabel = bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'Active' : 'Unavailable';
   const statusColor = bike.isUnderMaintenance
@@ -71,21 +72,21 @@ const FleetBikeRow = ({ bike, selected, onToggle }) => {
             <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
             {bike.zone && (
               <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md" style={{ background: 'var(--bg-surface)', color: 'var(--text-secondary)', border: '1px solid var(--border-base)' }}>
-                {bike.zone.name}
+                {typeof bike.zone === 'string' ? undefined : bike.zone?.name}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3 mt-0.5">
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name || 'N/A'}</span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'N/A'}</span>
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.pricePerHour} TK/hr</span>
-            {bike.currentMileage > 0 && (
+            {(bike.currentMileage ?? 0) > 0 && (
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.currentMileage} km</span>
             )}
           </div>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {bike.activeBooking && (
+          {!!bike.activeBooking && (
             <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
               <Clock size={10} />
               Rented

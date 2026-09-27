@@ -16,8 +16,8 @@ const START_TIME_MIN_MINUTES = 10;
 
 interface CheckoutRouteState {
   duration?: number;
-  startTime?: string;
-  endTime?: string;
+  startTime?: string | Date;
+  endTime?: string | Date;
   pricing?: PricingInfo;
   pickupLocation?: string;
   bike?: Bike | null;
@@ -25,8 +25,8 @@ interface CheckoutRouteState {
 
 interface BookingData {
   duration: number;
-  startTime?: string;
-  endTime?: string;
+  startTime?: string | Date;
+  endTime?: string | Date;
   pricing?: PricingInfo;
   pickupLocation: string;
   bike?: Bike | null;
@@ -45,7 +45,7 @@ const formatDateTime = (date: string | Date) => {
   return local.toISOString().slice(0, 16);
 };
 
-const formatDisplayDate = (dateStr: string) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
+const formatDisplayDate = (dateStr: string | Date) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
 
 const Checkout = () => {
   const { bikeId } = useParams();
@@ -177,7 +177,9 @@ const Checkout = () => {
       return;
     }
 
-    let effectiveStartTime: string = bookingData.startTime ?? '';
+    const rawStart = bookingData.startTime;
+    let effectiveStartTime: string =
+      typeof rawStart === 'string' ? rawStart : rawStart instanceof Date ? formatDateTime(rawStart) : '';
     const now = new Date();
     if (new Date(effectiveStartTime).getTime() < now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000) {
       const target = new Date(now.getTime() + START_TIME_MIN_MINUTES * 60 * 1000);

@@ -1,16 +1,16 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import type { AdminNotificationItem } from '@/types';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../api/axios';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 
 const AdminNotificationBell = () => {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<AdminNotificationItem[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const dropdownRef = useRef(null);
-  const intervalRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchCount = useCallback(async () => {
     try {
@@ -32,12 +32,12 @@ const AdminNotificationBell = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCount();
     intervalRef.current = setInterval(fetchCount, 60000);
-    return () => clearInterval(intervalRef.current);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchCount]);
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false);
+    const handleClickOutside = (e: MouseEvent): void => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -50,7 +50,7 @@ const AdminNotificationBell = () => {
     setOpen(!open);
   };
 
-  const markRead = async (id) => {
+  const markRead = async (id: string): Promise<void> => {
     try {
       await api.put(`/admin/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
@@ -66,7 +66,7 @@ const AdminNotificationBell = () => {
     } catch { /* silent */ }
   };
 
-  const severityIcon = (s) => {
+  const severityIcon = (s: string): string => {
     switch (s) {
       case 'critical': return '🔴';
       case 'high': return '🟠';
@@ -105,11 +105,11 @@ const AdminNotificationBell = () => {
             ) : (
               notifications.map(n => (
                 <div key={n._id} className={`flex items-start gap-3 p-3 border-b transition-colors ${!n.isRead ? 'bg-amber-500/5' : ''}`} style={{ borderColor: 'var(--border-base)' }}>
-                  <span className="text-base shrink-0 mt-0.5">{severityIcon(n.severity)}</span>
+                  <span className="text-base shrink-0 mt-0.5">{severityIcon(n.severity ?? '')}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
                     <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{n.message}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{new Date(n.createdAt).toLocaleString()}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{new Date(n.createdAt ?? '').toLocaleString()}</p>
                   </div>
                   {!n.isRead && (
                     <button onClick={() => markRead(n._id)} className="p-1 rounded-lg shrink-0 transition-all hover:opacity-80" style={{ color: 'var(--accent-text)' }} aria-label="Mark as read">

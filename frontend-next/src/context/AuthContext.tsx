@@ -106,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(getInitialUser());
       scheduleRefresh(stored);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional session restore on mount
     setLoading(false);
     return () => {
       if (refreshTimeout.current) window.clearTimeout(refreshTimeout.current);

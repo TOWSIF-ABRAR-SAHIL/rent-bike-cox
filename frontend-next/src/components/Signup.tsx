@@ -82,7 +82,7 @@ const Signup = () => {
               <UserPlus size={24} style={{ color: 'var(--text-primary)' }} />
             </div>
             <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Create Account</h2>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Join Rent Bike Cox's Bazar</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Join Rent Bike Cox&apos;s Bazar</p>
           </div>
 
           {error && (

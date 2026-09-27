@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import api from '../../api/axios';
+import api, { type ApiError } from '../../api/axios';
+import type { Faq } from '@/types';
 import { useToast } from '../useToast';
 import { HelpCircle, Trash2, ChevronDown, ChevronRight, Search, Pin, X, Save } from 'lucide-react';
 
@@ -9,11 +9,11 @@ const CATEGORIES = ['General', 'Booking', 'Payment', 'Vehicle', 'Account', 'Safe
 
 const FAQManager = () => {
   const { addToast } = useToast();
-  const [faqs, setFaqs] = useState([]);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ question: '', answer: '', category: 'General', tags: '', isPinned: false });
-  const [editing, setEditing] = useState(null);
-  const [expanded, setExpanded] = useState({});
+  const [editing, setEditing] = useState<Faq | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -22,8 +22,8 @@ const FAQManager = () => {
     try {
       const res = await api.get('/admin/faqs');
       setFaqs(res.data);
-      const cats = {};
-      res.data.forEach(f => { cats[f.category] = true; });
+      const cats: Record<string, boolean> = {};
+      res.data.forEach((f: Faq) => { cats[f.category ?? ''] = true; });
       setExpanded(cats);
     } catch {
       addToast('Failed to load FAQs', 'error');
@@ -47,14 +47,15 @@ const FAQManager = () => {
       setForm({ question: '', answer: '', category: 'General', tags: '', isPinned: false });
       fetchFaqs();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed', 'error');
     } finally { setSaving(false); }
   };
 
   const handleUpdate = async () => {
     setSaving(true);
     try {
-      await api.put(`/admin/faqs/${editing._id}`, {
+      await api.put(`/admin/faqs/${editing?._id ?? ''}`, {
         question: form.question, answer: form.answer, category: form.category,
         tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         isPinned: form.isPinned
@@ -64,11 +65,12 @@ const FAQManager = () => {
       setForm({ question: '', answer: '', category: 'General', tags: '', isPinned: false });
       fetchFaqs();
     } catch (err) {
-      addToast(err.response?.data?.message || 'Failed', 'error');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      addToast(data?.message || 'Failed', 'error');
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!window.confirm('Delete this FAQ?')) return;
     try {
       await api.delete(`/admin/faqs/${id}`);
@@ -79,19 +81,19 @@ const FAQManager = () => {
     }
   };
 
-  const openEdit = (faq) => {
+  const openEdit = (faq: Faq): void => {
     setEditing(faq);
     setForm({
-      question: faq.question, answer: faq.answer, category: faq.category,
+      question: faq.question ?? '', answer: faq.answer ?? '', category: faq.category ?? 'General',
       tags: (faq.tags || []).join(', '),
       isPinned: faq.isPinned || false
     });
   };
 
   const filtered = searchQuery.trim()
-    ? faqs.filter(f =>
-        f.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        f.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ? faqs.filter((f: Faq) =>
+        (f.question ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (f.answer ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (f.tags || []).some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : faqs;
@@ -99,10 +101,11 @@ const FAQManager = () => {
   const pinned = filtered.filter(f => f.isPinned);
   const unpinned = filtered.filter(f => !f.isPinned);
 
-  const grouped = {};
-  [...pinned, ...unpinned].forEach(f => {
-    if (!grouped[f.category]) grouped[f.category] = [];
-    grouped[f.category].push(f);
+  const grouped: Record<string, Faq[]> = {};
+  [...pinned, ...unpinned].forEach((f: Faq) => {
+    const gkey = f.category ?? '';
+    if (!grouped[gkey]) grouped[gkey] = [];
+    grouped[gkey].push(f);
   });
 
   if (loading) return <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-12 rounded-xl" />)}</div>;
@@ -169,16 +172,16 @@ const FAQManager = () => {
                           {faq.isPinned && <Pin size={12} style={{ color: 'var(--accent-text)' }} />}
                         </div>
                         <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{faq.answer}</p>
-                        {faq.tags?.length > 0 && (
+                        {(faq.tags ?? []).length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
-                            {faq.tags.map(t => <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{t}</span>)}
+                            {(faq.tags ?? []).map((t: string) => <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{t}</span>)}
                           </div>
                         )}
                         <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Helpful: {faq.helpfulCount || 0} · Not: {faq.notHelpfulCount || 0}</p>
                       </div>
                       <div className="flex gap-1 shrink-0">
                         <button onClick={() => openEdit(faq)} className="px-2 py-1.5 rounded-lg text-xs border" style={{ borderColor: 'var(--border-base)', color: 'var(--text-secondary)' }} aria-label="Edit FAQ">Edit</button>
-                        <button onClick={() => handleDelete(faq._id)} className="px-2 py-1.5 rounded-lg text-xs border" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }} aria-label="Delete FAQ"><Trash2 size={12} /></button>
+                        <button onClick={() => handleDelete(faq._id ?? '')} className="px-2 py-1.5 rounded-lg text-xs border" style={{ borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }} aria-label="Delete FAQ"><Trash2 size={12} /></button>
                       </div>
                     </div>
                   </div>

@@ -1,20 +1,21 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { memo } from 'react';
 import { X, SlidersHorizontal, ArrowUpDown, DollarSign } from 'lucide-react';
 
-const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClear }) => {
-  const activeFilters = [];
+import type { BikeCategory, PriceRange, SearchFilterState } from '@/types';
+
+const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClear }: { filters: SearchFilterState; categories: BikeCategory[]; priceRange: PriceRange; zones?: string[]; onFilterChange: (key: string, value: string) => void; onClear: () => void }) => {
+  const activeFilters: { key: string; label: string }[] = [];
   if (filters.category) {
-    const cat = categories.find(c => c.slug === filters.category);
-    activeFilters.push({ key: 'category', label: cat?.name || filters.category });
+    const cat = categories.find((c: BikeCategory) => c.slug === filters.category);
+    activeFilters.push({ key: 'category', label: cat?.name || filters.category || '' });
   }
   if (filters.minPrice) activeFilters.push({ key: 'minPrice', label: `Min ${filters.minPrice} TK` });
   if (filters.maxPrice) activeFilters.push({ key: 'maxPrice', label: `Max ${filters.maxPrice} TK` });
   if (filters.availability !== 'all') activeFilters.push({ key: 'availability', label: filters.availability === 'true' ? 'Available' : 'Unavailable' });
-  if (filters.condition !== 'all') activeFilters.push({ key: 'condition', label: filters.condition });
+  if (filters.condition !== 'all') activeFilters.push({ key: 'condition', label: filters.condition || '' });
 
-  const removeFilter = (key) => {
+  const removeFilter = (key: string): void => {
     if (key === 'category') onFilterChange(key, '');
     else if (key === 'availability' || key === 'condition') onFilterChange(key, 'all');
     else onFilterChange(key, '');
@@ -108,7 +109,7 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
           <div className="flex items-center gap-2">
             <input
               type="number"
-              placeholder={priceRange.min || 'Min'}
+              placeholder={String(priceRange.min || '') || 'Min'}
               value={filters.minPrice}
               onChange={e => onFilterChange('minPrice', e.target.value)}
               className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
@@ -118,7 +119,7 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
             <input
               type="number"
-              placeholder={priceRange.max || 'Max'}
+              placeholder={String(priceRange.max || '') || 'Max'}
               value={filters.maxPrice}
               onChange={e => onFilterChange('maxPrice', e.target.value)}
               className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"

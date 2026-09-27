@@ -1,8 +1,9 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { MapPin, Tag } from 'lucide-react';
 
-const SearchAutocomplete = ({ suggestions, onSelect }) => {
+import type { Suggestion } from '@/types';
+
+const SearchAutocomplete = ({ suggestions, onSelect }: { suggestions: Suggestion[]; onSelect: (s: Suggestion) => void }) => {
   return (
     <div className="absolute left-0 right-0 top-full mt-2 rounded-xl shadow-2xl overflow-hidden z-[100] animate-slide-up" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
       <div className="py-2">

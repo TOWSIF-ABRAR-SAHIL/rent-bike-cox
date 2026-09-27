@@ -1,8 +1,10 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { Users, UserPlus, Repeat, DollarSign, ShoppingCart } from 'lucide-react';
 
-const CustomerInsights = ({ data }) => {
+import type { CustomerInsightsData, TopSpender } from '@/types';
+import type { LucideIcon } from 'lucide-react';
+
+const CustomerInsights = ({ data }: { data: CustomerInsightsData }) => {
   const activeCustomers = data.activeCustomers ?? 0;
   const repeatCustomers = data.repeatCustomers ?? 0;
   const avgBookingsPerCustomer = activeCustomers > 0
@@ -34,11 +36,11 @@ const CustomerInsights = ({ data }) => {
         ))}
       </div>
 
-      {data.topSpenders.length > 0 && (
+      {(data.topSpenders ?? []).length > 0 && (
         <div>
           <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Top Spenders</p>
           <div className="space-y-2">
-            {data.topSpenders.map((s, i) => (
+            {(data.topSpenders ?? []).map((s: TopSpender, i: number) => (
               <div key={i} className="flex items-center justify-between p-2 rounded-lg" style={{ background: 'var(--input-bg)' }}>
                 <div className="flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>

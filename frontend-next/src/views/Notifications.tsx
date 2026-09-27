@@ -1,12 +1,12 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
+import type { NotificationItem } from '@/types';
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +25,7 @@ const Notifications = () => {
     fetchNotifications();
   }, []);
 
-  const markRead = async (id) => {
+  const markRead = async (id: string): Promise<void> => {
     const prevNotifications = notifications;
     const prevUnread = unread;
     try {
@@ -51,7 +51,7 @@ const Notifications = () => {
     }
   };
 
-  const typeColors = {
+  const typeColors: Record<string, string> = {
     booking: 'var(--accent-text)',
     payment: 'var(--success-text)',
     maintenance: 'var(--warning-text)',
@@ -80,7 +80,7 @@ const Notifications = () => {
           <div className="p-16 text-center rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
             <Bell size={48} className="mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
             <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No notifications</p>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>You're all caught up!</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>You&apos;re all caught up!</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -91,17 +91,17 @@ const Notifications = () => {
                 style={{ background: n.read ? 'var(--bg-card)' : 'var(--accent-bg)', border: '1px solid var(--border-base)' }}
                 onClick={() => !n.read && markRead(n._id)}
               >
-                <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ background: n.read ? 'transparent' : typeColors[n.type] || 'var(--text-muted)' }} />
+                <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ background: n.read ? 'transparent' : typeColors[n.type ?? ''] || 'var(--text-muted)' }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded capitalize" style={{ background: 'var(--input-bg)', color: typeColors[n.type] || 'var(--text-muted)' }}>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded capitalize" style={{ background: 'var(--input-bg)', color: typeColors[n.type ?? ''] || 'var(--text-muted)' }}>
                       {n.type}
                     </span>
                   </div>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>{n.message}</p>
                   <p className="text-[10px] mt-2" style={{ color: 'var(--text-muted)' }}>
-                    {new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(n.createdAt ?? '').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
                 {!n.read && (

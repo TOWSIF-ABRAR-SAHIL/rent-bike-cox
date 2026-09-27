@@ -1,4 +1,3 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -20,7 +19,7 @@ const BottomNav = () => {
   const { user } = useAuth();
   const { count } = useWishlist();
 
-  const isActive = (path) => {
+  const isActive = (path: string): boolean => {
     if (path === '/') return pathname === '/';
     return pathname.startsWith(path);
   };

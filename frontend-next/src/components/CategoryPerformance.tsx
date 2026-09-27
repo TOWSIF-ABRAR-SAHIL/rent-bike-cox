@@ -1,10 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { PieChart } from 'lucide-react';
 
-const CategoryPerformance = ({ data }) => {
-  const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
-  const totalRevenue = data.reduce((sum, d) => sum + d.revenue, 0);
+import type { CategoryPerf } from '@/types';
+
+const CategoryPerformance = ({ data }: { data: CategoryPerf[] }) => {
+  const maxRevenue = Math.max(...data.map((d: CategoryPerf) => d.revenue ?? 0), 1);
+  const totalRevenue = data.reduce((sum: number, d: CategoryPerf) => sum + (d.revenue ?? 0), 0);
 
   return (
     <div className="p-5 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
@@ -16,8 +17,8 @@ const CategoryPerformance = ({ data }) => {
       ) : (
         <div className="space-y-3">
           {data.map((cat, i) => {
-            const share = totalRevenue > 0 ? ((cat.revenue / totalRevenue) * 100).toFixed(1) : 0;
-            const avgPerBooking = cat.bookings > 0 ? Math.round(cat.revenue / cat.bookings) : 0;
+            const share = totalRevenue > 0 ? (((cat.revenue ?? 0) / totalRevenue) * 100).toFixed(1) : 0;
+            const avgPerBooking = (cat.bookings ?? 0) > 0 ? Math.round((cat.revenue ?? 0) / (cat.bookings ?? 1)) : 0;
             return (
               <div key={cat.category}>
                 <div className="flex items-center justify-between mb-1">
@@ -28,13 +29,13 @@ const CategoryPerformance = ({ data }) => {
                   <div
                     className="h-full rounded-full transition-all"
                     style={{
-                      width: `${(cat.revenue / maxRevenue) * 100}%`,
+                      width: `${((cat.revenue ?? 0) / maxRevenue) * 100}%`,
                       background: `hsl(${i * 60 + 30}, 70%, 50%)`,
                     }}
                   />
                 </div>
                 <div className="flex justify-between mt-0.5">
-                  <p className="text-xs" style={{ color: 'var(--accent-text)' }}>{cat.revenue.toLocaleString()} TK</p>
+                  <p className="text-xs" style={{ color: 'var(--accent-text)' }}>{(cat.revenue ?? 0).toLocaleString()} TK</p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>avg {avgPerBooking.toLocaleString()} TK/booking</p>
                 </div>
               </div>

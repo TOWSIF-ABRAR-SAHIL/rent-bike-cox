@@ -1,10 +1,11 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useRouter } from 'next/navigation';
 import { Trophy } from 'lucide-react';
 
 
-const TopBikes = ({ data }) => {
+import type { TopBikeItem } from '@/types';
+
+const TopBikes = ({ data }: { data: TopBikeItem[] }) => {
   const router = useRouter();
 
   return (
@@ -16,7 +17,7 @@ const TopBikes = ({ data }) => {
         <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>No data</p>
       ) : (
         <div className="space-y-3">
-          {data.map((item, i) => (
+          {data.map((item: TopBikeItem, i: number) => (
             <div
               key={i}
               className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all"
@@ -43,12 +44,12 @@ const TopBikes = ({ data }) => {
                   {item.bike?.brand} {item.bike?.model}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                  {item.bookings} bookings · {item.bike?.category?.name || 'N/A'}
+                  {item.bookings} bookings · {(typeof item.bike?.category === 'string' ? undefined : item.bike?.category?.name) || 'N/A'}
                 </p>
               </div>
               <div className="text-right flex-shrink-0">
-                <p className="text-sm font-bold" style={{ color: 'var(--accent-text)' }}>{item.revenue.toLocaleString()} TK</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>avg {item.avgRevenue.toLocaleString()} TK</p>
+                <p className="text-sm font-bold" style={{ color: 'var(--accent-text)' }}>{(item.revenue ?? 0).toLocaleString()} TK</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>avg {(item.avgRevenue ?? 0).toLocaleString()} TK</p>
               </div>
             </div>
           ))}

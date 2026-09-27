@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import api from '../api/axios';
+import api, { type ApiError } from '../api/axios';
+import type { NotificationPrefs } from '@/types';
 import { Bell, Mail, Smartphone, Monitor, Save, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const CHANNELS = [
@@ -20,7 +20,7 @@ const TYPES = [
   { key: 'systemUpdate', label: 'System Updates' },
 ];
 
-function urlBase64ToUint8Array(base64String) {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(base64);
@@ -28,10 +28,10 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 export default function NotificationPreferences() {
-  const [prefs, setPrefs] = useState(null);
+  const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [pushSupported] = useState(() => 'serviceWorker' in navigator && 'PushManager' in window);
+  const [pushSupported] = useState(() => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [pushMsg, setPushMsg] = useState('');
@@ -82,17 +82,21 @@ export default function NotificationPreferences() {
         setPushMsg('Push notifications enabled!');
       }
     } catch (err) {
-      setPushMsg(err.response?.data?.message || 'Failed to update push notifications');
+      const data = (err as ApiError).response?.data as { message?: string } | undefined;
+      setPushMsg(data?.message || 'Failed to update push notifications');
     } finally {
       setPushLoading(false);
     }
   }, [pushEnabled, pushLoading]);
 
-  const toggle = (channel, type) => {
+  const isOn = (channel: string, type: string): boolean =>
+    !!prefs?.[channel as keyof NotificationPrefs]?.[type];
+
+  const toggle = (channel: string, type: string): void => {
     setPrefs(p => ({
       ...p,
-      [channel]: { ...p[channel], [type]: !p[channel]?.[type] },
-    }));
+      [channel]: { ...((p as NotificationPrefs)[channel as keyof NotificationPrefs] ?? {}), [type]: !((p as NotificationPrefs)[channel as keyof NotificationPrefs]?.[type]) },
+    } as NotificationPrefs));
   };
 
   const handleSave = async () => {
@@ -166,10 +170,10 @@ export default function NotificationPreferences() {
                   <button onClick={() => toggle(ch.key, type.key)}
                     className="w-10 h-5 rounded-full transition-colors relative mx-auto"
                     aria-label={`Toggle ${type.label} ${ch.label} notifications`}
-                    aria-pressed={prefs[ch.key]?.[type.key]}
-                    style={{ background: prefs[ch.key]?.[type.key] ? 'var(--accent-bg-solid, #f59e0b)' : 'var(--border-base)' }}>
+                    aria-pressed={isOn(ch.key, type.key)}
+                    style={{ background: isOn(ch.key, type.key) ? 'var(--accent-bg-solid, #f59e0b)' : 'var(--border-base)' }}>
                     <span className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm"
-                      style={{ left: prefs[ch.key]?.[type.key] ? '22px' : '2px' }} />
+                      style={{ left: isOn(ch.key, type.key) ? '22px' : '2px' }} />
                   </button>
                 </div>
               );

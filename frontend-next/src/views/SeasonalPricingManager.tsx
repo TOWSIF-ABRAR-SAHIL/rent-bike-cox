@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import type { SeasonalRate, SeasonalRateForm } from '@/types';
 import { Calendar, Plus, Trash2, Edit3, Check, X, RefreshCw } from 'lucide-react';
 
 const TYPES = [
@@ -21,10 +21,10 @@ const emptyForm = {
 };
 
 export default function SeasonalPricingManager() {
-  const [rates, setRates] = useState([]);
+  const [rates, setRates] = useState<SeasonalRate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState(emptyForm);
-  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState<SeasonalRateForm>(emptyForm);
+  const [editing, setEditing] = useState<SeasonalRate | null>(null);
   const [saving, setSaving] = useState(false);
 
   const fetchRates = async () => {
@@ -39,10 +39,10 @@ export default function SeasonalPricingManager() {
     void fetchRates();
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     setSaving(true);
     try {
-      if (editing) {
+      if (editing?._id) {
         await api.put(`/admin/seasonal-rates/${editing._id}`, form);
       } else {
         await api.post('/admin/seasonal-rates', form);
@@ -53,18 +53,18 @@ export default function SeasonalPricingManager() {
     } catch { /* */ } finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!confirm('Delete this rate?')) return;
     await api.delete(`/admin/seasonal-rates/${id}`);
     fetchRates();
   };
 
-  const handleEdit = (rate) => {
+  const handleEdit = (rate: SeasonalRate): void => {
     setEditing(rate);
     setForm({
-      name: rate.name,
-      type: rate.type,
-      multiplier: rate.multiplier,
+      name: rate.name ?? '',
+      type: rate.type ?? 'peak',
+      multiplier: rate.multiplier ?? 1,
       startDate: rate.startDate ? new Date(rate.startDate).toISOString().split('T')[0] : '',
       endDate: rate.endDate ? new Date(rate.endDate).toISOString().split('T')[0] : '',
       recurringYearly: rate.recurringYearly || false,
@@ -77,7 +77,7 @@ export default function SeasonalPricingManager() {
     });
   };
 
-  const toggleDay = (day) => {
+  const toggleDay = (day: number): void => {
     setForm(f => ({
       ...f,
       daysOfWeek: f.daysOfWeek.includes(day)
@@ -282,8 +282,8 @@ export default function SeasonalPricingManager() {
                   {rate.recurringYearly && rate.month && rate.dayOfMonth &&
                     `Every ${['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][rate.month]} ${rate.dayOfMonth}`
                   }
-                  {rate.type === 'weekend' && rate.daysOfWeek?.length > 0 &&
-                    `Every ${rate.daysOfWeek.map(d => DAYS[d]).join(', ')}`
+                  {rate.type === 'weekend' && (rate.daysOfWeek ?? []).length > 0 &&
+                    `Every ${(rate.daysOfWeek ?? []).map((d: number) => DAYS[d]).join(', ')}`
                   }
                   {rate.description && ` — ${rate.description}`}
                 </div>
@@ -292,7 +292,7 @@ export default function SeasonalPricingManager() {
                 <button onClick={() => handleEdit(rate)} className="p-2 rounded-lg transition-colors hover:bg-amber-500/10" style={{ color: 'var(--text-muted)' }} aria-label="Edit rate">
                   <Edit3 size={16} />
                 </button>
-                <button onClick={() => handleDelete(rate._id)} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" aria-label="Delete rate">
+                <button onClick={() => handleDelete(rate._id ?? '')} className="p-2 rounded-lg transition-colors hover:bg-red-500/10 text-red-400" aria-label="Delete rate">
                   <Trash2 size={16} />
                 </button>
               </div>

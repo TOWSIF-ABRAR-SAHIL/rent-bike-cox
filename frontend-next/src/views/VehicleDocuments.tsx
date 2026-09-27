@@ -1,7 +1,7 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import type { Bike, VehicleDocument } from '@/types';
 import { useAuth } from '../context/useAuth';
 import DocumentUpload from '../components/DocumentUpload';
 import DocumentViewer from '../components/DocumentViewer';
@@ -9,17 +9,21 @@ import { FileText, AlertTriangle, ChevronLeft } from 'lucide-react';
 
 export default function VehicleDocuments() {
   const { user } = useAuth();
-  const [bikes, setBikes] = useState([]);
-  const [selectedBike, setSelectedBike] = useState(null);
-  const [docs, setDocs] = useState([]);
-  const [expiring, setExpiring] = useState([]);
+  const [bikes, setBikes] = useState<Bike[]>([]);
+  const [selectedBike, setSelectedBike] = useState<string | null>(null);
+  const [docs, setDocs] = useState<VehicleDocument[]>([]);
+  const [expiring, setExpiring] = useState<VehicleDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchBikes = async () => {
       try {
         const { data } = await api.get('/dashboard/bikes');
-        const myBikes = user.role === 'Admin' ? data : data.filter(b => b.renter?._id === user.id || b.renter === user.id);
+        const myBikes = ((user?.role === 'Admin' ? data : (data as Bike[]).filter((b: Bike) => {
+      const r = b.renter;
+      const renterId = typeof r === 'string' ? r : r?._id;
+      return renterId !== undefined && renterId === user?.id;
+    })) as Bike[]);
         setBikes(myBikes);
       } catch { /* */ } finally { setLoading(false); }
     };
@@ -28,7 +32,7 @@ export default function VehicleDocuments() {
     api.get('/vehicle-docs/expiring?days=30').then(({ data }) => setExpiring(data)).catch(() => {});
   }, [user]);
 
-  const fetchDocs = async (bikeId) => {
+  const fetchDocs = async (bikeId: string | null): Promise<void> => {
     setSelectedBike(bikeId);
     try {
       const { data } = await api.get(`/vehicle-docs/bike/${bikeId}`);
@@ -36,13 +40,13 @@ export default function VehicleDocuments() {
     } catch { setDocs([]); }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (!confirm('Delete document?')) return;
     await api.delete(`/vehicle-docs/${id}`);
     fetchDocs(selectedBike);
   };
 
-  const handleVerify = async (id) => {
+  const handleVerify = async (id: string): Promise<void> => {
     await api.patch(`/vehicle-docs/${id}/verify`);
     fetchDocs(selectedBike);
   };
@@ -84,7 +88,7 @@ export default function VehicleDocuments() {
                aria-label="View vehicle documents">
                 <div>
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{bike.brand} {bike.model}</p>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{bike.category?.name || 'Vehicle'}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'Vehicle'}</p>
                 </div>
                 <FileText size={16} style={{ color: 'var(--text-muted)' }} />
               </button>
@@ -105,7 +109,7 @@ export default function VehicleDocuments() {
             <DocumentUpload bikeId={selectedBike} onUploaded={() => fetchDocs(selectedBike)} />
           </div>
 
-          <DocumentViewer documents={docs} onVerify={user.role === 'Admin' ? handleVerify : undefined} onDelete={handleDelete} />
+          <DocumentViewer documents={docs} onVerify={user?.role === 'Admin' ? handleVerify : undefined} onDelete={handleDelete} />
         </div>
       )}
     </div>

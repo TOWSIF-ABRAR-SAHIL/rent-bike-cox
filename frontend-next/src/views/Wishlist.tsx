@@ -1,15 +1,15 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState, useEffect, memo } from 'react';
 
 import { Heart, ArrowLeft, Trash2 } from 'lucide-react';
 import api from '../api/axios';
+import type { Bike } from '@/types';
 import { useWishlist } from '../context/useWishlist';
 
 const Wishlist = () => {
   const { ids, toggle, clear } = useWishlist();
-  const [bikes, setBikes] = useState([]);
+  const [bikes, setBikes] = useState<Bike[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

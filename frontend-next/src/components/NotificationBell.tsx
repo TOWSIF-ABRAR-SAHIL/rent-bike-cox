@@ -1,16 +1,16 @@
-// @ts-nocheck — P1 bootstrap: parity copy of the Vite app. P3 types this file.
 "use client";
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 
 import api from '../api/axios';
+import type { NotificationItem } from '@/types';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 
 const NotificationBell = () => {
   const [unread, setUnread] = useState(0);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   const fetchUnread = async () => {
     try {
@@ -46,14 +46,14 @@ const NotificationBell = () => {
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    const handler = (e: MouseEvent): void => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const markRead = async (id) => {
+  const markRead = async (id: string): Promise<void> => {
     try {
       await api.put(`/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
@@ -73,7 +73,7 @@ const NotificationBell = () => {
     }
   };
 
-  const typeColors = {
+  const typeColors: Record<string, string> = {
     booking: 'var(--accent-text)',
     payment: 'var(--success-text)',
     maintenance: 'var(--warning-text)',
@@ -124,12 +124,12 @@ const NotificationBell = () => {
                   aria-label={n.read ? `${n.title} - ${n.message}` : `Mark "${n.title}" as read`}
                   onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !n.read) markRead(n._id); }}
                 >
-                  <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: n.read ? 'transparent' : typeColors[n.type] || 'var(--text-muted)' }} />
+                  <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: n.read ? 'transparent' : typeColors[n.type ?? ''] || 'var(--text-muted)' }} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{n.title}</p>
                     <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{n.message}</p>
                     <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                      {new Date(n.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {new Date(n.createdAt ?? '').toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                   {!n.read && <Check size={12} style={{ color: 'var(--accent-text)', flexShrink: 0, marginTop: 4 }} />}
