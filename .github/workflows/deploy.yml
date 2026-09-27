@@ -49,3 +49,28 @@ jobs:
       - name: No Vercel token configured
         if: env.VERCEL_TOKEN == ''
         run: echo "VERCEL_TOKEN not set; relying on Vercel GitHub integration"
+
+  deploy-frontend-next:
+    name: Deploy Frontend-Next Preview to Vercel
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID_NEXT: ${{ secrets.VERCEL_PROJECT_ID_NEXT }}
+    if: >-
+      !contains(github.event.head_commit.message, 'docs:') &&
+      !contains(github.event.head_commit.message, 'style:') &&
+      !contains(github.event.head_commit.message, 'chore:')
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy preview to Vercel
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID_NEXT != ''
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ env.VERCEL_TOKEN }}
+          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ env.VERCEL_PROJECT_ID_NEXT }}
+          working-directory: frontend-next
+      - name: No preview project configured
+        if: env.VERCEL_TOKEN == '' || env.VERCEL_PROJECT_ID_NEXT == ''
+        run: echo "VERCEL_PROJECT_ID_NEXT not set; create a second Vercel project with root frontend-next and add its project ID as a secret"

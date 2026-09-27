@@ -134,6 +134,11 @@ const allowedOrigins = [
   process.env.NODE_ENV !== 'production' ? 'http://localhost:3000' : null,
   'https://sandbox.sslcommerz.com',
   'https://sslcommerz.com',
+  // Preview deployments (e.g. frontend-next on Vercel). Comma-separated via
+  // PREVIEW_URLS env var. Empty by default — no behavior change.
+  ...(process.env.PREVIEW_URLS
+    ? process.env.PREVIEW_URLS.split(',').map((s) => s.trim()).filter(Boolean)
+    : []),
 ].filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => {
