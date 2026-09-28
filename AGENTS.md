@@ -21,22 +21,19 @@ Each has own `node_modules/`, `.env`, `package.json`. Lockfiles committed.
 # One-time after clone
 git config core.hooksPath .githooks   # enables commit-msg hook
 
-node scripts/dev.js                # both packages; prefixed logs, Ctrl-C stops both
 cd backend && npm run dev          # backend alone (nodemon on :5000)
-cd frontend && npm run dev         # frontend alone (vite on :5173)
-cd frontend && npm run lint        # eslint (no typecheck in stack)
-cd frontend && npm run build       # prod build
+cd frontend-next && npm run dev    # frontend alone (next on :3000)
+cd frontend-next && npm run lint   # eslint
+cd frontend-next && npm run typecheck  # strict TypeScript
+cd frontend-next && npm run build   # prod build
 docker-compose up --build          # Docker (backend + mongo)
 ```
 
-`scripts/dev.js` (zero-dependency, no root `package.json`) is the preferred way to run the
-stack: it resolves the ports, forces `PORT` into the backend's environment, points the
-frontend's API URL at the backend it started, waits for both to answer, and kills both process
-groups on exit. It exists because `dotenv` does not override an already-set `PORT` — a shell
-exporting `PORT=0` makes the backend bind a random port while still logging "Server running on
-port 0". See `.freebuff/run.md` for the run notes.
-
-Test suites: Vitest. Backend 232 tests, frontend 26 tests (258 total). Run with `npx vitest run` in either package.
+Test suites: Vitest (`npm test` in either package) plus a zero-dependency E2E
+smoke seed: `cd backend && npm run test:e2e` hits a running backend
+(`E2E_API_URL`, defaults to `http://localhost:5000/api`) and exercises
+login → available bikes → booking create (pickupLocation) → cancel, then exits
+non-zero on failure. Point it at staging, not prod CI.
 
 `backend/test/regressions.test.mjs` holds the regression tests for the payment, coupon,
 booking-window, and PII-hashing fixes — 33 of the backend cases. They are unit-level by
