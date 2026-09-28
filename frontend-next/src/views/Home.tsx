@@ -6,13 +6,14 @@ import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 
 import api from '../api/axios';
 import { normalizeFaqs } from '../lib/faqContent';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Calendar, Navigation, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Calendar, Navigation, BadgeCheck, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import VehicleCard from '../components/VehicleCard';
 import ShowcaseImage from '../components/ShowcaseImage';
 import SafeImage from '../components/SafeImage';
+import { NEWS } from '../data/homepage';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
@@ -71,6 +72,15 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
   const [heroSlide, setHeroSlide] = useState(0);
   const [bikeRatings, setBikeRatings] = useState<Record<string, ReviewStats>>(initialRatings ?? {});
   const [faqs, setFaqs] = useState<Faq[]>(initialFaqs ?? []);
+  const [rentalPackages, setRentalPackages] = useState<{ name: string; price: number }[] | null>(null);
+
+  // Rental packages are admin-priced in Settings; hide the section if unreachable.
+  useEffect(() => {
+    api.get('/dashboard/settings').then(res => {
+      const pkgs = res.data?.packages;
+      if (Array.isArray(pkgs) && pkgs.length > 0) setRentalPackages(pkgs.slice(0, 3));
+    }).catch(() => {});
+  }, []);
   const [openFaq, setOpenFaq] = useState(0);
   const [heroLocation, setHeroLocation] = useState('');
 
@@ -853,6 +863,41 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
         </div>
       </section>
 
+      {/* ============ PRICING ============ */}
+      {rentalPackages && rentalPackages.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Rental Packages, Honest Prices</h2>
+            <p className="text-slate-500 text-sm max-w-xl mx-auto">Longer rides cost less per day — same verified fleet, same free cancellation</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+            {rentalPackages.map((pkg, i) => {
+              const isPopular = i === 1 && rentalPackages.length === 3;
+              return (
+                <div key={pkg.name} className={`relative rounded-2xl border p-7 flex flex-col ${isPopular ? 'border-orange-500 bg-neutral-900 text-white shadow-xl shadow-orange-500/20 sm:-my-3 sm:py-10' : 'border-slate-200 bg-white'}`}>
+                  {isPopular && (
+                    <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-black uppercase tracking-wide bg-orange-500 text-white shadow">
+                      Most Popular
+                    </span>
+                  )}
+                  <h3 className={`font-black text-lg mb-1 ${isPopular ? 'text-white' : 'text-slate-900'}`}>{pkg.name}</h3>
+                  <p className="mb-5"><span className={`text-4xl font-black ${isPopular ? 'text-white' : 'text-slate-900'}`}>{pkg.price.toLocaleString()}</span> <span className={`text-sm font-bold ${isPopular ? 'text-slate-300' : 'text-slate-500'}`}>TK</span></p>
+                  <ul className={`space-y-2.5 text-[13px] mb-7 ${isPopular ? 'text-slate-200' : 'text-slate-600'}`}>
+                    <li className="flex items-center gap-2"><BadgeCheck size={15} className="text-teal-500 shrink-0" /> {pkg.name} full-duration rental</li>
+                    <li className="flex items-center gap-2"><BadgeCheck size={15} className="text-teal-500 shrink-0" /> Free cancellation (24h+ notice)</li>
+                    <li className="flex items-center gap-2"><BadgeCheck size={15} className="text-teal-500 shrink-0" /> Verified inspected vehicle</li>
+                    <li className="flex items-center gap-2"><BadgeCheck size={15} className="text-teal-500 shrink-0" /> 24/7 roadside support</li>
+                  </ul>
+                  <Link href="/search" className={`mt-auto inline-flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold transition-all ${isPopular ? 'bg-orange-500 hover:bg-orange-600 text-white' : 'bg-neutral-900 hover:bg-black text-white'}`}>
+                    Choose Plan
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ============ TESTIMONIALS ============ */}
       <section className="relative overflow-hidden bg-[#0d0d12] py-16">
         <div className="pointer-events-none absolute -right-20 top-0 h-full w-72 opacity-90" aria-hidden="true"
@@ -905,6 +950,32 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ============ NEWS ============ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Riding Notes &amp; Tips</h2>
+          <p className="text-slate-500 text-sm max-w-xl mx-auto">Short guides for getting the most out of Cox&apos;s Bazar on two wheels</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {NEWS.map(item => (
+            <Link key={item.title} href={item.href} className="group bg-white rounded-2xl overflow-hidden border border-slate-200 hover:shadow-[0_16px_40px_rgba(0,0,0,0.10)] hover:-translate-y-1 transition-all duration-300 flex flex-col">
+              <div className="relative h-48 overflow-hidden">
+                <Image src={item.image} alt={item.title} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/95 text-slate-800 shadow">{item.date}</span>
+              </div>
+              <div className="p-5 flex flex-col flex-1">
+                <h3 className="font-black text-slate-900 leading-snug mb-2 group-hover:text-orange-600 transition-colors">{item.title}</h3>
+                <p className="text-[13px] text-slate-500 leading-relaxed mb-4">{item.excerpt}</p>
+                <span className="mt-auto inline-flex items-center gap-1.5 text-[13px] font-bold text-orange-600">
+                  Read Guide <ArrowRight size={14} /> <span className="font-semibold text-slate-400">• {item.readTime}</span>
+                </span>
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 

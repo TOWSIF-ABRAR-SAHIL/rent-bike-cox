@@ -72,8 +72,10 @@ describe("Home view server-prefetch seeding", () => {
 
     // The model shows in the card and in the hero; either way it came from the server.
     expect(screen.getAllByText("Scooty Pep Plus").length).toBeGreaterThan(0);
-    // Fully seeded: not even the sidebar requests go out.
-    expect(get).not.toHaveBeenCalled();
+    // Fully seeded: the storefront and category requests stay quiet (pricing
+    // packages are not SSR-seeded, so /dashboard/settings may still go out).
+    expect(get).not.toHaveBeenCalledWith("/dashboard/bikes/available", expect.anything());
+    expect(get).not.toHaveBeenCalledWith("/dashboard/categories", expect.anything());
   });
 
   it("shows no skeleton once the server data is seeded", () => {
