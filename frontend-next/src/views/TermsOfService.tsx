@@ -1,4 +1,4 @@
-"use client";
+// Static copy with no interactivity: a server component, so it ships no JavaScript.
 const TermsOfService = () => {
   return (
     <div className="min-h-[calc(100dvh-4rem)] py-12 px-4">

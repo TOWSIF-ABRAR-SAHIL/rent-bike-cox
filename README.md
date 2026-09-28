@@ -11,7 +11,7 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 19, Vite 8, Tailwind CSS 4, React Router DOM 7, Axios |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, Axios |
 | Backend | Express 5, Mongoose 9, MongoDB |
 | Auth | JWT (bcryptjs), password policy (8+ chars, uppercase, number, special) |
 | Payments | SSLCommerz (bKash, Nagad, card, internet banking) |
@@ -47,7 +47,8 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - **Photo lightbox** — fullscreen gallery with zoom and keyboard navigation
 - **SEO** — meta tags, robots.txt, sitemap.xml, JSON-LD schema
 - **Security** — Helmet CSP, rate limiting, audit logging, fraud detection, circuit breaker
-- **Testing** — 157 tests (131 backend + 26 frontend) with Vitest
+- **Testing** — Vitest, run with `npm test` in either package (250 backend + 80 frontend)
+- **Rendering** — public pages (`/`, `/faq`, `/bike/[id]`) are server-rendered with ISR and prefetch their data; the policy pages ship no JavaScript; auth/booking/dashboard pages stay client-side
 
 ## Demo Accounts
 
@@ -66,20 +67,20 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - Cloudinary account
 - SSLCommerz sandbox account
 
-### Both at once (recommended)
+### Both at once
 
-After installing dependencies once in each workspace, start both from the repo root:
+There is no root runner script — start each package in its own terminal:
 
 ```bash
-node scripts/dev.js
+# terminal 1 — backend on http://localhost:5000
+cd backend && npm run dev
+
+# terminal 2 — Next.js on http://localhost:3000
+cd frontend-next && npm run dev
 ```
 
-This runs the backend and the Vite dev server together with prefixed output, waits until both
-answer, tails their logs to `.logs/`, and stops both on Ctrl-C. `--backend-port` /
-`--frontend-port` override the ports (default 5000 and 5173) and the frontend's API URL follows
-the backend automatically. It also forces the backend port: some shells export `PORT=0`, and
-`dotenv` will not override an existing `PORT`, which otherwise makes the backend bind a random
-port that the frontend cannot reach.
+The frontend reads its API base from `NEXT_PUBLIC_API_URL` and falls back to
+`http://localhost:5000/api`, so a local backend is picked up automatically.
 
 ### Backend
 
@@ -94,13 +95,14 @@ npm run dev
 ### Frontend
 
 ```bash
-cd frontend
-cp .env.example .env    # set VITE_API_URL
+cd frontend-next
 npm install
+# create .env.local with: NEXT_PUBLIC_API_URL=https://rent-bike-backend.onrender.com/api
 npm run dev
 ```
 
-Frontend runs on `http://localhost:5173`, backend on `http://localhost:5000`.
+Frontend runs on `http://localhost:3000`, backend on `http://localhost:5000`. With no env file,
+the Axios client defaults to `http://localhost:5000/api`.
 
 ### Docker
 
@@ -123,9 +125,11 @@ Runs backend + MongoDB on `http://localhost:5000`.
 ### Frontend (Vercel)
 
 1. Import repo on Vercel
-2. Root directory: `frontend`, framework: Vite
-3. Env var: `VITE_API_URL=https://rent-bike-backend.onrender.com/api`
+2. Root directory: `frontend-next`, framework: Next.js (auto-detected)
+3. Env var: `NEXT_PUBLIC_API_URL=https://rent-bike-backend.onrender.com/api`
 4. Frontend URL: `https://rent-bike-cox.vercel.app`
+
+No `vercel.json` — Next.js handles routing and headers through `next.config.ts`.
 
 ## Project Structure
 

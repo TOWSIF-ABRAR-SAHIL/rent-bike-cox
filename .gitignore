@@ -39,8 +39,8 @@ figma/
 backend/.env
 backend/node_modules/
 
-# Frontend
-frontend/.env
-frontend/.env.production
-frontend/node_modules/
-frontend/dist/
+# Frontend (Next.js)
+frontend-next/.env
+frontend-next/.env.local
+frontend-next/node_modules/
+frontend-next/.next/

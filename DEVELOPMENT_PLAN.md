@@ -28,7 +28,7 @@ git config core.hooksPath .githooks
 cd backend && cp .env.example .env && npm install && npm run dev
 
 # Frontend (new terminal)
-cd frontend && cp .env.example .env && npm run dev
+cd frontend-next && npm run dev
 ```
 
 ### Demo Accounts
@@ -66,7 +66,7 @@ cd frontend && cp .env.example .env && npm run dev
 ## 3. Architecture Summary
 
 ### Tech Stack
-- **Frontend:** React 19, Vite 8, Tailwind CSS 4, React Router 7
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS 4
 - **Backend:** Express 5, Mongoose 9, MongoDB
 - **Auth:** JWT (bcryptjs)
 - **Payments:** SSLCommerz
@@ -120,15 +120,15 @@ cd frontend && cp .env.example .env && npm run dev
    - Add rate limiter if needed
 
 2. **Frontend:**
-   - Create page in `frontend/src/pages/`
-   - Add route in `App.jsx` with `React.lazy`
-   - Create components in `frontend/src/components/`
+   - Create the route segment in `frontend-next/src/app/<path>/page.tsx`
+   - Put the screen in `frontend-next/src/views/`, render it from the page
+   - Create components in `frontend-next/src/components/`
    - Use `useAuth()` for auth state
    - Use `useTheme()` for theme state
 
 3. **Testing:**
    - Start backend: `cd backend && npm run dev`
-   - Start frontend: `cd frontend && npm run dev`
+   - Start frontend: `cd frontend-next && npm run dev`
    - Test all roles
    - Run `npm run lint` in frontend
 
@@ -142,7 +142,7 @@ cd frontend && cp .env.example .env && npm run dev
 | Express 5 | Route errors propagate differently than Express 4 |
 | Tailwind 4 | No `@tailwind` directives, use `@import "tailwindcss"` |
 | ESLint | Context hooks MUST be in separate files from providers |
-| Frontend env | Must be prefixed with `VITE_` |
+| Frontend env | Client-side vars must be prefixed with `NEXT_PUBLIC_` |
 | CORS | Errors return 403, not 500 |
 | CORS localhost | Only in dev mode (NODE_ENV !== production) |
 | `req.query` | Express 5 makes it read-only — use custom sanitize.js |
@@ -159,7 +159,7 @@ cd frontend && cp .env.example .env && npm run dev
 
 ### Frontend (Vercel)
 1. Push to `main` → auto-deploys
-2. `VITE_API_URL` env var in Vercel dashboard
+2. `NEXT_PUBLIC_API_URL` env var in Vercel dashboard
 3. URL: `https://rent-bike-cox.vercel.app`
 
 ### Post-Deploy
@@ -192,8 +192,8 @@ cd frontend && cp .env.example .env && npm run dev
 |-------|--------------|
 | Express 5 routing | `backend/server.js`, `backend/routes/` |
 | Mongoose schemas | `backend/models/` |
-| React context pattern | `frontend/src/context/AuthContext.jsx` + `useAuth.js` |
-| JWT auth flow | `backend/middleware/authMiddleware.js`, `frontend/src/api/axios.js` |
+| React context pattern | `frontend-next/src/context/AuthContext.tsx` + `useAuth.ts` |
+| JWT auth flow | `backend/middleware/authMiddleware.js`, `frontend-next/src/api/axios.ts` |
 | Payment flow | `backend/gateways/SSLCommerzGateway.js`, `backend/controllers/paymentController.js` |
 | State machines | `backend/stateMachines/` |
 | Event system | `backend/events/EventBus.js` |

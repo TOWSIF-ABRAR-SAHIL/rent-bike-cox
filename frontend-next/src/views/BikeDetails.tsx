@@ -1,6 +1,6 @@
 "use client";
 import Image from 'next/image';
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { setNavState } from '../lib/navState';
@@ -26,20 +26,29 @@ const SPEC_ICON: Record<string, LucideIcon> = {
   Engine: Gauge,
 };
 
-const BikeDetails = () => {
+/** Prefetched by `app/bike/[id]/page.tsx`; `null` means no prefetch (or the API
+ *  was unreachable) and the view fetches on the client as it always did. */
+interface BikeDetailsProps {
+  initialBike?: Bike | null;
+  initialReviews?: Review[] | null;
+  initialReviewStats?: ReviewStats | null;
+  initialReviewPages?: number | null;
+}
+
+const BikeDetails = ({ initialBike = null, initialReviews = null, initialReviewStats = null, initialReviewPages = null }: BikeDetailsProps = {}) => {
   const { id } = useParams();
   const router = useRouter();
   const { token } = useAuth();
-  const [bike, setBike] = useState<Bike | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [bike, setBike] = useState<Bike | null>(initialBike);
+  const [loading, setLoading] = useState(initialBike === null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [fetchError, setFetchError] = useState('');
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
+  const [reviews, setReviews] = useState<Review[]>(initialReviews ?? []);
+  const [reviewStats, setReviewStats] = useState<ReviewStats | null>(initialReviewStats);
   const [reviewPage, setReviewPage] = useState(1);
-  const [reviewPages, setReviewPages] = useState(1);
+  const [reviewPages, setReviewPages] = useState(initialReviewPages ?? 1);
   const [reviewSort, setReviewSort] = useState('newest');
   const [reviewLoading, setReviewLoading] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -47,6 +56,13 @@ const BikeDetails = () => {
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
+
+  // Skip only the first fetch of each resource: the server already rendered that
+  // exact query. Sorting, paginating, retry and post-review refetches still run.
+  const seeded = useRef({
+    bike: initialBike !== null,
+    reviews: initialReviews !== null,
+  });
 
   const fetchReviews = useCallback(async (page = 1) => {
     try {
@@ -65,7 +81,7 @@ const BikeDetails = () => {
   }, [id, reviewSort]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (seeded.current.reviews) { seeded.current.reviews = false; return; }
     fetchReviews(1);
   }, [fetchReviews]);
 
@@ -89,8 +105,10 @@ const BikeDetails = () => {
     }).finally(() => setLoading(false));
   }, [id]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchBike(); }, [fetchBike]);
+  useEffect(() => {
+    if (seeded.current.bike) { seeded.current.bike = false; return; }
+    fetchBike();
+  }, [fetchBike]);
 
   useEffect(() => {
     if (!bike) return;

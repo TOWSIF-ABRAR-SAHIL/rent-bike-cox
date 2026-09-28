@@ -62,7 +62,7 @@
 ### CORS
 - Exact-match whitelist only (no loose `origin.includes()`)
 - Allowed origins: `FRONTEND_URL`, `https://rent-bike-cox.vercel.app`, SSLCommerz domains
-- `http://localhost:5173` only in development
+- `http://localhost:3000` (Next.js dev server) only in development
 - CORS errors return 403
 
 ### Payment Security

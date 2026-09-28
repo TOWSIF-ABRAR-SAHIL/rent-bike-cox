@@ -26,3 +26,29 @@ export async function serverGet<T>(
   }
   return (await res.json()) as T;
 }
+
+/**
+ * `serverGet` for page prefetching, where "the API is unreachable" must not be
+ * fatal. A throw here would fail the whole build (or the request) for a page that
+ * only wanted a first-paint head start, so the failure is logged and reported as
+ * `null`; the client view then behaves exactly as it did before prefetching
+ * existed and fetches the data itself.
+ *
+ * Next does not cache a fetch that throws, so the next revalidation retries.
+ */
+export async function serverGetOrNull<T>(
+  path: string,
+  options?: ServerGetOptions,
+  label?: string
+): Promise<T | null> {
+  try {
+    return await serverGet<T>(path, options);
+  } catch (error) {
+    if (process.env.NODE_ENV !== "test") {
+      console.warn(
+        `[serverApi] ${label ?? path} not prefetched: ${(error as Error).message}`
+      );
+    }
+    return null;
+  }
+}

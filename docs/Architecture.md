@@ -4,12 +4,12 @@
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Frontend | React | 19.2.5 |
-| Build tool | Vite | 8.0.10 |
+| Frontend | Next.js (App Router) | 16.3.6 |
+| UI runtime | React | 19.2.8 |
 | CSS | Tailwind CSS | 4.2.4 |
-| Animations | Framer Motion | 12.42.2 |
+| Animations | CSS transitions (Framer Motion dropped in the Next migration) | — |
 | HTTP client | Axios | 1.16.0 |
-| Routing | React Router DOM | 7.15.0 |
+| Routing | Next.js App Router (file-based, no React Router) | 16.3.6 |
 | Icons | Lucide React | 1.14.0 |
 | Backend | Express | 5.2.1 |
 | Database | Mongoose/MongoDB | 9.6.1 |
@@ -218,119 +218,108 @@ rent-bike-cox/
 │   ├── Dockerfile                   # Production container (node:20-alpine)
 │   ├── .dockerignore
 │   └── package.json
-├── frontend/
+├── frontend-next/                   # Next.js App Router (React → Next migration complete)
 │   ├── src/
-│   │   ├── App.jsx                  # Router + React.lazy code splitting
-│   │   ├── main.jsx                 # ReactDOM entry
-│   │   ├── index.css                # Tailwind 4 + design system (CSS variables, glass, gradients)
-│   │   ├── api/axios.js             # Axios instance + JWT interceptor
-│   │   ├── context/
-│   │   │   ├── AuthContext.jsx       # Auth provider (separate file per ESLint)
-│   │   │   ├── useAuth.js           # useAuth hook
-│   │   │   ├── ThemeContext.jsx      # Light/Dark/System theme
-│   │   │   └── useTheme.js
-│   │   ├── pages/                   # 30+ route pages
-│   │   │   ├── Home.jsx
-│   │   │   ├── BikeDetails.jsx
-│   │   │   ├── Checkout.jsx
-│   │   │   ├── Invoice.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── Signup.jsx
-│   │   │   ├── ForgotPassword.jsx
-│   │   │   ├── AdminDashboard.jsx
-│   │   │   ├── RenterDashboard.jsx
-│   │   │   ├── FleetDashboard.jsx
-│   │   │   ├── AnalyticsDashboard.jsx
-│   │   │   ├── AdvancedSearch.jsx
-│   │   │   ├── VehicleHistory.jsx
-│   │   │   ├── Notifications.jsx
-│   │   │   ├── NotificationPreferences.jsx
-│   │   │   ├── SeasonalPricingManager.jsx
-│   │   │   ├── VehicleDocuments.jsx
-│   │   │   ├── PolicyList.jsx
-│   │   │   ├── FAQ.jsx
-│   │   │   ├── Contact.jsx
-│   │   │   ├── CompareVehicles.jsx
-│   │   │   ├── Wishlist.jsx
-│   │   │   ├── RefundManagement.jsx
-│   │   │   ├── Profile.jsx
-│   │   │   ├── ChangePassword.jsx
-│   │   │   ├── MyBookings.jsx
-│   │   │   ├── PaymentFailed.jsx
-│   │   │   ├── PaymentCancelled.jsx
-│   │   │   └── NotFound.jsx
-│   │   ├── components/              # 60+ reusable components
-│   │   │   ├── ErrorBoundary.jsx    # User-friendly error UI
-│   │   │   ├── TabErrorBoundary.jsx # Per-tab error boundary (AdminDashboard)
-│   │   │   ├── PageSpinner.jsx      # Full-page loading for lazy routes
-│   │   │   ├── LoadingSkeleton.jsx
-│   │   │   ├── ProtectedRoute.jsx   # Role-based route gating
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Footer.jsx
-│   │   │   ├── ThemeToggle.jsx
-│   │   │   ├── AvailabilityCalendar.jsx
-│   │   │   ├── LiveFleetMap.jsx     # Real-time GPS map with clustering, telemetry, trails
-│   │   │   ├── FleetOverview.jsx, FleetSummary.jsx, FleetFilter.jsx, FleetBikeRow.jsx
-│   │   │   ├── FleetHealthChart.jsx, FleetUtilizationChart.jsx
-│   │   │   ├── MaintenanceSchedule.jsx, MaintenanceLogForm.jsx, MaintenanceHistory.jsx
-│   │   │   ├── VehicleHealthCard.jsx
-│   │   │   ├── HistoryTimeline.jsx, HistoryFilter.jsx, HistoryStats.jsx
-│   │   │   ├── SearchFilters.jsx, SearchResults.jsx, SearchAutocomplete.jsx
-│   │   │   ├── RevenueChart.jsx, BookingTrendChart.jsx, CategoryPerformance.jsx, TopBikes.jsx
-│   │   │   ├── CustomerInsights.jsx, ZoneAnalytics.jsx, RentalDurationChart.jsx
-│   │   │   ├── FinancialSummary.jsx, HourlyDistribution.jsx
-│   │   │   ├── NotificationBell.jsx
-│   │   │   ├── ReviewForm.jsx, ReviewList.jsx
-│   │   │   ├── SeasonalBadge.jsx
-│   │   │   ├── DocumentUpload.jsx, DocumentViewer.jsx
-│   │   │   ├── BulkOperations.jsx
-│   │   │   ├── RoutePlanner.jsx
-│   │   │   ├── CompareBar.jsx
-│   │   │   ├── BottomNav.jsx
-│   │   │   ├── WhatsAppButton.jsx
-│   │   │   ├── Lightbox.jsx
-│   │   │   ├── RenterEarnings.jsx   # Renter earnings dashboard
-│   │   │   ├── admin/               # 13 admin sub-components
-│   │   │   │   ├── CommandCenter.jsx       # Default tab — quick actions, system status
-│   │   │   │   ├── ReportsTab.jsx          # 18 report types, 4 formats, preview, history
-│   │   │   │   ├── SystemHealthTab.jsx     # Server/DB health dashboard
-│   │   │   │   ├── ContentEditor.jsx       # Site content by page group
-│   │   │   │   ├── BrandingTab.jsx         # Business info, colors, social, SEO
-│   │   │   │   ├── AnnouncementManager.jsx # Banners/popups
-│   │   │   │   ├── TemplateManager.jsx     # Email/notification templates
-│   │   │   │   ├── FAQManager.jsx          # FAQ CRUD with categories
-│   │   │   │   ├── MessageInbox.jsx        # Contact form inbox
-│   │   │   │   ├── CampaignManager.jsx     # Email campaigns
-│   │   │   │   ├── LogsViewer.jsx          # App/error log viewer
-│   │   │   │   ├── CacheManager.jsx        # In-memory cache stats + flush
-│   │   │   │   ├── RateLimitManager.jsx    # Rate limiter config cards
-│   │   │   │   └── AdminNotificationBell.jsx # Navbar notification dropdown
-│   │   │   └── ui/ (EmptyState, Skeleton)
-│   │   └── assets/
-│   ├── index.html                   # SEO meta tags, OG, Twitter cards
+│   │   ├── app/                     # File-based routes: one folder per URL
+│   │   │   ├── layout.tsx           # Root layout — metadata, theme + auth providers
+│   │   │   ├── providers.tsx        # Client provider tree
+│   │   │   ├── page.tsx             # Home
+│   │   │   ├── login/, signup/, forgot-password/, profile/, change-password/
+│   │   │   ├── bike/[id]/, checkout/[bikeId]/, invoice/[bookingId]/, vehicle-history/[bikeId]/
+│   │   │   ├── admin-dashboard/, renter-dashboard/, fleet/, analytics/, search/
+│   │   │   ├── vehicle-docs/, seasonal-pricing/, wishlist/, compare/, refunds/
+│   │   │   ├── notifications/, notification-settings/, admin/notifications/
+│   │   │   ├── policies/, privacy/, terms/, faq/, contact/, my-bookings/, my-disputes/
+│   │   │   ├── payment-failed/, payment-cancelled/, offline/
+│   │   │   ├── globals.css          # Tailwind 4 + design system (CSS variables, glass, gradients)
+│   │   │   ├── not-found.tsx / global-error.tsx
+│   │   │   ├── robots.ts, sitemap.ts, manifest.ts   # generated, not static files
+│   │   │   └── opengraph-image.tsx, favicon.ico
+│   │   ├── views/                   # 31 screen components rendered by the routes
+│   │   │   ├── Home.tsx, BikeDetails.tsx, Checkout.tsx, Invoice.tsx
+│   │   │   ├── AdminDashboard.tsx, RenterDashboard.tsx, FleetDashboard.tsx
+│   │   │   ├── AnalyticsDashboard.tsx, AdvancedSearch.tsx, VehicleHistory.tsx
+│   │   │   ├── Notifications.tsx, NotificationPreferences.tsx, SeasonalPricingManager.tsx
+│   │   │   ├── VehicleDocuments.tsx, Policies.tsx, FAQ.tsx, Contact.tsx
+│   │   │   ├── CompareVehicles.tsx, Wishlist.tsx, RefundManagement.tsx, MyDisputes.tsx
+│   │   │   ├── Profile.tsx, ChangePassword.tsx, MyBookings.tsx
+│   │   │   ├── PaymentFailed.tsx, PaymentCancelled.tsx, NotFound.tsx
+│   │   │   └── PrivacyPolicy.tsx, TermsOfService.tsx, AdminNotificationsPage.tsx
+│   │   ├── components/              # 57 reusable components
+│   │   │   ├── ErrorBoundary.tsx    # User-friendly error UI
+│   │   │   ├── TabErrorBoundary.tsx # Per-tab error boundary (AdminDashboard)
+│   │   │   ├── PageSpinner.tsx / LoadingSkeleton.tsx
+│   │   │   ├── ProtectedRoute.tsx   # Role-based client-side gating
+│   │   │   ├── Navbar.tsx, Footer.tsx, ThemeToggle.tsx, BottomNav.tsx
+│   │   │   ├── AvailabilityCalendar.tsx, LiveFleetMap.tsx (GPS map: clusters, telemetry, trails)
+│   │   │   ├── Fleet*, Maintenance*, VehicleHealthCard.tsx, History* (timeline/filter/stats)
+│   │   │   ├── SearchFilters.tsx, SearchResults.tsx, SearchAutocomplete.tsx
+│   │   │   ├── RevenueChart.tsx, BookingTrendChart.tsx, CategoryPerformance.tsx, TopBikes.tsx
+│   │   │   ├── CustomerInsights.tsx, ZoneAnalytics.tsx, RentalDurationChart.tsx
+│   │   │   ├── FinancialSummary.tsx, HourlyDistribution.tsx
+│   │   │   ├── NotificationBell.tsx, ReviewForm.tsx, ReviewList.tsx, SeasonalBadge.tsx
+│   │   │   ├── DocumentUpload.tsx, DocumentViewer.tsx, BulkOperations.tsx
+│   │   │   ├── RoutePlanner.tsx, CompareBar.tsx, WhatsAppButton.tsx, Lightbox.tsx
+│   │   │   ├── RenterEarnings.tsx   # Renter earnings dashboard
+│   │   │   └── admin/               # 14 admin sub-components (CommandCenter, ReportsTab,
+│   │   │                            # SystemHealthTab, ContentEditor, BrandingTab, …)
+│   │   ├── api/axios.ts             # Axios instance + JWT interceptor
+│   │   ├── context/                 # AuthContext, ThemeContext, WishlistContext, CompareContext + hooks
+│   │   ├── hooks/                   # useSiteContent
+│   │   ├── lib/                     # Pure helpers (adminContent, bikeMedia, navState, serverApi, pickupSpots)
+│   │   ├── types/                   # shared TS types
+│   │   └── test/                    # vitest setup
 │   ├── public/
-│   │   ├── robots.txt
-│   │   ├── sitemap.xml
-│   │   └── .well-known/security.txt
-│   ├── vercel.json                  # SPA rewrites + asset caching
-│   ├── vite.config.js
-│   ├── eslint.config.js
-│   ├── tailwind.config.js
-│   ├── .env / .env.example / .env.production
+│   │   ├── sw.js                    # push notifications + offline cache (/_next/static, /offline)
+│   │   ├── icons/, favicon.svg
+│   │   └── robots/sitemap are generated by app/robots.ts + app/sitemap.ts
+│   ├── next.config.ts               # images, security headers, Sentry wrapper
+│   ├── postcss.config.mjs           # Tailwind 4
+│   ├── eslint.config.mjs
+│   ├── vitest.config.ts
+│   ├── sentry.client.config.ts / sentry.server.config.ts
+│   ├── tsconfig.json
+│   ├── .env.development (NEXT_PUBLIC_API_URL)
 │   └── package.json
 ├── docs/
 ├── .github/workflows/
 │   ├── ci.yml                       # Lint + build + syntax check
 │   └── deploy.yml                   # Render + Vercel deploy triggers
 ├── render.yaml                      # Render blueprint
-├── vercel.json                      # Vercel SPA config
+├── .vercelignore                    # keeps backend/ out of the Vercel upload
 ├── docker-compose.yml               # Local Docker dev (backend + mongo:7)
 ├── AGENTS.md                        # Dev context
 ├── RULES.md                         # Business rules
-├── CREDENTIALS.md                   # Secrets (gitignored)
-├── CONTRIBUTING.md                  # Commit conventions
+├── CREDENTIALS.md                   # Secrets (gitignored)├── CONTRIBUTING.md                   # Commit conventions
 └── README.md
 ```
+
+## Rendering Strategy (App Router)
+
+| Route | Mode | First paint data |
+|-------|------|------------------|
+| `/`, `/faq` | Static + ISR (`revalidate` 60s / 1h) | prefetched server-side into the HTML |
+| `/bike/[id]` | Dynamic — SSR on demand, 60s data cache | bike + first review page prefetched |
+| `/policies`, `/privacy`, `/terms` | Static, plain server components | none — these ship no JavaScript |
+| auth / booking / dashboard routes | Client components | fetched in the browser with the axios client (needs the token) |
+
+Public pages prefetch through `src/lib/serverApi.ts`:
+
+- `serverGet(path, { revalidate })` — throws on failure.
+- `serverGetOrNull(path, opts, label)` — logs and returns `null`. **Pages use this one**: a
+  page whose prefetch fails still renders (the view fetches on the client), and
+  `next build` cannot fail because the API was unreachable at build time.
+
+**Seeding contract.** A page passes its payload to the view as `initial*` props, where
+`null` means "nothing prefetched — fetch yourself" and an empty array means "the API
+really had none". The view seeds its state and renders it on the first paint (no skeleton
+flash, no duplicate request) and skips only the **first** effect run per resource via a
+`seeded` ref, so user-driven behaviour — typing in the search box, changing the review
+sort, Retry — is unchanged.
+
+Session-scoped pages (profile, bookings, dashboards, checkout, invoice) must **not** use
+`serverApi`: they need the user's token, which exists only in the browser.
+`src/test/nextjsConversion.test.ts` fails if one starts importing it.
 
 ## API Routes
 
@@ -436,8 +425,9 @@ Advance: 50% for ≤24h, 30% for >24h. `BACKEND_URL` and `FRONTEND_URL` control 
 - Env vars: MONGODB_URI, JWT_SECRET, Cloudinary, SSLCommerz, BACKEND_URL, FRONTEND_URL, IOT_API_KEY (ESP32/GSM auth)
 
 ### Frontend (Vercel)
-- `vercel.json` in `frontend/`: SPA catch-all rewrite + asset caching
-- Env var: `VITE_API_URL=https://rent-bike-backend.onrender.com/api`
+- Vercel project root directory: `frontend-next/` (Next.js preset; no `vercel.json`, no SPA rewrites)
+- Env var: `NEXT_PUBLIC_API_URL=https://rent-bike-backend.onrender.com/api`
+- Sentry (optional): `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN`
 
 ### Docker
 - `docker-compose.yml`: backend + mongo:7 with health checks + persistent volume

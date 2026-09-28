@@ -8,7 +8,7 @@
 - Frontend: https://rent-bike-cox.vercel.app
 - Backend: https://rent-bike-backend.onrender.com
 
-**Tech Stack:** React 19, Vite 8, Tailwind CSS 4, Express 5, Mongoose 9
+**Tech Stack:** Next.js 16, React 19, Tailwind CSS 4, Express 5, Mongoose 9
 **Design Direction:** Dark mode default, vibrant gradients (amber/orange), glassmorphism cards, micro-animations
 **Payment:** SSLCommerz (bKash, Nagad, Bank, Card via gateway)
 **Contact Numbers:** 0189154443, 01764466757

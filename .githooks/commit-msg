@@ -45,7 +45,7 @@ if echo "$msg" | grep -qE '^(feat|fix|docs|refactor|chore|test|style): [A-Z]'; t
 fi
 
 # Check description length (subject line max 72 chars)
-length=$(echo "$msg" | wc -c)
+length=$(echo "$msg" | head -1 | wc -c)
 if [ "$length" -gt 73 ]; then
   echo ""
   echo "  Commit message subject line too long ($length chars). Max 72."

@@ -1,34 +1,38 @@
 "use client";
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { HelpCircle, ChevronDown, ChevronRight, ThumbsUp, ThumbsDown, Search } from 'lucide-react';
 import api from '../api/axios';
+import { normalizeFaqs } from '../lib/faqContent';
 import type { Faq } from '@/types';
 
-const FAQPage = () => {
-  const [faqs, setFaqs] = useState<Faq[]>([]);
-  const [loading, setLoading] = useState(true);
+/** Prefetched by `app/faq/page.tsx`; `null` means the view fetches on the client. */
+interface FAQProps {
+  initialFaqs?: Faq[] | null;
+  initialCategories?: string[] | null;
+}
+
+const FAQPage = ({ initialFaqs = null, initialCategories = null }: FAQProps = {}) => {
+  const [faqs, setFaqs] = useState<Faq[]>(initialFaqs ?? []);
+  const [loading, setLoading] = useState(initialFaqs === null);
   const [error, setError] = useState('');
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries((initialCategories ?? []).map(c => [c, true]))
+  );
   const [search, setSearch] = useState('');
   const [helpfulMap, setHelpfulMap] = useState<Record<string, boolean>>({});
+
+  // The server rendered this query already; only the first run is skipped, so
+  // Try Again after a failure still fetches.
+  const seeded = useRef(initialFaqs !== null);
 
   const fetchFaqs = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const res = await api.get('/faqs');
-      const data = res.data || {};
-      const cats = (Array.isArray(data.categories) ? data.categories : []) as string[];
-      const faqMap = ((data.faqs && !Array.isArray(data.faqs)) ? data.faqs : {}) as Record<string, Faq[]>;
-      const flat: Faq[] = [];
-      cats.forEach(cat => {
-        const items = Array.isArray(faqMap[cat]) ? faqMap[cat] : [];
-        items.forEach(f => flat.push({ ...f, category: cat }));
-      });
+      const { categories, faqs: flat } = normalizeFaqs(res.data);
       setFaqs(flat);
-      const catsObj: Record<string, boolean> = {};
-      cats.forEach(c => { catsObj[c] = true; });
-      setExpanded(catsObj);
+      setExpanded(Object.fromEntries(categories.map(c => [c, true])));
     } catch {
       setError('Failed to load FAQs');
     } finally {
@@ -36,8 +40,10 @@ const FAQPage = () => {
     }
   }, []);
 
-  useEffect(() => { // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchFaqs(); }, [fetchFaqs]);
+  useEffect(() => {
+    if (seeded.current) { seeded.current = false; return; }
+    fetchFaqs();
+  }, [fetchFaqs]);
 
   const trackHelpful = async (id: string, helpful: boolean): Promise<void> => {
     if (helpfulMap[id]) return;

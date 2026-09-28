@@ -150,6 +150,14 @@ message (`Path \`expiryDate\` is required.` — our words, naming a field and it
 the fallback. Never a driver's, a gateway's or a library's message. Every catch logs the real
 message first, or the failure disappears from the logs entirely.
 
+`clientStatus(err, fallback)` mirrors the handler's first branches rather than the fallback: an
+`HttpError` keeps its own 4xx status, and a `CastError` or schema `ValidationError` answers **400**
+— the same mapping the central handler applies. So a catch that wraps a `findById(req.params.id)`
+must use it, not a hard-coded `500`: `Model.findById('not-an-id')` throws a `CastError` while
+casting the path parameter, and answering 500 for it reports the caller's typo as a server fault.
+For the same reason `clientMessage` returns the handler's canned `'Invalid request data'` for those
+two error names instead of the fallback. Regression coverage: `test/malformedId.test.mjs` (I4).
+
 
 ## Per-Controller Error Patterns
 
@@ -162,7 +170,7 @@ message first, or the failure disappears from the logs entirely.
 | Duplicate email | 409 | "Email already registered" |
 | Duplicate NID | 409 | "NID already registered" |
 | Duplicate license | 409 | "License already registered" |
-| Invalid credentials | 401 | "Invalid email or password" |
+| Invalid credentials | 401 | "Invalid credentials" |
 | Server error | 500 | "Server error during registration" / "Server error during login" |
 
 ### Booking Controller

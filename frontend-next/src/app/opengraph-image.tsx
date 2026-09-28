@@ -1,6 +1,9 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+// No `runtime = \"edge\"`: the Edge Runtime is deprecated in Next 16 and declaring it
+// also disabled static generation for this route. `next/og` renders fine on the
+// default Node.js runtime, and the image is static (no request data), so it is now
+// prerendered instead of generated on every request.
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

@@ -1,9 +1,10 @@
 "use client";
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 
 import api from '../api/axios';
+import { normalizeFaqs } from '../lib/faqContent';
 import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Heart, GitCompareArrows, Calendar, Navigation, BadgeCheck, Gauge, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
@@ -45,25 +46,51 @@ const hotspots = [
   { name: 'Sea Beach' },
 ];
 
-const Home = () => {
+/** Storefront data prefetched by `app/page.tsx`; `null` means the prefetch failed
+ *  and the view falls back to fetching on the client exactly as it used to. */
+interface HomeProps {
+  initialBikes?: BikeType[] | null;
+  initialCategories?: BikeCategory[] | null;
+  initialFaqs?: Faq[] | null;
+  initialRatings?: Record<string, ReviewStats> | null;
+}
+
+const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = null, initialRatings = null }: HomeProps = {}) => {
   const { get } = useSiteContent();
   const { user } = useAuth();
-  const [bikes, setBikes] = useState<BikeType[]>([]);
-  const [categories, setCategories] = useState<BikeCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [bikes, setBikes] = useState<BikeType[]>(initialBikes ?? []);
+  const [categories, setCategories] = useState<BikeCategory[]>(initialCategories ?? []);
+  const [loading, setLoading] = useState(initialBikes === null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [fetchError, setFetchError] = useState('');
   const [slowNetwork, setSlowNetwork] = useState(false);
   const [heroSlide, setHeroSlide] = useState(0);
-  const [bikeRatings, setBikeRatings] = useState<Record<string, ReviewStats>>({});
-  const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [bikeRatings, setBikeRatings] = useState<Record<string, ReviewStats>>(initialRatings ?? {});
+  const [faqs, setFaqs] = useState<Faq[]>(initialFaqs ?? []);
   const [openFaq, setOpenFaq] = useState(0);
-  const [heroLocation, setHeroLocation] = useState(() => getSavedPickupLocation());
+  const [heroLocation, setHeroLocation] = useState('');
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
+
+  // The server render already answered these queries, so the first client effect
+  // for each resource is skipped (no duplicate request, no skeleton flash). Later
+  // runs — typing, a category click, Retry — are user-driven and still fetch.
+  const seeded = useRef({
+    bikes: initialBikes !== null,
+    categories: initialCategories !== null,
+    faqs: initialFaqs !== null,
+    ratings: initialRatings !== null,
+  });
+
+  // localStorage does not exist during SSR; reading it in the initial state would
+  // render a different value on the client and warn on hydration.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHeroLocation(getSavedPickupLocation());
+  }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -80,17 +107,14 @@ const Home = () => {
   }, [search]);
 
   useEffect(() => {
+    if (seeded.current.categories) { seeded.current.categories = false; return; }
     api.get('/dashboard/categories').then(res => setCategories(res.data)).catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
+    if (seeded.current.faqs) { seeded.current.faqs = false; return; }
     api.get('/faqs')
-      .then(res => {
-        if (res.data && res.data.faqs) {
-          const all = (Object.values(res.data.faqs) as Faq[][]).flat();
-          setFaqs(all.slice(0, 6));
-        }
-      })
+      .then(res => setFaqs(normalizeFaqs(res.data).faqs.slice(0, 6)))
       .catch(() => {});
   }, []);
 
@@ -110,8 +134,10 @@ const Home = () => {
     }
   }, [debouncedSearch, activeCategory]);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { fetchBikes(); }, [fetchBikes]);
+  useEffect(() => {
+    if (seeded.current.bikes) { seeded.current.bikes = false; return; }
+    fetchBikes();
+  }, [fetchBikes]);
 
   useEffect(() => {
     if (bikes.length === 0) return;
@@ -123,6 +149,7 @@ const Home = () => {
 
   useEffect(() => {
     if (bikes.length === 0) return;
+    if (seeded.current.ratings) { seeded.current.ratings = false; return; }
     const ids = bikes.map((b: BikeType) => b._id).join(',');
     api.get(`/reviews/stats?bikeIds=${encodeURIComponent(ids)}`)
       .then(res => {

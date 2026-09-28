@@ -1,7 +1,7 @@
 # Project Manifest: Rent Bike Cox's Bazar
 
 ## 1. Tech Stack
-*   **Frontend:** React.js (Vite), Tailwind CSS
+*   **Frontend:** Next.js 16 (React 19, App Router), Tailwind CSS
 *   **Backend:** Node.js, Express.js, Helmet, Compression, Rate Limiting
 *   **Database:** MongoDB (Mongoose) with indexes
 *   **Authentication:** JWT (JSON Web Tokens)

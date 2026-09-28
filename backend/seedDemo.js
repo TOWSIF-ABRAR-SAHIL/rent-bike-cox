@@ -266,7 +266,7 @@ async function seedDemoData() {
   }
 
   console.log(`\nSeeded ${demoBikes.length} demo vehicles successfully!`);
-  console.log('Visit http://localhost:5173 to see them.');
+  console.log('Visit http://localhost:3000 to see them.');
   process.exit(0);
 }
 

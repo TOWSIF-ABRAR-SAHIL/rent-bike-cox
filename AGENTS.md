@@ -213,8 +213,19 @@ Three roles on `User` model: `Admin`, `Renter`, `User`. Authorization via middle
 ### Auth
 JWT in `Authorization: Bearer <token>` header. Token decoded in `middleware/authMiddleware.js` — sets `req.user = { id, role }`. Expires in 1d. Stored in `localStorage` on frontend, injected by Axios interceptor (`frontend-next/src/api/axios.ts`). Refresh tokens supported.
 
+### Server vs client rendering
+Public pages (`/`, `/faq`, `/bike/[id]`) are async server components that prefetch through
+`lib/serverApi.ts` and hand the payload to their view as `initial*` props; the view seeds
+state from it and skips only the **first** fetch per resource (a `seeded` ref), so filters,
+sorting and Retry still hit the API. Use `serverGetOrNull`, never `serverGet`, in a page:
+unreachable API must degrade to a client fetch, not a failed build or a 500. Pages that need
+the user's token (profile, bookings, dashboards, checkout, invoice) stay client-only and must
+not import `serverApi`. `/policies`, `/privacy` and `/terms` are plain server components — no
+`"use client"`, no JavaScript. `src/test/nextjsConversion.test.ts` and `src/views/*.test.tsx`
+pin all of this.
+
 ### Context hook pattern (ESLint enforced)
-`AuthContext` (provider) in `AuthContext.jsx`, `useAuth()` hook in separate `useAuth.js` file. Same for `ThemeContext`/`useTheme`. ESLint React Hooks rules require hooks and providers in different files.
+`AuthContext` (provider) in `AuthContext.tsx`, `useAuth()` hook in separate `useAuth.ts` file. Same for `ThemeContext`/`useTheme`. ESLint React Hooks rules require hooks and providers in different files.
 
 ### Payment flow (SSLCommerz)
 1. Frontend `POST /api/booking` → booking created as `Pending`
@@ -269,7 +280,7 @@ itself leaves every card blank (`Rate NaN/m`). `test/apiContract.test.mjs` fails
 `server.js` ever calls `registerLimiter` directly.
 
 ### CORS whitelist
-`FRONTEND_URL` env, `https://rent-bike-cox.vercel.app`, `https://sandbox.sslcommerz.com`, `https://sslcommerz.com`. `http://localhost:5173` only in dev mode (`NODE_ENV !== 'production'`). No loose `origin.includes()`. CORS errors return 403.
+`FRONTEND_URL` env, `https://rent-bike-cox.vercel.app`, `https://sandbox.sslcommerz.com`, `https://sslcommerz.com`. `http://localhost:3000` (the Next.js dev server) only in dev mode (`NODE_ENV !== 'production'`). No loose `origin.includes()`. CORS errors return 403.
 
 ### Upload middleware
 `middleware/uploadMiddleware.js` — multer → Cloudinary (if credentials configured) or memory storage fallback. Max 5MB, JPG/JPEG/PNG only. Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`. File size/type errors return 400.
@@ -393,14 +404,15 @@ bottom offset again**, which is how the compare bar ended up 11px inside the nav
 
 Use `dvh`, not `vh`, for anything that must match the visible viewport (full-height pages,
 modal `max-h`): on mobile `100vh` includes the URL bar area, so `100vh`-sized content pushes its
-primary action below the fold. `#root` already sets `min-height: 100dvh`. `.no-scrollbar` hides a
+primary action below the fold. The layout wrapper in `src/app/layout.tsx` already sets
+`min-h-screen`. `.no-scrollbar` hides a
 scrollbar on horizontal scrollers where one looks like a rendering fault (the 67px compare bar).
 
-### Pages (all React.lazy loaded)
+### Routes (Next.js App Router — `src/app/<segment>/page.tsx`, screen in `src/views/`)
 - `/` — Home (hero carousel, vehicle ratings, testimonials)
-- `/bike/:id` — BikeDetails (gallery, lightbox, save/compare, recommendations)
-- `/checkout/:bikeId` — Checkout (booking + payment)
-- `/invoice/:bookingId` — Invoice (printable)
+- `/bike/[id]` — BikeDetails (gallery, lightbox, save/compare, recommendations)
+- `/checkout/[bikeId]` — Checkout (booking + payment)
+- `/invoice/[bookingId]` — Invoice (printable)
 - `/login` — Login
 - `/signup` — Signup
 - `/forgot-password` — Forgot password (OTP flow)
@@ -413,7 +425,7 @@ scrollbar on horizontal scrollers where one looks like a rendering fault (the 67
 - `/fleet` — Fleet dashboard (roles: Renter, Admin)
 - `/analytics` — Analytics dashboard (Admin only — revenue, bookings, categories, top bikes, duration, financial, hourly, customers)
 - `/search` — Advanced search with filters (price range, category, sort)
-- `/vehicle-history/:bikeId` — Vehicle history timeline
+- `/vehicle-history/[bikeId]` — Vehicle history timeline
 - `/notifications` — Notifications
 - `/notification-settings` — Notification preferences (email, push, in-app)
 - `/seasonal-pricing` — Seasonal pricing manager (Admin only)
@@ -425,14 +437,14 @@ scrollbar on horizontal scrollers where one looks like a rendering fault (the 67
 - `/wishlist` — Saved vehicles (localStorage)
 - `/refunds` — Refund management (Admin only)
 - `/payment-failed`, `/payment-cancelled` — Error states
-- `*` — 404
+- `not-found.tsx` / `global-error.tsx` — 404 and root error UI
 
 ### SEO
-- 17 meta tags (OG, Twitter, robots, canonical, theme-color)
-- `public/robots.txt` — disallows all dashboard/protected routes
-- `public/sitemap.xml` — 7 public pages
-- `public/.well-known/security.txt`
-- JSON-LD Organization schema in Home.jsx
+- Metadata API (`export const metadata`) per route — OG, Twitter, robots, canonical, theme-color
+- `src/app/robots.ts` — disallows all dashboard/protected routes
+- `src/app/sitemap.ts` — public pages
+- `src/app/manifest.ts` — PWA manifest; `src/app/opengraph-image.tsx` — static OG image
+- JSON-LD Organization schema in `src/views/Home.tsx`
 
 ## Deployment
 
@@ -475,7 +487,7 @@ scrollbar on horizontal scrollers where one looks like a rendering fault (the 67
 - **`express-mongo-sanitize`** — replaced with custom `middleware/sanitize.js` (Express 5 incompatible)
 - **`Date.now()` in render** — React 19 ESLint `set-state-in-effect` rule; keep side effects out of render
 - **`context` hooks** — must be in separate files from providers (ESLint enforced)
-- **N+1 review requests** — Home.jsx uses `GET /reviews/stats?bikeIds=a,b,c` (bulk) instead of one request per bike; never add per-bike loops for review stats
+- **N+1 review requests** — `Home.tsx` uses `GET /reviews/stats?bikeIds=a,b,c` (bulk) instead of one request per bike; never add per-bike loops for review stats
 - **`res.headersSent`** — controllers must check `if (!res.headersSent)` before responding; rate-limit middleware can already send a response, causing ERR_HTTP_HEADERS_SENT
 - **Rate limits** — global 300/min, dashboard 120/min per IP; keep generous for real usage, tighten only for auth/booking routes. The strict auth limiter applies to `/api/auth/login|register|forgot-password|verify-otp|reset-password` **only** (the rest of `/api/auth` gets 100/15min), since capping `/profile` and `/refresh` at 5/15min broke normal use behind NAT. The payment limiter **skips** `/success|/fail|/cancel|/ipn` because the gateway calls them from a handful of shared IPs, and the search limiter skips `/suggestions`. Never mount a limiter on a path **prefix** that also carries GETs — that is how the 10/hour upload ceiling ended up throttling the public storefront with "Too many file uploads"
 - **`Bike.availability` is a manual out-of-service switch**, not a booking lock. Booking conflicts are decided per time window by `createBookingAtomically` (insert-then-verify, tie-broken on ObjectId order) so a vehicle can hold multiple non-overlapping bookings. Overlap logic lives in `buildOverlapFilter` and is shared by the booking engine, the availability endpoint, and the pricing preview — never re-implement it inline

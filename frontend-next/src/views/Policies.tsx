@@ -1,4 +1,5 @@
-"use client";
+// Static copy with no interactivity: a server component, so the page ships no
+// JavaScript for it (the icons render to SVG on the server).
 import { ShieldCheck, AlertTriangle, Phone, FileText, CreditCard, Fuel, Scale, RotateCcw, Shield } from 'lucide-react';
 
 import type { ReactNode } from 'react';

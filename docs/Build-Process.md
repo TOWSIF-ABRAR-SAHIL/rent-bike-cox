@@ -22,9 +22,9 @@ cp .env.example .env      # Edit with your credentials
 npm install
 
 # Frontend setup
-cd ../frontend
-cp .env.example .env      # Edit VITE_API_URL
+cd ../frontend-next
 npm install
+# create .env.local with NEXT_PUBLIC_API_URL=https://rent-bike-backend.onrender.com/api
 ```
 
 ### Running Locally
@@ -35,10 +35,10 @@ cd backend
 npm run dev    # nodemon (auto-restart on changes)
 ```
 
-**Frontend** (port 5173):
+**Frontend** (port 3000):
 ```bash
-cd frontend
-npm run dev    # Vite dev server with HMR
+cd frontend-next
+npm run dev    # Next.js dev server with HMR
 ```
 
 **Docker** (backend + MongoDB):
@@ -51,9 +51,10 @@ docker-compose up --build
 | Command | Location | Description |
 |---------|----------|-------------|
 | `npm run dev` | backend/ | Start backend with nodemon |
-| `npm run dev` | frontend/ | Start Vite dev server |
-| `npm run lint` | frontend/ | ESLint check (no typecheck) |
-| `npm run build` | frontend/ | Production build |
+| `npm run dev` | frontend-next/ | Start Next.js dev server |
+| `npm run lint` | frontend-next/ | ESLint check |
+| `npm run typecheck` | frontend-next/ | Strict TypeScript check |
+| `npm run build` | frontend-next/ | Production build |
 | `node scripts/seedAdmin.js` | backend/ | Seed admin user |
 | `node seed.js` | backend/ | Seed admin (simple) |
 | `node seedDemo.js` | backend/ | Seed demo data |
@@ -64,18 +65,13 @@ docker-compose up --build
 
 ## Code Quality
 
-### ESLint (Frontend)
+### ESLint & TypeScript (Frontend)
 ```bash
-cd frontend && npm run lint
+cd frontend-next && npm run lint
+cd frontend-next && npm run typecheck
 ```
-- Strict rules enforced
-- Context hooks must be in separate files from providers
-- React 19 purity rules (no Date.now() in render)
-
-### No TypeScript
-- Project uses plain JavaScript
-- Frontend has no typecheck command
-- Only `npm run lint` for code quality
+- ESLint: strict Next.js rules; context hooks in separate files from providers; React 19 purity rules (no Date.now() in render)
+- TypeScript: strict mode — `npm run typecheck` must pass
 
 ## Git Workflow
 
@@ -101,9 +97,9 @@ chore: update npm dependencies
 
 ### Frontend Production Build
 ```bash
-cd frontend && npm run build
+cd frontend-next && npm run build
 ```
-Output: `frontend/dist/` (static files served by Vite or Vercel)
+Output: `.next/` (built by Next.js; Vercel runs this automatically)
 
 ### Backend
 No build step — Node.js runs directly. Dependencies installed via `npm install`.
@@ -147,13 +143,13 @@ docker-compose up --build
 
 1. Go to vercel.com → New Project → Import GitHub repo
 2. Settings:
-   - Framework: Vite
-   - Root directory: `frontend`
-   - Build command: `npm run build`
-   - Output directory: `dist`
+   - Framework: Next.js (auto-detected)
+   - Root directory: `frontend-next`
+   - Build command: `next build` (default)
 3. Environment variables:
-   - `VITE_API_URL` = `https://rent-bike-backend.onrender.com/api`
+   - `NEXT_PUBLIC_API_URL` = `https://rent-bike-backend.onrender.com/api`
 4. Deploy → Wait 1-2 min → Site live at `https://rent-bike-cox.vercel.app`
+5. No `vercel.json` — Next.js handles routing/headers via `next.config.ts`
 
 ### Post-Deploy Checklist
 
@@ -175,8 +171,8 @@ docker-compose up --build
 ### GitHub Actions
 
 **ci.yml** — Runs on push/PR to `main`:
-- ESLint check (frontend)
-- Vite production build (frontend)
+- ESLint + typecheck (frontend-next)
+- Next.js production build (frontend-next)
 - Node.js syntax check (backend)
 
 **deploy.yml** — Deploy triggers:
@@ -189,6 +185,6 @@ docker-compose up --build
 | Render cold start (30s delay) | Free tier sleeps after 15min inactivity. First request wakes it. |
 | MongoDB connection refused | Check IP whitelist in Atlas. Add `0.0.0.0/0` for testing. |
 | CORS error (403) | Check `FRONTEND_URL` env var matches your Vercel URL. |
-| SPA routes return 404 on Vercel | Ensure `vercel.json` is in `frontend/` directory (not repo root). |
+| Routes 404 on Vercel | Set the Vercel root directory to `frontend-next`; Next.js needs no rewrites. |
 | SSLCommerz callback fails | Verify `BACKEND_URL` is correct and SSLCommerz URLs match. |
 | `req.query` error in middleware | Express 5 doesn't allow setting `req.query`. Use custom sanitize.js. |

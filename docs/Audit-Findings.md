@@ -551,6 +551,32 @@ keeps `{ status, checks, timestamp }` with no process detail, so the Docker heal
 mounts the real router in an express app and fails if a session-less route answers with any
 of `pid`, `env`, `nodeVersion`, `startedAt`, `memory` or `uptime`.
 
+### H5. Three admin tabs read a field or shape their endpoint never sent — FIXED
+A component-by-component cross-check of `frontend-next/src/components/admin/` against the
+responses its endpoints return (the same class as H1/H2) found three more:
+
+- **Cache tab.** `GET /api/admin/cache` returned `stats.size` and `stats.maxSize` from the
+  memory backend only; the Redis backend's `stats()` omitted both, so on a Redis deployment
+  (`REDIS_URL` set) the Entries and Max cards rendered blank and each key's Type cell was
+  empty. Redis now reports `size` (key count) and `maxSize: 0` (unbounded); the view prints
+  `∞` for a zero cap and `—` for a key with no type.
+- **Campaigns tab.** `EmailCampaign` stores the send time under `scheduling.sendAt`, but
+  `CampaignManager.openEdit` read a top-level `c.scheduledAt` (never sent), and the
+  create/update payload sent `scheduledAt`, which strict mode discarded — so scheduling a
+  campaign silently produced an unscheduled draft and editing a scheduled one showed an
+  empty date. Both now use `scheduling.sendAt`; the controller accepts `scheduling`.
+- **Content tab.** `GET /content/page/:page` returns `{ page, sections, items }`, but
+  `ContentEditor` consumed the body as `Record<string, ContentItem[]>` and called `forEach`
+  on each value — the first is the page-name string, so selecting a page always failed with
+  "Failed to load content". Both endpoint shapes now normalise through
+  `frontend-next/src/lib/adminContent.ts` (`groupContentPayload`), unit-tested in
+  `adminContent.test.ts`.
+
+`test/apiContract.test.mjs` gained contracts for the Cache and Campaigns tabs. The read-path
+resolver now also finds a field inside the array an item root iterates, and no longer mistakes
+a method call (`sendAt.split(...)`) for a field read; a third test pins both cache backends'
+`stats()` key sets together.
+
 ## Fifth pass — what a failed request tells the caller
 
 Asked to audit every error response. No stack trace was reachable — nothing anywhere puts
@@ -660,14 +686,28 @@ which is what the pre-fix code did instead (`upload_stream called`, `CDN receive
 The regression is pinned by a test that posts an oversized *valid* image through real
 multipart parsing (without it, that request hangs rather than answering 400).
 
-### I4. A malformed id is answered 500 — OPEN
+### I4. A malformed id is answered 500 — FIXED
 Any handler catching its own errors turns a `CastError` on `:id` into a server fault, which is a
 client mistake and noise in the error rate. Live: `GET /api/vehicle-docs/bike/not-an-id` with an
-Admin token returns `500 {"message":"Failed to load vehicle documents"}`. Worst case is worse —
+Admin token returned `500 {"message":"Failed to load vehicle documents"}`. Worst case is worse —
 before I1 the same request returned `Cast to ObjectId failed for value "not-an-id" (type string)
 at path "_id" for model "VehicleDocument"`, so it was both the wrong status and a description of
 the schema. The central handler already maps `CastError` to 400; controllers that catch
 everything should do the same rather than rely on the message staying hidden.
+
+**Fix:** `utils/httpError.js` now owns the mapping. `clientStatus(err, fallback)` answers 400 for
+a `CastError` or a schema `ValidationError` exactly as `middleware/errorHandler.js` does, and
+`clientMessage` returns the handler's canned `'Invalid request data'` (exported as
+`INVALID_REQUEST_MESSAGE`, which the handler now also uses) rather than a fallback that would
+describe a server failure the 400 denies. Every catch in `controllers/vehicleDocController.js`
+routes through both, so no handler hard-codes a status any more: the six routes with a path
+parameter answer `400 {"message":"Invalid request data"}` for a malformed id. The same
+`clientStatus` fallback covers any other controller that adopts it.
+
+Pinned by `test/malformedId.test.mjs`: the real handlers mounted over a stub session (a
+malformed id casts without touching the database, so the test is deterministic), a unit half that
+mirrors the helper against the handler's branches, and a static assertion that the controller
+contains no `res.status(500)`.
 
 ### I5. `GET /api/docs` serves the whole API surface to anonymous callers — OPEN
 `server.js` mounts `swagger-ui-express` with no gate and without a `NODE_ENV` check, so in
@@ -779,13 +819,16 @@ scrollbar is an overlay, so it was not treated as a mobile bug.
 
 ## Verification performed
 
-- `npx vitest run` — **231 backend** (131 pre-existing, 43 regression tests in
-  `test/regressions.test.mjs`, 7 wiring tests in `test/jobWiring.test.mjs`, 5 API contract
+- `npx vitest run` — **250 backend** (132 pre-existing, 43 regression tests in
+  `test/regressions.test.mjs`, 7 wiring tests in `test/jobWiring.test.mjs`, 8 API contract
   tests in `test/apiContract.test.mjs`, 6 report-history tests in
   `test/reportHistory.test.mjs`, 7 health-exposure tests in
   `test/healthExposure.test.mjs`, 14 error-exposure tests in
   `test/errorExposure.test.mjs`, 18 upload-content-guard tests in
-  `test/uploadContentGuard.test.mjs`) and **26 frontend**, all passing.
+  `test/uploadContentGuard.test.mjs`, 11 malformed-id tests in
+  `test/malformedId.test.mjs`, plus 4 login-status tests in `test/loginStatus.test.mjs`)
+  and **61 frontend** (56 view/API tests plus 5 conversion-guard tests in
+  `src/test/nextjsConversion.test.ts`), all passing.
 - Health surface live after the fix: `/api/health` 200 `{status, timestamp}`,
   `/api/health/liveness` 200 `{status, timestamp}`, `/api/health/readiness` 200
   (`database` and `gateway` both `ok`), `/api/health/info` **401** unauthenticated; the same
@@ -912,8 +955,93 @@ scrollbar is an overlay, so it was not treated as a mobile bug.
   it only when `NODE_ENV !== 'production'` or to require an Admin session, but Swagger UI's own
   assets load from the same path, so a header-based token gate would break the page itself —
   worth deciding deliberately rather than in passing.
-- **`/api/vehicle-docs/bike/:id` answers 500 for a bad id (I4).** The message no longer leaks,
-  but the status is still wrong. The same applies to every handler that catches its own errors
-  and hard-codes 500 for a `CastError` from `req.params`.
 - **`PaymentIntent` collection.** The model is deleted, but existing documents (if any
   were ever created) remain in the database. They are unreferenced.
+
+---
+
+## React → Next.js conversion sweep (`frontend-next/`)
+
+Verified the Vite SPA → Next.js App Router migration. `next build` emits all 37 routes
+(35 pages + `robots.txt`, `sitemap.xml`, `manifest.webmanifest`, `opengraph-image`), and
+`tsc --noEmit`, `eslint .`, frontend Vitest (61) and backend Vitest (250) are green.
+The tree is fully converted: no `index.html`/`main.jsx`/`App.jsx`, no `.jsx`/`.js` source
+files, no `react-router-dom` or `import.meta.env`, no leftover Vite `frontend/` directory,
+and `.github/workflows/ci.yml` already lints, typechecks, tests and builds `frontend-next`.
+`public/sw.js` is Next-aware (`/_next/static` cache-first, `/offline` fallback).
+
+**Fixed — dev origin still pointed at the retired Vite port.** The old SPA ran on
+:5173; `next dev` runs on :3000. Four places still assumed :5173:
+
+- `controllers/paymentController.js:24` — the `FRONTEND_URL` fallback, i.e. where a
+  successful or failed payment redirects in local dev. With the Vite app gone the browser
+  was sent to a dead port after checkout. Now `http://localhost:3000`.
+- `security/config/corsConfig.js:6` — dev whitelist entry (the module is **dead code**:
+  `server.js` builds its own `allowedOrigins` inline and `getCorsOptions` has no importers).
+  Updated for consistency; deleting it is a separate call.
+- `server.js:155` — the inline dev whitelist already allowed :3000 and still carried the
+  stale :5173 entry; the :5173 line is removed.
+- `backend/.env.example` (`FRONTEND_URL`) and the `seedDemo.js` console hint.
+
+**Verified — client/server boundaries.** A static sweep of every non-test `.ts`/`.tsx`
+file under `src/` finds no file that calls a client hook (or `useSearchParams`/`useRouter`/
+`usePathname`) without a `"use client"` directive, and no client file reading a
+non-`NEXT_PUBLIC_` env var — the failure mode `next build` would only catch for files a
+route actually reaches. This is now pinned by `src/test/nextjsConversion.test.ts`
+(5 tests): `use client` coverage, no React Router / Vite / `react-dom/client` /
+`getElementById('root')` / `import.meta.env` artifacts, `NEXT_PUBLIC_`-only env access in
+client code, and every route having a `page.tsx`/`route.ts`/error UI (a path-prefix
+directory such as `bike/` may only contain `[id]/`).
+
+**Docs corrected** (they still described the SPA): `README.md`, `RULES.md`,
+`docs/Architecture.md` (tech-stack rows, `frontend-next/` directory tree, Vercel deploy
+notes), `docs/Build-Process.md`, `docs/Security.md`, `AGENTS.md` (routes, SEO surface,
+`.jsx` → `.tsx`, `#root` → the layout wrapper),
+`DEVELOPMENT_PLAN.md`, `REDESIGN_PLAN.md`, and the root `.gitignore` (which still ignored
+`frontend/dist`).
+
+**Not changed (needs a product call):** `AnnouncementManager`'s form still offers
+`type: 'toast'`, `position: 'center'` and `frequency: 'weekly'`, none of which are in the
+`Announcement` model enums (see the earlier open item). Also note `frontend-next/.env.local`
+holds a live `VERCEL_OIDC_TOKEN`; it is gitignored and untracked, but it should be rotated
+if this checkout was ever shared.
+
+---
+
+## Server-side rendering for the public pages
+
+The conversion was functionally complete but used none of Next's data layer: every view
+fetched client-side through the axios client, so the HTML for `/`, `/bike/[id]` and `/faq`
+was an empty shell and the SEO-relevant content arrived only after JavaScript ran.
+
+**Now:** `/` (ISR 60s), `/faq` (ISR 1h) and `/bike/[id]` (dynamic SSR, 60s data cache)
+prefetch their public data through `lib/serverApi.ts` and pass it down as `initial*`
+props; `/policies`, `/privacy` and `/terms` are plain server components that ship no
+JavaScript at all. The seeded views skip only the *first* fetch per resource (a `seeded`
+ref), so search, review sorting and Retry still hit the API, and nothing re-requests data
+the server already rendered.
+
+- `lib/serverApi.ts` gained `serverGetOrNull` — a prefetch failure logs a warning and
+  returns `null` instead of failing the render. Falsified with the API down: a
+  `NEXT_PUBLIC_API_URL=http://localhost:59999` build completes with four warnings and
+  still emits all 36 pages, and the pages fall back to client fetching.
+- `lib/faqContent.ts` extracts the duplicated `/faqs` response flattening that previously
+  lived in `views/FAQ.tsx` and `views/Home.tsx`; both now share one normalizer.
+- `views/Home.tsx` — `heroLocation` no longer reads `localStorage` during the initial
+  render (SSR would have warned on hydration); it fills in an effect after mount.
+- `views/BikeDetails.tsx` and `views/FAQ.tsx` — page props seed bike/reviews/FAQ state;
+  the client fetches only when nothing was prefetched (`null`) or the user acts.
+- Guards: the conversion test now fails if a public page loses its server prefetch, if a
+  session page (profile, bookings, dashboards, checkout) starts importing `serverApi`, or
+  if the policy pages regain `"use client"`/hooks. New `views/Home.test.tsx` and
+  `views/FAQ.test.tsx` assert the real contract — seeded props render with **zero** client
+  requests, `null` props trigger exactly the old fetch, search still fetches.
+
+Verified against the live dev API: the prerendered `/` HTML contains all 29 bike cards
+(`href="/bike/<id>"` for each) and `/faq` HTML contains the actual questions; serving the
+production build, `/bike/<id>` renders the bike's model with zero skeleton markers in the
+HTML. Frontend Vitest 80 (16 files), backend 250, `tsc --noEmit` and `eslint .` clean.
+
+**Deliberately client-side:** auth, checkout, booking, dashboards, notifications — anything
+reading the JWT. The token exists only in the browser, so prefetching them server-side is
+impossible without a service account, and none are SEO-relevant.
