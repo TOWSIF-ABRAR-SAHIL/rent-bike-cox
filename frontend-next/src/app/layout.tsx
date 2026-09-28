@@ -10,6 +10,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import CompareBar from "@/components/CompareBar";
 import ScrollToTop from "@/components/ScrollToTop";
 import PageSpinner from "@/components/PageSpinner";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -66,6 +67,7 @@ export default function RootLayout({
       <body className={`${inter.className} bg-[#0a0a0f] antialiased`}>
         <Providers>
           <ScrollToTop />
+          <ServiceWorkerRegister />
           <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] overflow-x-hidden">
             <Navbar />
             <main className="pt-[72px]">

@@ -71,7 +71,7 @@ export default function NotificationPreferences() {
         setPushMsg('Push notifications disabled');
       } else {
         const { data } = await api.get('/push/vapid-public-key');
-        const reg = await navigator.serviceWorker.register('/push-sw.js');
+        const reg = await navigator.serviceWorker.register('/sw.js');
         await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
