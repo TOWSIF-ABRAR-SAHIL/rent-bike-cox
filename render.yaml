@@ -37,6 +37,18 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://rent-bike-cox.vercel.app
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: Rent Bike Cox <noreply@rentbikecox.com>
   # Staging mirror: deploy via dashboard ("New +" -> "Web Service" -> same repo,
   # name rent-bike-backend-staging) or `render blueprint launch`. Then set its env:
   # a SEPARATE staging MONGODB_URI + its own ENCRYPTION_KEY (never reuse prod's),
