@@ -197,7 +197,9 @@ async function main() {
   if (!APPLY) log('re-run with --apply to write these changes');
 }
 
-main().catch((err) => {
-  console.error('Migration failed:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Migration failed:', err.message);
+    process.exit(1);
+  });
+}
