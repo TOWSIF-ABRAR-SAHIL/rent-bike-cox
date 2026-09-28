@@ -279,7 +279,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
           <div className="absolute -left-10 top-10 h-full w-40 opacity-60"
             style={{ background: 'linear-gradient(115deg, transparent 55%, #fed7aa 56%, transparent 70%)' }} />
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-28 sm:pt-20 sm:pb-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10 lg:pb-32 sm:pt-20 relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
             <div className="animate-fade-in">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200 text-xs font-semibold text-orange-600 mb-5">
@@ -352,9 +352,11 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
           </div>
         </div>
 
-        {/* Search widget overlapping */}
+        {/* Search widget: overlaps the next section by a fixed half only on lg+,
+            where the card is always one row tall. Below lg the card wraps to
+            2+ rows, so a percentage overlap would swallow the heading. */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mb-2">
-          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-slate-100 p-4 sm:p-5 translate-y-1/2">
+          <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-slate-100 p-4 sm:p-5 lg:translate-y-1/2">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.2fr_1fr_auto] gap-3">
               <div>
                 <label htmlFor="hero-category" className="block text-xs font-bold text-slate-900 mb-1.5">Vehicle Type</label>
@@ -406,7 +408,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       </section>
 
       {/* ============ POPULAR CATEGORIES ============ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 lg:pt-24 pb-4">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Popular Bike Categories</h2>
           <p className="text-slate-500 text-sm max-w-xl mx-auto">Most popular worldwide categories due to their reliability, affordability, and features</p>
