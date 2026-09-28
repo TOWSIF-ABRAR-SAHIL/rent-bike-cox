@@ -456,13 +456,14 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">How It Works</h2>
           <p className="text-slate-500 text-sm max-w-xl mx-auto">Renting a vehicle is a straightforward process that typically involves the following steps</p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto relative">
+          <div className="hidden sm:block absolute top-7 left-[18%] right-[18%] border-t-2 border-dashed border-slate-200" aria-hidden="true" />
           {steps.map((s, i) => {
             const Icon = s.icon;
             const dots = ['bg-teal-700', 'bg-neutral-900', 'bg-orange-500'];
             return (
-              <div key={i} className="text-center px-4">
-                <div className={`w-14 h-14 rounded-full ${dots[i % 3]} flex items-center justify-center mx-auto mb-1 shadow-lg`}>
+              <div key={i} className="text-center px-4 relative">
+                <div className={`w-14 h-14 rounded-full ${dots[i % 3]} flex items-center justify-center mx-auto mb-1 shadow-lg relative z-10 ring-4 ring-white`}>
                   <Icon size={24} className="text-white" />
                 </div>
                 <div className="text-4xl font-black text-slate-200 -mt-1 mb-1">{s.num}</div>
@@ -632,21 +633,45 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       )}
 
       {/* ============ WHY CHOOSE US ============ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Why Choose Us</h2>
-          <p className="text-slate-500 text-sm max-w-lg mx-auto">We are committed to the best rental experience in Cox&apos;s Bazar</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((f, i) => (
-            <div key={i} className="text-center px-4">
-              <div className={`w-16 h-16 rounded-2xl ${f.bg} flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                <f.icon size={28} className="text-white" />
+      <section className="relative overflow-hidden bg-[#0d0d12] py-16 sm:py-20">
+        <div className="pointer-events-none absolute -left-24 top-0 h-full w-72 opacity-80" aria-hidden="true"
+          style={{ background: 'linear-gradient(115deg, #f97316 0%, #fb923c 40%, transparent 41%)' }} />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-orange-500 mb-3">Why choose us</p>
+              <h2 className="text-2xl sm:text-3xl font-black text-white mb-3">Why People Love To Use Rent Bike</h2>
+              <p className="text-slate-400 text-sm max-w-lg mb-8">We are committed to the best rental experience in Cox&apos;s Bazar — verified vehicles, honest pricing, support that answers.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {features.map((f, i) => (
+                  <div key={i} className="flex gap-3.5">
+                    <div className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center shrink-0 shadow-lg`}>
+                      <f.icon size={22} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-[15px] mb-1">{f.title}</h3>
+                      <p className="text-[13px] text-slate-400 leading-relaxed">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <h3 className="font-black text-slate-900 mb-1.5">{f.title}</h3>
-              <p className="text-[13px] text-slate-500 leading-relaxed">{f.desc}</p>
             </div>
-          ))}
+            <div className="relative hidden md:block">
+              <div className="absolute inset-8 rounded-[2rem] bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 rotate-2" aria-hidden="true" />
+              <div className="relative rounded-[2rem] overflow-hidden border-8 border-white/10 shadow-2xl bg-slate-800 -rotate-1 h-[360px]">
+                <Image src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=900&q=80&auto=format&fit=crop" alt="Rental motorbike"
+                  fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              </div>
+              <div className="absolute -bottom-5 right-8 bg-white rounded-xl shadow-xl px-4 py-3 flex items-center gap-2.5">
+                <Shield size={20} className="text-teal-700" />
+                <div>
+                  <p className="text-sm font-black text-slate-900">100% Verified</p>
+                  <p className="text-xs text-slate-500">Inspected fleet</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
