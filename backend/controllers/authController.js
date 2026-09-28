@@ -158,7 +158,7 @@ exports.login = async (req, res) => {
         userAgent,
         metadata: { email, reason: 'invalid_credentials' },
       });
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -192,7 +192,7 @@ exports.login = async (req, res) => {
         userAgent,
         metadata: { email, reason: 'invalid_credentials' },
       });
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     await LoginAttempt.create({ email, ip, userAgent, success: true, failureCount: 0 });

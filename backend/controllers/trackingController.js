@@ -5,6 +5,7 @@ const Category = require('../models/Category');
 const LocationHistory = require('../models/LocationHistory');
 const { escapeRegex } = require('../utils/sanitize');
 const logger = require('../utils/logger');
+const { clientMessage, clientStatus } = require('../utils/httpError');
 
 let ioInstance = null;
 
@@ -79,7 +80,7 @@ async function updateLocation(req, res) {
     res.json({ message: 'Location updated', bikeId: bike._id });
   } catch (err) {
     logger.error('Tracking update error', { error: err.message });
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Tracking request failed') });
   }
 }
 
@@ -150,7 +151,7 @@ async function getLocations(req, res) {
     }));
   } catch (err) {
     logger.error('Get locations error', { error: err.message });
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Tracking request failed') });
   }
 }
 
@@ -184,7 +185,7 @@ async function getBikeLocation(req, res) {
     });
   } catch (err) {
     logger.error('Get bike location error', { error: err.message });
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Tracking request failed') });
   }
 }
 
@@ -212,7 +213,7 @@ async function getHistory(req, res) {
     res.json(points.reverse());
   } catch (err) {
     logger.error('Get history error', { error: err.message });
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Tracking request failed') });
   }
 }
 
@@ -265,7 +266,7 @@ async function getStats(req, res) {
     res.json(result);
   } catch (err) {
     logger.error('Get stats error', { error: err.message });
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Tracking request failed') });
   }
 }
 

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import api, { type ApiError } from '../../api/axios';
 import type { ContentItem } from '@/types';
+import { groupContentPayload } from '@/lib/adminContent';
 import type { ChangeEvent } from 'react';
 import { useToast } from '../useToast';
 import { FileText, Save, RotateCcw, Download, Upload, ChevronDown, ChevronRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
@@ -62,34 +63,13 @@ const ContentEditor = () => {
     try {
       const url = selectedPage ? `/content/page/${selectedPage}` : '/admin/content';
       const res = await api.get(url);
-      if (selectedPage) {
-        const grouped = res.data as Record<string, ContentItem[]>;
-        const map: Record<string, string> = {};
-        const metaMap: Record<string, ContentItem> = {};
-        Object.entries(grouped).forEach(([, items]) => {
-          items.forEach((item: ContentItem) => {
-            map[item.key] = item.value;
-            metaMap[item.key] = item;
-          });
-        });
-        setContent(map);
-        setMeta(metaMap);
-        setExpanded(Object.keys(grouped).reduce((a, s) => ({ ...a, [s]: true }), {}));
-      } else {
-        const map: Record<string, string> = {};
-        const metaMap: Record<string, ContentItem> = {};
-        (res.data as ContentItem[]).forEach((item: ContentItem) => {
-          map[item.key] = item.value;
-          metaMap[item.key] = item;
-        });
-        setContent(map);
-        setMeta(metaMap);
-        const sections: Record<string, boolean> = {};
-        (res.data as ContentItem[]).forEach((item: ContentItem) => {
-          if (item.section) sections[item.section] = true;
-        });
-        setExpanded(Object.keys(sections).reduce((a, s) => ({ ...a, [s]: true }), {}));
-      }
+      // /admin/content returns a plain array; /content/page/:page returns
+      // { page, sections, items }. The helper reduces both to the same shape — reading
+      // the page body as a Record<string, ContentItem[]> threw on the page-name string.
+      const { map, metaMap, sections } = groupContentPayload(res.data);
+      setContent(map);
+      setMeta(metaMap);
+      setExpanded(sections.reduce((a, s) => ({ ...a, [s]: true }), {}));
     } catch {
       addToast('Failed to load content', 'error');
     } finally {

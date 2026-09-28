@@ -24,6 +24,11 @@ const frontendRoot = path.join(backendRoot, '..', 'frontend-next');
 
 const systemHealthController = require('../controllers/systemHealthController');
 const rateLimitController = require('../controllers/rateLimitController');
+const cacheController = require('../controllers/cacheController');
+const campaignController = require('../controllers/campaignController');
+const EmailCampaign = require('../models/EmailCampaign');
+const { defaultCache } = require('../utils/cache');
+const { RedisCache } = require('../utils/redisCache');
 const { makeLimiter } = require('../middleware/rateLimitFactory');
 
 async function callController(handler) {
@@ -47,7 +52,14 @@ function extractReadPaths(source, roots) {
   const chain = new RegExp(`\\b(?:${rootAlt})(?:\\??\\.)[A-Za-z_$][\\w$]*(?:\\??\\.[A-Za-z_$][\\w$]*)*`, 'g');
   const found = new Set();
   for (const match of source.matchAll(chain)) {
-    found.add(match[0].split(/\??\./).slice(1).join('.'));
+    let text = match[0];
+    // A trailing segment that is called as a method (`c.scheduling.sendAt.split(...)`,
+    // `data.keys.filter(...)`) is not a field of the response — stop the path before it.
+    if (source[match.index + text.length] === '(') {
+      text = text.replace(/\??\.[A-Za-z_$][\w$]*$/, '');
+    }
+    const parts = text.split(/\??\./).slice(1);
+    if (parts.length) found.add(parts.join('.'));
   }
   return found;
 }
@@ -55,10 +67,61 @@ function extractReadPaths(source, roots) {
 const getPath = (obj, path) =>
   path.split('.').reduce((acc, key) => (acc === null || acc === undefined ? undefined : acc[key]), obj);
 
+// Resolve a read path wherever the response carries it: at the top level of a flat body,
+// or inside the array an item root iterates (`c.name` on each campaign, `entry.key` on each
+// cache entry). A path that resolves nowhere is a field the endpoint never sends.
+function findPath(value, readPath, seen = new Set()) {
+  if (value === null || typeof value !== 'object' || seen.has(value)) return undefined;
+  seen.add(value);
+  const direct = getPath(value, readPath);
+  if (direct !== undefined) return direct;
+  const children = Array.isArray(value) ? value : Object.values(value);
+  for (const child of children) {
+    const found = findPath(child, readPath, seen);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
 // A field is only usable if it is present and not NaN: 0 and '' are legitimate values
 // (a report with no rows, a collection count of zero), undefined/null are not.
 function unusable(value) {
   return value === undefined || value === null || (typeof value === 'number' && Number.isNaN(value));
+}
+
+// A representative EmailCampaign document, so the campaigns contract can run the real
+// controller without a database. Every field the tab reads must appear here.
+const CAMPAIGN_SAMPLE = {
+  _id: '64b000000000000000000001',
+  name: 'Monsoon promo',
+  subject: 'Ride the rain',
+  body: '<p>Book now</p>',
+  status: 'scheduled',
+  audience: { filter: 'all' },
+  scheduling: { sendAt: new Date('2026-12-01T04:00:00.000Z'), timezone: 'Asia/Dhaka' },
+  progress: { total: 100, sent: 0, failed: 0, bounced: 0, opened: 0, clicked: 0 },
+  batchSize: 50,
+  batchDelay: 5000,
+  sentCount: 0,
+  failedCount: 0,
+  openCount: 0,
+  clickCount: 0,
+  sentAt: new Date('2026-12-01T04:05:00.000Z'),
+  createdAt: new Date('2026-11-30T00:00:00.000Z'),
+  updatedAt: new Date('2026-11-30T00:00:00.000Z'),
+};
+
+function stubCampaignQuery(items) {
+  const originalFind = EmailCampaign.find;
+  const originalCount = EmailCampaign.countDocuments;
+  EmailCampaign.countDocuments = async () => items.length;
+  EmailCampaign.find = () => ({
+    sort: () => ({ skip: () => ({ limit: () => ({ populate: () => ({ lean: async () => items }) }) }) }),
+  });
+  return () => {
+    EmailCampaign.find = originalFind;
+    EmailCampaign.countDocuments = originalCount;
+  };
 }
 
 const CONTRACTS = [
@@ -85,6 +148,31 @@ const CONTRACTS = [
       return callController(rateLimitController.getRateLimits);
     },
   },
+  {
+    name: 'Cache tab ← GET /api/admin/cache',
+    component: 'src/components/admin/CacheManager.tsx',
+    roots: ['data', 'entry'],
+    response: async () => {
+      // Seed one entry so the per-key reads (entry.key / valueType / ttl) have a row to
+      // land on, and so stats.size is a number the tab can render.
+      defaultCache.set('contract-cache-sample', { hello: 'world' }, 60_000);
+      return callController(cacheController.getCacheStatus);
+    },
+  },
+  {
+    name: 'Campaigns tab ← GET /api/admin/campaigns',
+    component: 'src/components/admin/CampaignManager.tsx',
+    roots: ['c'],
+    response: async () => {
+      const restore = stubCampaignQuery([CAMPAIGN_SAMPLE]);
+      try {
+        const body = await callController(campaignController.getAll);
+        return body.campaigns;
+      } finally {
+        restore();
+      }
+    },
+  },
 ];
 
 describe('frontend ↔ API field contracts', () => {
@@ -102,7 +190,7 @@ describe('frontend ↔ API field contracts', () => {
       const missing = [];
       for (const read of reads) {
         for (const [index, sample] of samples.entries()) {
-          if (unusable(getPath(sample, read))) {
+          if (unusable(findPath(sample, read))) {
             missing.push(`${read}${samples.length > 1 ? ` (item ${index})` : ''}`);
           }
         }
@@ -146,5 +234,24 @@ describe('rate limiters are registered as config, not as middleware', () => {
     expect(entry.max).toBe(10);
     expect(entry.message).toBe('nope');
     expect(entry.windowMinutes).toBeGreaterThan(0);
+  });
+});
+
+describe('the two cache backends expose the same stats shape', () => {
+  it('redis stats carry the size and maxSize the cache tab reads', async () => {
+    // The memory backend reported size/maxSize but Redis did not, so on a Redis
+    // deployment the Entries and Max cards rendered blank. Both must expose the keys
+    // the view reads — and they should stay identical as either backend changes.
+    const fakeClient = {
+      async *scanIterator() { yield 'rbx:one'; yield 'rbx:two'; },
+    };
+    const redis = await new RedisCache(fakeClient).stats();
+    const memory = defaultCache.stats();
+
+    expect(Object.keys(redis).sort()).toEqual(Object.keys(memory).sort());
+    expect(redis.backend).toBe('redis');
+    expect(redis.size).toBe(2);
+    expect(typeof redis.maxSize).toBe('number');
+    expect(redis.hitRate).toBeGreaterThanOrEqual(0);
   });
 });

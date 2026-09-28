@@ -34,7 +34,7 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { name, subject, body, template, audience, scheduledAt } = req.body;
+    const { name, subject, body, template, audience, scheduledAt, scheduling } = req.body;
     if (!name || !subject || !body) return res.status(400).json({ message: 'Name, subject, and body are required' });
     const campaign = await EmailCampaign.create({
       name: sanitize(String(name)),
@@ -42,7 +42,11 @@ exports.create = async (req, res) => {
       body,
       template: template || undefined,
       audience: audience || { filter: 'all' },
-      scheduledAt: scheduledAt || undefined,
+      // The schema stores the send time under `scheduling.sendAt`; a top-level
+      // `scheduledAt` was silently discarded by strict mode, so a campaign the admin
+      // scheduled was created as an unscheduled draft. `scheduledAt` is still accepted
+      // for API callers that send it.
+      scheduling: scheduling || (scheduledAt ? { sendAt: scheduledAt } : undefined),
       createdBy: req.user.id
     });
     res.status(201).json(campaign);
@@ -54,12 +58,21 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const allowed = ['name', 'subject', 'body', 'template', 'audience', 'scheduledAt', 'status'];
+    const allowed = ['name', 'subject', 'body', 'template', 'audience', 'scheduling', 'status', 'scheduledAt'];
     const update = {};
     for (const field of allowed) {
       if (req.body[field] !== undefined) {
         update[field] = ['name', 'subject'].includes(field) ? sanitize(String(req.body[field])) : req.body[field];
       }
+    }
+    if (update.scheduledAt !== undefined && update.scheduling === undefined) {
+      // Dot-notation so a custom `scheduling.timezone` survives the update.
+      // Skipped when `scheduling` itself was sent (explicit shape wins; avoids
+      // conflicting update paths in the same write).
+      update['scheduling.sendAt'] = update.scheduledAt;
+      delete update.scheduledAt;
+    } else {
+      delete update.scheduledAt;
     }
     const campaign = await EmailCampaign.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!campaign) return res.status(404).json({ message: 'Campaign not found' });

@@ -1,6 +1,7 @@
 "use client";
 import type { AdminNotificationItem } from '@/types';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import api from '../../api/axios';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 
@@ -122,7 +123,7 @@ const AdminNotificationBell = () => {
           </div>
 
           <div className="p-3 border-t text-center" style={{ borderColor: 'var(--border-base)' }}>
-            <a href="/admin-dashboard" onClick={() => setOpen(false)} className="text-xs font-medium" style={{ color: 'var(--accent-text)' }}>View All</a>
+            <Link href="/admin-dashboard" onClick={() => setOpen(false)} className="text-xs font-medium" style={{ color: 'var(--accent-text)' }}>View All</Link>
           </div>
         </div>
       )}

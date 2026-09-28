@@ -86,7 +86,8 @@ const CacheManager = () => {
             </div>
             <div className="p-3 rounded-xl" style={{ background: 'var(--bg-secondary)' }}>
               <div className="flex items-center gap-1.5 text-xs mb-1" style={{ color: 'var(--text-muted)' }}><BarChart3 size={12} /> Max</div>
-              <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{data.stats.maxSize}</p>
+              {/* Redis reports maxSize 0 (no fixed capacity); the memory backend has a real cap. */}
+              <p className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{data.stats.maxSize ? data.stats.maxSize : '∞'}</p>
             </div>
             <div className="p-3 rounded-xl" style={{ background: 'var(--bg-secondary)' }}>
               <div className="flex items-center gap-1.5 text-xs mb-1" style={{ color: 'var(--text-muted)' }}><Zap size={12} /> Hit Rate</div>
@@ -135,7 +136,7 @@ const CacheManager = () => {
                     <td className="p-2">
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-medium"
                         style={{ background: 'var(--info-bg)', color: 'var(--info-text)' }}>
-                        {entry.valueType}
+                        {entry.valueType || '—'}
                       </span>
                     </td>
                     <td className="p-2" style={{ color: (entry.ttl ?? 0) < 30 ? 'var(--warning-text)' : 'var(--text-secondary)' }}>

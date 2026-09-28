@@ -1,5 +1,5 @@
 const logger = require('../utils/logger');
-const { isClientFacing, statusMessage, validationMessage } = require('../utils/httpError');
+const { isClientFacing, statusMessage, validationMessage, INVALID_REQUEST_MESSAGE } = require('../utils/httpError');
 const { reportServerError } = require('../utils/sentry');
 
 // Multer's own codes. Messages are ours: multer's text names internal parser state.
@@ -61,7 +61,7 @@ function errorHandler(err, req, res, _next) {
     logger.warn('Validation error', meta);
     // Schema messages name a field and its constraint, which is what the caller
     // needs to fix the request; mongoose's CastError text is not forwarded.
-    return res.status(400).json({ message: validationMessage(err) || 'Invalid request data' });
+    return res.status(400).json({ message: validationMessage(err) || INVALID_REQUEST_MESSAGE });
   }
 
   if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {

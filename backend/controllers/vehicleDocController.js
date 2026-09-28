@@ -1,7 +1,7 @@
 const VehicleDocument = require('../models/VehicleDocument');
 const Bike = require('../models/Bike');
 const logger = require('../utils/logger');
-const { clientMessage } = require('../utils/httpError');
+const { clientMessage, clientStatus } = require('../utils/httpError');
 
 exports.listByBike = async (req, res) => {
   try {
@@ -19,7 +19,7 @@ exports.listByBike = async (req, res) => {
     res.json(docs);
   } catch (err) {
     logger.error('listByBike (vehicle documents) error', { bikeId: req.params.bikeId, error: err.message });
-    res.status(500).json({ message: 'Failed to load vehicle documents' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Failed to load vehicle documents') });
   }
 };
 
@@ -32,7 +32,7 @@ exports.listMyDocs = async (req, res) => {
     res.json(docs);
   } catch (err) {
     logger.error('listMyDocs error', { userId: req.user.id, error: err.message });
-    res.status(500).json({ message: 'Failed to load your documents' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Failed to load your documents') });
   }
 };
 
@@ -77,7 +77,7 @@ exports.upload = async (req, res) => {
     res.status(201).json(doc);
   } catch (err) {
     logger.error('upload vehicle document error', { bikeId: req.params.bikeId, error: err.message });
-    res.status(400).json({ message: clientMessage(err, 'Could not save the document') });
+    res.status(clientStatus(err, 400)).json({ message: clientMessage(err, 'Could not save the document') });
   }
 };
 
@@ -96,7 +96,7 @@ exports.update = async (req, res) => {
     res.json(doc);
   } catch (err) {
     logger.error('update vehicle document error', { documentId: req.params.id, error: err.message });
-    res.status(400).json({ message: clientMessage(err, 'Could not update the document') });
+    res.status(clientStatus(err, 400)).json({ message: clientMessage(err, 'Could not update the document') });
   }
 };
 
@@ -111,7 +111,7 @@ exports.verify = async (req, res) => {
     res.json(doc);
   } catch (err) {
     logger.error('verify vehicle document error', { documentId: req.params.id, error: err.message });
-    res.status(500).json({ message: 'Failed to verify the document' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Failed to verify the document') });
   }
 };
 
@@ -126,7 +126,7 @@ exports.remove = async (req, res) => {
     res.json({ message: 'Document deleted' });
   } catch (err) {
     logger.error('remove vehicle document error', { documentId: req.params.id, error: err.message });
-    res.status(500).json({ message: 'Failed to delete the document' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Failed to delete the document') });
   }
 };
 
@@ -151,6 +151,6 @@ exports.expiring = async (req, res) => {
     res.json(docs);
   } catch (err) {
     logger.error('expiring vehicle documents error', { userId: req.user.id, error: err.message });
-    res.status(500).json({ message: 'Failed to load expiring documents' });
+    res.status(clientStatus(err, 500)).json({ message: clientMessage(err, 'Failed to load expiring documents') });
   }
 };

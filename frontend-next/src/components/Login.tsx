@@ -27,13 +27,17 @@ const Login = () => {
       router.push('/');
     } catch (err) {
       const apiErr = err as ApiError;
-      if (apiErr.response?.status === 423) {
-        const data = apiErr.response.data as { retryAfter?: number } | undefined;
+      const status = apiErr.response?.status;
+      const data = apiErr.response?.data as { message?: string; retryAfter?: number } | undefined;
+      if (status === 423) {
         const retryAfter = data?.retryAfter || 900;
         const minutes = Math.ceil(retryAfter / 60);
         setError(`Account temporarily locked. Try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`);
+      } else if (status === 401) {
+        // A rejected login, not an expired session; the axios interceptor leaves a
+        // credential 401 alone (see api/axios.ts) so `message` reaches the form.
+        setError(data?.message || 'Invalid email or password');
       } else {
-        const data = apiErr.response?.data as { message?: string } | undefined;
         setError(data?.message || 'Login failed');
       }
     } finally {

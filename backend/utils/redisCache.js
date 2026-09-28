@@ -61,8 +61,13 @@ class RedisCache {
   }
 
   async stats() {
+    // `size` and `maxSize` are part of the shape the admin cache view reads; they used
+    // to be returned by the memory backend only, so on a Redis deployment the Entries
+    // and Max cards rendered blank. Redis has no fixed capacity, so 0 means unbounded.
     return {
       backend: 'redis',
+      size: (await this.keys()).length,
+      maxSize: 0,
       hits: this.hits,
       misses: this.misses,
       hitRate: this.hits + this.misses > 0

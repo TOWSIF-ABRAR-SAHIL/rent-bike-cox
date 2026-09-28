@@ -36,8 +36,10 @@ const CampaignManager = () => {
 
   const handleCreate = async () => {
     try {
-      const payload: { name: string; subject: string; body: string; audience: { filter: string }; scheduledAt?: string } = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
-      if (form.scheduledAt) payload.scheduledAt = form.scheduledAt;
+      const payload: { name: string; subject: string; body: string; audience: { filter: string }; scheduling?: { sendAt: string; timezone: string } } = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
+      // The campaign document stores this under `scheduling.sendAt`; a top-level
+      // `scheduledAt` was dropped by the schema, so scheduling silently never happened.
+      if (form.scheduledAt) payload.scheduling = { sendAt: new Date(form.scheduledAt).toISOString(), timezone: form.timezone };
       await api.post('/admin/campaigns', payload);
       addToast('Campaign created!', 'success');
       setForm({ name: '', subject: '', body: '', audience: 'all', scheduledAt: '', timezone: 'Asia/Dhaka', batchSize: 50, batchDelay: 5000 });
@@ -51,8 +53,8 @@ const CampaignManager = () => {
 
   const handleUpdate = async () => {
     try {
-      const payload: { name: string; subject: string; body: string; audience: { filter: string }; scheduledAt?: string } = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
-      if (form.scheduledAt) payload.scheduledAt = form.scheduledAt;
+      const payload: { name: string; subject: string; body: string; audience: { filter: string }; scheduling?: { sendAt: string; timezone: string } } = { name: form.name, subject: form.subject, body: form.body, audience: { filter: form.audience } };
+      if (form.scheduledAt) payload.scheduling = { sendAt: new Date(form.scheduledAt).toISOString(), timezone: form.timezone };
       await api.put(`/admin/campaigns/${editing?._id ?? ''}`, payload);
       addToast('Campaign updated!', 'success');
       setEditing(null);
@@ -130,7 +132,8 @@ const CampaignManager = () => {
     setForm({
       name: c.name ?? '', subject: c.subject ?? '', body: c.body ?? '',
       audience: (typeof c.audience === 'string' ? undefined : c.audience?.filter) || 'all',
-      scheduledAt: c.scheduledAt ? c.scheduledAt.split('.')[0] : '',
+      // The API returns scheduling.sendAt (a top-level scheduledAt never existed).
+      scheduledAt: c.scheduling?.sendAt ? c.scheduling.sendAt.split('.')[0] : '',
       timezone: c.scheduling?.timezone || 'Asia/Dhaka',
       batchSize: c.batchSize || 50,
       batchDelay: c.batchDelay || 5000,

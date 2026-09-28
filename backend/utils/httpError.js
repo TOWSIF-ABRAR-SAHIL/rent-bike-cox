@@ -77,24 +77,55 @@ function validationMessage(err) {
   return messages.length ? messages.join('; ') : null;
 }
 
+/**
+ * The two error names `middleware/errorHandler.js` answers 400 for. A CastError is
+ * the one a controller sees: `Model.findById('not-an-id')` fails to cast the path
+ * parameter before any query leaves the process, so a handler that catches
+ * everything used to report a caller's typo as a server fault.
+ */
+function isMalformedRequest(err) {
+  return Boolean(err && (err.name === 'CastError' || err.name === 'ValidationError'));
+}
+
+/** The handler's wording for a malformed request, shared so the two cannot drift. */
+const INVALID_REQUEST_MESSAGE = 'Invalid request data';
+
 /** What a controller may send back: our own message, or a schema's — never a driver's. */
 function clientMessage(err, fallback) {
   if (isClientFacing(err) && typeof err.message === 'string' && err.message) {
     return err.message;
   }
-  return validationMessage(err) || fallback;
+  const schemaMessage = validationMessage(err);
+  if (schemaMessage) return schemaMessage;
+  // A CastError is excluded from validationMessage() because mongoose writes it, so
+  // it falls back to the handler's canned text rather than a fallback that would
+  // describe a server failure the 400 denies.
+  if (isMalformedRequest(err)) return INVALID_REQUEST_MESSAGE;
+  return fallback;
 }
 
 /**
  * The status to answer with. Only an exposed error may choose its own status, and
  * only within the 4xx range a caller can act on — an internal failure must never
- * be able to label itself a 2xx or leak a 5xx it invented.
+ * be able to label itself a 2xx or leak a 5xx it invented. A CastError or schema
+ * ValidationError is mapped to 400 exactly as the central handler does, so a
+ * catch-all can use this instead of hard-coding a status.
  */
 function clientStatus(err, fallback = 400) {
   if (isClientFacing(err) && typeof err.status === 'number' && err.status >= 400 && err.status < 500) {
     return err.status;
   }
+  if (isMalformedRequest(err)) return 400;
   return fallback;
 }
 
-module.exports = { HttpError, isClientFacing, statusMessage, validationMessage, clientMessage, clientStatus };
+module.exports = {
+  HttpError,
+  isClientFacing,
+  isMalformedRequest,
+  INVALID_REQUEST_MESSAGE,
+  statusMessage,
+  validationMessage,
+  clientMessage,
+  clientStatus,
+};

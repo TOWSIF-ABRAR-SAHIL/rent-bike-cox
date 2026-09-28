@@ -1,17 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { requestMock } = vi.hoisted(() => ({ requestMock: vi.fn() }));
+const { requestMock, responseUseMock } = vi.hoisted(() => ({
+  requestMock: vi.fn(),
+  responseUseMock: vi.fn(),
+}));
 const postMock = vi.hoisted(() => ({ post: vi.fn() }));
 
 vi.mock("axios", () => ({
   default: {
-    create: () => ({
-      request: requestMock,
-      interceptors: {
-        request: { use: vi.fn() },
-        response: { use: vi.fn() },
-      },
-    }),
+    // The instance is callable — the refresh path replays the request with api(config).
+    create: () =>
+      Object.assign(requestMock, {
+        request: requestMock,
+        interceptors: {
+          request: { use: vi.fn() },
+          response: { use: responseUseMock },
+        },
+      }),
     post: postMock.post,
     defaults: { headers: { common: {} } },
   },
@@ -22,13 +27,18 @@ let apiWithRetry: (
   retries?: number,
   delay?: number
 ) => Promise<unknown>;
+let isCredentialRequest: (url?: string) => boolean;
 
 beforeEach(async () => {
   requestMock.mockReset();
+  responseUseMock.mockReset();
+  postMock.post.mockReset();
+  localStorage.clear();
   vi.useFakeTimers();
   vi.resetModules();
   const mod = await import("@/api/axios");
   apiWithRetry = mod.apiWithRetry;
+  isCredentialRequest = mod.isCredentialRequest;
 });
 
 describe("apiWithRetry", () => {
@@ -84,5 +94,50 @@ describe("apiWithRetry", () => {
     await vi.advanceTimersByTimeAsync(30);
     await assertion;
     expect(requestMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+/**
+ * A 401 from the login form is a rejected credential, not an expired session. Treating
+ * it as an expiry replayed the failing login after a refresh, and a failed refresh
+ * hard-navigated back to /login before the form could show the error message.
+ */
+describe("401 handling", () => {
+  const rejectHandler = (): ((error: unknown) => Promise<unknown>) =>
+    responseUseMock.mock.calls[0][1] as (error: unknown) => Promise<unknown>;
+
+  it("leaves a credential 401 alone: no refresh, no cleared session", async () => {
+    const error = {
+      config: { url: "/auth/login" },
+      response: { status: 401, data: { message: "Invalid credentials" } },
+    };
+    localStorage.setItem("refreshToken", "stale-refresh");
+
+    await expect(rejectHandler()(error)).rejects.toBe(error);
+
+    expect(postMock.post).not.toHaveBeenCalled();
+    expect(localStorage.getItem("refreshToken")).toBe("stale-refresh");
+  });
+
+  it("still refreshes a 401 from a normal request", async () => {
+    localStorage.setItem("accessToken", "old-access");
+    localStorage.setItem("refreshToken", "refresh-1");
+    postMock.post.mockResolvedValue({ data: { accessToken: "new-access", refreshToken: "refresh-2" } });
+    requestMock.mockResolvedValueOnce({ data: { ok: true } });
+
+    await rejectHandler()({
+      config: { url: "/booking/mine", headers: {} },
+      response: { status: 401, data: {} },
+    });
+
+    expect(postMock.post).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("accessToken")).toBe("new-access");
+  });
+
+  it("recognises only the credential endpoints", () => {
+    expect(isCredentialRequest("/auth/login")).toBe(true);
+    expect(isCredentialRequest("/auth/register")).toBe(true);
+    expect(isCredentialRequest("/auth/profile")).toBe(false);
+    expect(isCredentialRequest(undefined)).toBe(false);
   });
 });

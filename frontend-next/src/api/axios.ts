@@ -33,10 +33,20 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+/**
+ * A 401 from a credential endpoint means "wrong email or password", not an expired
+ * session. Treating it as one swallowed the error the login form was about to show:
+ * with a stale refresh token still in localStorage the interceptor replayed the very
+ * login that just failed, and if that refresh failed it hard-navigated back to /login
+ * before the form could render the message.
+ */
+export const isCredentialRequest = (url?: string): boolean =>
+  !!url && (url.includes('/auth/login') || url.includes('/auth/register'));
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isCredentialRequest(error.config?.url)) {
       const refreshToken = localStorage.getItem('refreshToken');
       const original = error.config as RetryableRequestConfig | undefined;
       if (!refreshToken || original?.url?.includes('/auth/refresh')) {
