@@ -6,13 +6,12 @@ import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 
 import api from '../api/axios';
 import { normalizeFaqs } from '../lib/faqContent';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Heart, GitCompareArrows, Calendar, Navigation, BadgeCheck, Gauge, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Calendar, Navigation, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
+import VehicleCard from '../components/VehicleCard';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
-import { useCompare } from '../context/useCompare';
-import { useWishlist } from '../context/useWishlist';
 import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
 import dynamic from 'next/dynamic';
@@ -73,8 +72,6 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
   const [openFaq, setOpenFaq] = useState(0);
   const [heroLocation, setHeroLocation] = useState('');
 
-  const { toggle: toggleCompare, has: hasCompare } = useCompare();
-  const { toggle: toggleWishlist, has: hasWish } = useWishlist();
   const router = useRouter();
 
   // The server render already answered these queries, so the first client effect
@@ -216,6 +213,16 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       }
     });
     return best || bikes[0] || null;
+  }, [bikes, bikeRatings]);
+
+  /** Top 4 for the Featured row: rated first, verified fill the rest. */
+  const featuredBikes = useMemo(() => {
+    const scored = bikes.map(b => {
+      const r = bikeRatings[b._id];
+      const score = r && (r.total || 0) > 0 ? (r.avgRating || 0) * 100 + Math.min(r.total ?? 0, 50) : (b.isVerified ? 1 : 0);
+      return { bike: b, score };
+    });
+    return scored.sort((a, b) => b.score - a.score).slice(0, 4).map(s => s.bike);
   }, [bikes, bikeRatings]);
 
   const orgSchema = {
@@ -384,6 +391,65 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
         </div>
       </section>
 
+      {/* ============ POPULAR CATEGORIES ============ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-4">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Popular Bike Categories</h2>
+          <p className="text-slate-500 text-sm max-w-xl mx-auto">Most popular worldwide categories due to their reliability, affordability, and features</p>
+        </div>
+        {categories.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-6xl mx-auto">
+            {categoryCounts.map(cat => {
+              const Icon = categoryIcons[cat.name ?? ''] || Bike;
+              const isZero = cat.count === 0;
+              const isActive = activeCategory === cat.slug;
+              return (
+                <button key={cat._id}
+                  onClick={() => { if (isZero) return; handleCategoryClick(cat.slug ?? ''); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  disabled={isZero}
+                  className={`rounded-2xl p-5 flex flex-col items-center gap-2 text-center border transition-all duration-300 ${isZero ? 'opacity-50 border-slate-200 bg-slate-50' : isActive ? 'border-teal-700 bg-teal-700 text-white shadow-lg shadow-teal-900/20' : 'border-slate-200 bg-white hover:border-slate-900 hover:shadow-lg'}`}
+                  aria-label={isZero ? `${cat.name} — coming soon` : `Filter by ${cat.name}`}>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isActive ? 'bg-white/15' : 'bg-slate-100'}`}>
+                    <Icon size={24} className={isActive ? 'text-white' : 'text-slate-800'} />
+                  </div>
+                  <h3 className={`font-bold text-sm ${isActive ? 'text-white' : 'text-slate-900'}`}>{cat.name}s</h3>
+                  <p className={`text-xs ${isActive ? 'text-white/80' : 'text-slate-500'}`}>{isZero ? 'Coming soon' : `${cat.count} Vehicles`}</p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="text-center mt-8">
+          <a href="#vehicles" className="inline-flex items-center gap-2 bg-neutral-900 text-white font-bold px-7 py-3 rounded-lg text-sm hover:bg-black transition-all">
+            View all Categories <ArrowRight size={15} />
+          </a>
+        </div>
+      </section>
+
+      {/* ============ FEATURED BIKES ============ */}
+      {featuredBikes.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Featured &amp; Top Rated Bikes</h2>
+            <p className="text-slate-500 text-sm max-w-xl mx-auto">Here is a list of some of the most loved bikes globally, based on user votes and reviews</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredBikes.map(bike => {
+              const rating = bikeRatings[bike._id];
+              const isTopRated = rating && (rating.avgRating || 0) >= 4.5 && (rating.total || 0) > 0;
+              return (
+                <VehicleCard key={bike._id} bike={bike} rating={rating} badge={isTopRated ? 'top' : bike.isVerified ? 'featured' : null} />
+              );
+            })}
+          </div>
+          <div className="text-center mt-8">
+            <a href="#vehicles" className="inline-flex items-center gap-2 bg-neutral-900 text-white font-bold px-7 py-3 rounded-lg text-sm hover:bg-black transition-all">
+              View All Bikes <ArrowRight size={15} />
+            </a>
+          </div>
+        </section>
+      )}
+
       {/* ============ HOW IT WORKS ============ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
         <div className="text-center mb-12">
@@ -482,121 +548,12 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
                 const rating = bikeRatings[bike._id];
                 const isTopRated = rating && (rating.avgRating || 0) >= 4.5 && (rating.total || 0) > 0;
                 const isFeatured = !isTopRated && bike.isVerified && index < 2;
-                const conditionLabel = bike.condition ? bike.condition.charAt(0).toUpperCase() + bike.condition.slice(1) : 'Good';
-                const packageStart = bike.packages?.[0]?.minHours;
                 return (
-                  <div key={bike._id} className="bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-[0_16px_40px_rgba(0,0,0,0.10)] hover:-translate-y-1 transition-all duration-300 flex flex-col">
-                    <div className="relative overflow-hidden group">
-                      <Link href={`/bike/${bike._id}`} aria-label={`View ${bike.model}`}>
-                        <Image src={bike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={bike.model ?? ''}
-                          width={400} height={300}
-                          className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
-                      </Link>
-                      {(isFeatured || isTopRated) && (
-                        <div className="absolute top-5 -left-10 rotate-[-35deg] px-10 py-1 text-[11px] font-black uppercase tracking-wide text-white shadow-md"
-                          style={{ background: isFeatured ? '#dc2626' : '#f97316' }}>
-                          {isFeatured ? 'Featured' : 'Top Rated'}
-                        </div>
-                      )}
-                      <div className="absolute top-3 right-3 flex gap-1.5">
-                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(bike._id); }}
-                          className="w-8 h-8 rounded-full bg-white shadow flex items-center justify-center transition-all hover:scale-110"
-                          aria-label={hasWish(bike._id) ? 'Remove from favorites' : 'Add to favorites'}>
-                          <Heart size={14} fill={hasWish(bike._id) ? '#ef4444' : 'none'} color={hasWish(bike._id) ? '#ef4444' : '#64748b'} />
-                        </button>
-                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(bike); }}
-                          className={`w-8 h-8 rounded-full bg-white shadow flex items-center justify-center transition-all hover:scale-110 ${hasCompare(bike._id) ? 'ring-2 ring-orange-500' : ''}`}
-                          aria-label={hasCompare(bike._id) ? 'Remove from comparison' : 'Add to comparison'}>
-                          <GitCompareArrows size={14} color={hasCompare(bike._id) ? '#f97316' : '#64748b'} />
-                        </button>
-                      </div>
-                      {(typeof bike.category === 'string' ? undefined : bike.category?.name) && (
-                        <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-md text-[11px] font-bold bg-white/95 text-slate-800 shadow">
-                          {(typeof bike.category === 'string' ? undefined : bike.category?.name)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-5 flex flex-col flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-[17px] font-black text-slate-900 leading-snug">
-                          <Link href={`/bike/${bike._id}`} className="hover:text-orange-600 transition-colors">{bike.model}</Link>
-                        </h3>
-                        {bike.isVerified && (
-                          <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-teal-700">
-                            <BadgeCheck size={13} /> Verified
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[13px] text-slate-500 mt-0.5">{bike.brand}</p>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <div className="flex items-center">
-                          {[1, 2, 3, 4, 5].map(star => (
-                            <Star key={star} size={13} fill={rating && star <= Math.round(rating.avgRating || 0) ? '#f59e0b' : 'none'} color={rating && star <= Math.round(rating.avgRating || 0) ? '#f59e0b' : '#cbd5e1'} />
-                          ))}
-                        </div>
-                        <span className="text-xs text-slate-500">
-                          {rating ? <><b className="text-slate-800">({(rating.avgRating || 0).toFixed(1)})</b> {rating.total || 0} Reviews</> : 'No reviews'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-y-2.5 gap-x-2 mt-4 text-[12px] text-slate-600">
-                        <span className="inline-flex items-center gap-1.5"><Gauge size={13} className="text-slate-400" />{conditionLabel}</span>
-                        <span className="inline-flex items-center gap-1.5"><Navigation size={13} className="text-slate-400" />{(bike.currentMileage ?? 0) > 0 ? `${bike.currentMileage} KM` : 'Low KM'}</span>
-                        <span className="inline-flex items-center gap-1.5"><Bike size={13} className="text-slate-400" />{(typeof bike.category === 'string' ? undefined : bike.category?.name) || 'Vehicle'}</span>
-                        <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-slate-400" />From {packageStart ? `${packageStart}h` : '1h'}</span>
-                        <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-slate-400" />Cox&apos;s Bazar</span>
-                        <span className="inline-flex items-center gap-1.5"><Shield size={13} className="text-slate-400" />Inspected</span>
-                      </div>
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                        <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-500">
-                          <MapPin size={13} /> Cox&apos;s Bazar
-                        </span>
-                        <p className="text-xl font-black text-red-600">{bike.pricePerHour} <span className="text-xs font-bold text-slate-500">TK/hr</span></p>
-                      </div>
-                      <Link href={`/bike/${bike._id}`}
-                        className="mt-4 inline-flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-neutral-900 hover:bg-black text-white transition-all">
-                        <Calendar size={15} /> Rent Now
-                      </Link>
-                    </div>
-                  </div>
+                  <VehicleCard key={bike._id} bike={bike} rating={rating} badge={isTopRated ? 'top' : isFeatured ? 'featured' : null} />
                 );
               })}
             </div>
           )}
-        </div>
-      </section>
-
-      {/* ============ CATEGORIES ============ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Most Popular Categories</h2>
-          <p className="text-slate-500 text-sm max-w-xl mx-auto">Choose from bikes, cars and beach jeeps — every category thoroughly inspected</p>
-        </div>
-        {categories.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-4xl mx-auto">
-            {categoryCounts.map(cat => {
-              const Icon = categoryIcons[cat.name ?? ''] || Bike;
-              const isZero = cat.count === 0;
-              return (
-                <button key={cat._id}
-                  onClick={() => { if (isZero) return; handleCategoryClick(cat.slug ?? ''); document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' }); }}
-                  disabled={isZero}
-                  className={`rounded-2xl p-6 flex flex-col items-center gap-2 text-center border transition-all duration-300 ${isZero ? 'opacity-50 border-slate-200 bg-slate-50' : activeCategory === cat.slug ? 'border-orange-500 bg-orange-50 shadow-lg shadow-orange-500/10' : 'border-slate-200 bg-white hover:border-slate-900 hover:shadow-lg'}`}
-                  aria-label={isZero ? `${cat.name} — coming soon` : `Filter by ${cat.name}`}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center ${activeCategory === cat.slug ? 'bg-orange-500' : 'bg-slate-100'}`}>
-                    <Icon size={26} className={activeCategory === cat.slug ? 'text-white' : 'text-slate-800'} />
-                  </div>
-                  <h3 className="font-black text-slate-900">{cat.name}s</h3>
-                  <p className="text-xs text-slate-500">{isZero ? 'Coming soon' : `${cat.count} Vehicles`}</p>
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <div className="text-center mt-8">
-          <a href="#vehicles" className="inline-flex items-center gap-2 border-2 border-slate-900 text-slate-900 font-bold px-7 py-3 rounded-lg text-sm hover:bg-slate-900 hover:text-white transition-all">
-            View all Vehicles <ArrowRight size={15} />
-          </a>
         </div>
       </section>
 
