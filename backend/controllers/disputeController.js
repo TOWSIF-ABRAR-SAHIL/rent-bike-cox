@@ -2,6 +2,7 @@ const Dispute = require('../models/Dispute');
 const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const logger = require('../utils/logger');
+const { clientMessage } = require('../utils/httpError');
 
 exports.createDispute = async (req, res) => {
   try {
@@ -35,7 +36,7 @@ exports.createDispute = async (req, res) => {
     res.status(201).json(dispute);
   } catch (error) {
     logger.error('createDispute error', { message: error.message });
-    res.status(500).json({ message: 'Failed to create dispute' });
+    res.status(err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500).json({ message: clientMessage(err, 'Failed to create dispute') });
   }
 };
 
@@ -59,7 +60,7 @@ exports.getMyDisputes = async (req, res) => {
     res.json({ disputes, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     logger.error('getMyDisputes error', { message: error.message });
-    res.status(500).json({ message: 'Failed to fetch disputes' });
+    res.status(err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500).json({ message: clientMessage(err, 'Failed to fetch disputes') });
   }
 };
 
@@ -87,7 +88,7 @@ exports.getAllDisputes = async (req, res) => {
     res.json({ disputes, page, limit, total, pages: Math.ceil(total / limit) });
   } catch (error) {
     logger.error('getAllDisputes error', { message: error.message });
-    res.status(500).json({ message: 'Failed to fetch disputes' });
+    res.status(err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500).json({ message: clientMessage(err, 'Failed to fetch disputes') });
   }
 };
 
@@ -114,7 +115,7 @@ exports.resolveDispute = async (req, res) => {
     res.json(dispute);
   } catch (error) {
     logger.error('resolveDispute error', { message: error.message });
-    res.status(500).json({ message: 'Failed to resolve dispute' });
+    res.status(err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500).json({ message: clientMessage(err, 'Failed to resolve dispute') });
   }
 };
 
@@ -143,6 +144,6 @@ exports.getDisputeStats = async (req, res) => {
     res.json({ stats: stats[0] || { total: 0, open: 0, underReview: 0, resolved: 0, rejected: 0 }, byReason });
   } catch (error) {
     logger.error('getDisputeStats error', { message: error.message });
-    res.status(500).json({ message: 'Failed to fetch dispute stats' });
+    res.status(err.name === 'ValidationError' || err.name === 'CastError' ? 400 : 500).json({ message: clientMessage(err, 'Failed to fetch dispute stats') });
   }
 };

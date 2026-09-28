@@ -40,9 +40,15 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refreshToken');
       const original = error.config as RetryableRequestConfig | undefined;
       if (!refreshToken || original?.url?.includes('/auth/refresh')) {
+        // Only bounce to /login when a session actually existed (expired or
+        // revoked). An anonymous visitor with no tokens tripping a 401 on a
+        // public page (homepage tracking, notification poll) must stay put —
+        // otherwise every logged-out page becomes a login wall.
+        const hadSession =
+          !!localStorage.getItem('accessToken') || !!refreshToken;
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        if (window.location.pathname !== '/login') {
+        if (hadSession && window.location.pathname !== '/login') {
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- hard nav required: auth state is being wiped, no router in module scope
           window.location.href = '/login';
         }

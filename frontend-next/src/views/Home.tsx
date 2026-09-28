@@ -11,6 +11,7 @@ import EmptyState from '../components/ui/EmptyState';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useCompare } from '../context/useCompare';
 import { useWishlist } from '../context/useWishlist';
+import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
 import dynamic from 'next/dynamic';
 const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
@@ -46,6 +47,7 @@ const hotspots = [
 
 const Home = () => {
   const { get } = useSiteContent();
+  const { user } = useAuth();
   const [bikes, setBikes] = useState<BikeType[]>([]);
   const [categories, setCategories] = useState<BikeCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -781,7 +783,23 @@ const Home = () => {
           </span>
         </div>
         <div className="rounded-2xl overflow-hidden border border-slate-200">
-          <LiveFleetMap height="400px" showRecenter={true} />
+          {user ? (
+            <LiveFleetMap height="400px" showRecenter={true} />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 bg-slate-50 px-6 py-14 text-center">
+              <Navigation size={28} className="text-orange-500" />
+              <p className="text-lg font-bold text-slate-900">See live vehicle locations</p>
+              <p className="max-w-sm text-sm text-slate-500">
+                Sign in to track our available vehicles on the live map in real-time.
+              </p>
+              <Link
+                href="/login"
+                className="mt-1 rounded-lg bg-orange-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-orange-600"
+              >
+                Sign in to view map
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
