@@ -11,6 +11,8 @@ import type { LucideIcon } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 import VehicleCard from '../components/VehicleCard';
+import ShowcaseImage from '../components/ShowcaseImage';
+import SafeImage from '../components/SafeImage';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
@@ -203,16 +205,19 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
   }, [bikes]);
 
   const topRatedBike = useMemo(() => {
+    // A showcase without a photo looks broken: prefer bikes that have images.
+    const withPhotos = bikes.filter(b => (b.images || []).length > 0);
+    const pool = withPhotos.length > 0 ? withPhotos : bikes;
     let best: BikeType | null = null;
     let bestScore = -1;
-    bikes.forEach(b => {
+    pool.forEach(b => {
       const r = bikeRatings[b._id];
       if (r && (r.total || 0) > 0) {
         const score = (r.avgRating || 0) * 100 + Math.min(r.total ?? 0, 50);
         if (score > bestScore) { bestScore = score; best = b; }
       }
     });
-    return best || bikes[0] || null;
+    return best || pool[0] || null;
   }, [bikes, bikeRatings]);
 
   /** Top 4 for the Featured row: rated first, verified fill the rest. */
@@ -307,9 +312,8 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
               <div className="absolute inset-6 rounded-[2rem] bg-gradient-to-br from-orange-400 via-orange-500 to-amber-500 rotate-3" aria-hidden="true" />
               <div className="relative rounded-[2rem] overflow-hidden border-8 border-white shadow-2xl bg-slate-100 -rotate-1 h-[380px]">
                 {heroBike?.images?.[0] ? (
-                  <Image key={heroBike._id} src={heroBike.images[0]} alt={heroBike.model ?? ''}
-                    fill sizes="(max-width: 1024px) 100vw, 50vw" priority className="object-cover animate-fade-in"
-                    onError={(e) => { const img = e.target as HTMLImageElement; img.onerror = null; img.src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
+                  <SafeImage key={heroBike._id} src={heroBike.images[0]} alt={heroBike.model ?? ''}
+                    fill sizes="(max-width: 1024px) 100vw, 50vw" eager className="object-cover animate-fade-in" />
                 ) : (
                   <div className="w-full h-[380px] flex items-center justify-center">
                     <Bike size={72} className="text-slate-300" />
@@ -609,9 +613,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
             </div>
             <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden grid grid-cols-1 lg:grid-cols-2 max-w-5xl mx-auto">
               <div className="relative min-h-[280px]">
-                <Image src={topRatedBike.images?.[0] || 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'} alt={topRatedBike.model ?? ''}
-                  fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x600/f1f5f9/94a3b8?text=No+Image'; }} />
+                <ShowcaseImage images={topRatedBike.images} model={topRatedBike.model} />
                 <span className="absolute top-4 left-4 px-3 py-1.5 rounded-md text-[11px] font-black uppercase tracking-wide bg-orange-500 text-white shadow">Top Rated</span>
               </div>
               <div className="p-8 sm:p-10 flex flex-col justify-center">
@@ -777,6 +779,19 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
               <Phone size={30} className="mx-auto mb-4 text-orange-500" />
               <h3 className="text-xl font-black text-white mb-2">Still Have Questions?</h3>
               <p className="text-sm text-slate-400 mb-6">Our team replies within minutes, 7 days a week.</p>
+              <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+                {[
+                  { value: `${bikes.length}+`, label: 'Vehicles' },
+                  { value: `${brands.length}+`, label: 'Brands' },
+                  { value: `${hotspots.length}`, label: 'Pickup Spots' },
+                  { value: minPrice > 0 ? `${minPrice}TK` : '—', label: 'Starting/hr' },
+                ].map(s => (
+                  <div key={s.label} className="rounded-xl bg-white/[0.06] border border-white/10 p-3">
+                    <p className="text-lg font-black text-white">{s.value}</p>
+                    <p className="text-[11px] text-slate-400">{s.label}</p>
+                  </div>
+                ))}
+              </div>
               <Link href="/contact" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-7 py-3 rounded-lg text-sm transition-all w-full justify-center">
                 Contact Us <ArrowRight size={15} />
               </Link>
