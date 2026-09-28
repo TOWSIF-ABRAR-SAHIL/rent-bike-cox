@@ -32,8 +32,8 @@ npm-debug.log*
 # Figma design exports (large binaries, kept locally)
 figma/
 
-# One-command dev launcher (local only)
-scripts/
+# One-command dev launcher (local only, retired with the Vite app)
+/scripts/
 
 # Backend
 backend/.env
