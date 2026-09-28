@@ -44,6 +44,7 @@ const CacheManager = () => {
   };
 
   const handleDeleteKey = async (key: string): Promise<void> => {
+    if (!window.confirm(`Delete cache key "${key}"? The app will rebuild it, but this can slow the next few requests.`)) return;
     try {
       await api.delete(`/admin/cache/key/${encodeURIComponent(key)}`);
       addToast(`Deleted key: ${key}`, 'success');

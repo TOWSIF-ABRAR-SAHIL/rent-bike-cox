@@ -12,23 +12,23 @@ import {
 const CATEGORIES = [
   {
     key: 'financial', label: 'Financial Reports', icon: DollarSign,
-    color: '#059669', bg: 'rgba(5, 150, 105, 0.08)', lightBg: '#ecfdf5',
-    borderColor: 'rgba(5, 150, 105, 0.2)'
+    color: 'var(--success-text)', bg: 'var(--success-bg)',
+    borderColor: 'var(--success-border)'
   },
   {
     key: 'operations', label: 'Operations Reports', icon: Bike,
-    color: '#2563eb', bg: 'rgba(37, 99, 235, 0.08)', lightBg: '#eff6ff',
-    borderColor: 'rgba(37, 99, 235, 0.2)'
+    color: 'var(--info-text)', bg: 'var(--info-bg)',
+    borderColor: 'var(--info-border)'
   },
   {
     key: 'user', label: 'User Reports', icon: Users,
-    color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.08)', lightBg: '#f5f3ff',
-    borderColor: 'rgba(124, 58, 237, 0.2)'
+    color: 'var(--purple-text)', bg: 'var(--purple-bg)',
+    borderColor: 'var(--purple-border)'
   },
   {
     key: 'analytics', label: 'Analytics Reports', icon: BarChart3,
-    color: '#ea580c', bg: 'rgba(234, 88, 12, 0.08)', lightBg: '#fff7ed',
-    borderColor: 'rgba(234, 88, 12, 0.2)'
+    color: 'var(--warning-text)', bg: 'var(--warning-bg)',
+    borderColor: 'var(--warning-border)'
   },
 ];
 

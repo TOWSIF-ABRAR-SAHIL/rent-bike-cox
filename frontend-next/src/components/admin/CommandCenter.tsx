@@ -10,8 +10,8 @@ const QUICK_ACTIONS = [
   { tab: 'content', icon: FileText, label: 'Site Content', color: 'var(--accent-text)', bg: 'var(--accent-bg)' },
   { tab: 'branding', icon: Palette, label: 'Branding', color: 'var(--purple-text)', bg: 'var(--purple-bg)' },
   { tab: 'messages', icon: Inbox, label: 'Messages', color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
-  { tab: 'campaigns', icon: Send, label: 'Campaigns', color: '#ec4899', bg: '#ec489910' },
-  { tab: 'health', icon: Activity, label: 'System Health', color: '#06b6d4', bg: '#06b6d410' },
+  { tab: 'campaigns', icon: Send, label: 'Campaigns', color: 'var(--purple-text)', bg: 'var(--purple-bg)' },
+  { tab: 'health', icon: Activity, label: 'System Health', color: 'var(--info-text)', bg: 'var(--info-bg)' },
 ];
 
 import type { HealthData } from '@/types';
@@ -19,8 +19,11 @@ import type { ReactNode } from 'react';
 
 export interface PlatformStats { bikes?: number; users?: number; coupons?: number; categories?: number; }
 
+interface TodayFigures { bookings: number; revenue: number; }
+
 const CommandCenter = ({ onNavigate, stats }: { onNavigate: (tab: string) => void; stats?: PlatformStats }) => {
   const [health, setHealth] = useState<HealthData | null>(null);
+  const [today, setToday] = useState<TodayFigures | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchHealth = useCallback(async () => {
@@ -30,9 +33,16 @@ const CommandCenter = ({ onNavigate, stats }: { onNavigate: (tab: string) => voi
       setHealth({
         server: { status: d.status === 'ok' ? 'online' : d.status, uptime: d.uptime },
         database: { status: d.status === 'ok' ? 'connected' : 'disconnected' },
-        memory: d.memory ? { heapUsed: d.memory.heapUsed, heapTotal: d.memory.heapTotal } : null,
+        memory: null,
       });
-    } catch { /* */ } finally { setLoading(false); }
+    } catch { /* */ }
+    try {
+      const res = await api.get('/financial/admin/overview');
+      setToday({
+        bookings: res.data?.today?.bookings ?? 0,
+        revenue: res.data?.today?.revenue ?? 0,
+      });
+    } catch { /* finance card simply stays empty */ } finally { setLoading(false); }
   }, []);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -82,12 +92,12 @@ const CommandCenter = ({ onNavigate, stats }: { onNavigate: (tab: string) => voi
                 <span className="flex items-center gap-1.5">{statusDot(health.database?.status)} <span style={{ color: 'var(--text-primary)' }}>{health.database?.status || 'Unknown'}</span></span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span style={{ color: 'var(--text-secondary)' }}>Memory</span>
-                <span style={{ color: 'var(--text-primary)' }}>{health.memory ? `${(((health.memory.heapUsed ?? 0) / (health.memory.heapTotal || 1)) * 100).toFixed(1)}%` : 'N/A'}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Today&apos;s Bookings</span>
+                <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{today?.bookings ?? '—'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span style={{ color: 'var(--text-secondary)' }}>Uptime</span>
-                <span style={{ color: 'var(--text-primary)' }}>{health.server?.uptime ? `${Math.floor(health.server.uptime / 86400)}d ${Math.floor((health.server.uptime % 86400) / 3600)}h` : 'N/A'}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Today&apos;s Revenue</span>
+                <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{today ? `${today.revenue.toLocaleString()} TK` : '—'}</span>
               </div>
             </div>
           ) : (

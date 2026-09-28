@@ -20,6 +20,7 @@ const LogsViewer = () => {
   const [lineCount, setLineCount] = useState(200);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedEntry, setExpandedEntry] = useState<number | null>(null);
+  const [showRaw, setShowRaw] = useState(false);
   const [error, setError] = useState('');
 
   const fetchLogs = useCallback(async () => {
@@ -169,11 +170,19 @@ const LogsViewer = () => {
         <div className="glass rounded-2xl p-4 border" style={{ borderColor: 'var(--accent-border)' }}>
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Log Detail</h4>
-            <button onClick={() => setExpandedEntry(null)} className="p-1 rounded" aria-label="Close detail"><X size={14} style={{ color: 'var(--text-muted)' }} /></button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowRaw(v => !v)} className="px-2 py-1 rounded text-xs" style={{ color: 'var(--accent-text)' }} aria-label="Toggle technical details">
+                {showRaw ? 'Hide technical details' : 'Show technical details'}
+              </button>
+              <button onClick={() => { setExpandedEntry(null); setShowRaw(false); }} className="p-1 rounded" aria-label="Close detail"><X size={14} style={{ color: 'var(--text-muted)' }} /></button>
+            </div>
           </div>
-          <pre className="text-xs whitespace-pre-wrap break-all max-h-80 overflow-y-auto p-3 rounded-xl" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
-            {JSON.stringify(filtered[expandedEntry].content, null, 2)}
-          </pre>
+          <p className="text-sm mb-2" style={{ color: 'var(--text-primary)' }}>{typeof filtered[expandedEntry].content === 'string' ? filtered[expandedEntry].content : String(filtered[expandedEntry].content?.message ?? '')}</p>
+          {showRaw && (
+            <pre className="text-xs whitespace-pre-wrap break-all max-h-80 overflow-y-auto p-3 rounded-xl" style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+              {JSON.stringify(filtered[expandedEntry].content, null, 2)}
+            </pre>
+          )}
         </div>
       )}
     </div>

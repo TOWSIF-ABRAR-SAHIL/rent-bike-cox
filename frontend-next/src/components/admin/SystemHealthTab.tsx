@@ -251,7 +251,7 @@ const SystemHealthTab = () => {
                   {isExpanded && (
                     <div className="px-3 pb-3" style={{ borderTop: `1px solid ${sev.border}` }}>
                       <p className="text-xs pt-2" style={{ color: 'var(--text-secondary)' }}>{a.message}</p>
-                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Type: {a.type} | ID: {(a._id ?? '').slice(-8)}</p>
+                      <p className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Type: {a.type}</p>
                     </div>
                   )}
                 </div>

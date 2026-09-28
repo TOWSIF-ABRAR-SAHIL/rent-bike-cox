@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState, useEffect, useCallback, memo } from 'react';
 
 import api, { type ApiError } from '../api/axios';
-import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download, Database, MapPin } from 'lucide-react';
+import { Settings, Tag, Users, Bike, CheckCircle, XCircle, Plus, Trash2, FolderOpen, UserPlus, Clock, Shield, AlertTriangle, DollarSign, X, Timer, Wrench, BarChart3, FileText, Palette, Megaphone, MessageSquare, HelpCircle, Inbox, Send, Activity, Download, Database, MapPin, Terminal, ChevronDown } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import TabErrorBoundary from '../components/TabErrorBoundary';
 import { SkeletonTable } from '../components/ui/Skeleton';
@@ -35,6 +35,7 @@ const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { Bike as BikeType, BikeCategory, BikePackage, Coupon, StoredUser, AdminFinance, AdminSettings } from '@/types';
+import { maskIp } from '../lib/maskIp';
 
 const TabButton = ({ active, onClick, icon: Icon, children }: { active: boolean; onClick: () => void; icon: LucideIcon; children: ReactNode }) => (
   <button onClick={onClick}
@@ -57,6 +58,9 @@ const StatCard = ({ label, value, colorStyle }: { label: string; value: ReactNod
   </div>
 );
 
+/** Tabs hidden behind the Advanced toggle: server internals, not daily business. */
+const ADVANCED_TABS = ['health', 'logs', 'cache', 'ratelimit'];
+
 const AdminDashboard = () => {
   const { addToast } = useToast();
   const [settings, setSettings] = useState<AdminSettings>({ basePricePerHour: 200, packages: [] });
@@ -65,6 +69,8 @@ const AdminDashboard = () => {
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [categories, setCategories] = useState<BikeCategory[]>([]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  // Technical tabs live behind this toggle so the everyday owner never trips over them.
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 10, maxUses: 0, expiresAt: '' });
   const [newCategory, setNewCategory] = useState('');
@@ -149,12 +155,15 @@ const AdminDashboard = () => {
   }, [settings, addToast]);
 
   const toggleBikeVerification = useCallback(async (bikeId: string): Promise<void> => {
+    const bike = bikes.find(b => b._id === bikeId);
+    const action = bike?.isVerified ? 'unverify' : 'verify';
+    if (!window.confirm(`${action === 'verify' ? 'Verify' : 'Unverify'} "${bike?.model ?? 'this bike'}"? ${action === 'unverify' ? 'It will disappear from the storefront.' : 'It will appear on the storefront.'}`)) return;
     try {
       await api.put(`/dashboard/admin/bikes/${bikeId}/verify`);
       setBikes(prev => prev.map(b => b._id === bikeId ? { ...b, isVerified: !b.isVerified } : b));
       addToast('Bike updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [addToast]);
+  }, [addToast, bikes]);
 
   const openEditPackages = useCallback((bike: BikeType): void => {
     setEditingBike(bike);
@@ -186,12 +195,15 @@ const AdminDashboard = () => {
   };
 
   const toggleUserVerification = useCallback(async (userId: string): Promise<void> => {
+    const user = users.find(u => (u._id ?? '') === userId);
+    const action = user?.isVerified ? 'unverify' : 'verify';
+    if (!window.confirm(`${action === 'verify' ? 'Verify' : 'Unverify'} "${user?.name || user?.email || 'this user'}"?`)) return;
     try {
       await api.put(`/dashboard/admin/users/${userId}/verify`);
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, isVerified: !u.isVerified } : u));
       addToast('User updated', 'success');
     } catch { addToast('Failed', 'error'); }
-  }, [addToast]);
+  }, [addToast, users]);
 
   const handleCreateCoupon = useCallback(async (e: FormEvent): Promise<void> => {
     e.preventDefault();
@@ -310,16 +322,29 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'faq'} onClick={() => setActiveTab('faq')} icon={HelpCircle}>FAQ</TabButton>
         <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} icon={Inbox}>Messages</TabButton>
         <TabButton active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={Send}>Campaigns</TabButton>
-        <TabButton active={activeTab === 'health'} onClick={() => setActiveTab('health')} icon={Activity}>System</TabButton>
-        <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} icon={FileText}>Logs</TabButton>
-        <TabButton active={activeTab === 'cache'} onClick={() => setActiveTab('cache')} icon={Database}>Cache</TabButton>
-        <TabButton active={activeTab === 'ratelimit'} onClick={() => setActiveTab('ratelimit')} icon={Shield}>Rate Limits</TabButton>
+        <button onClick={() => setShowAdvanced(v => !v)}
+          className="flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap snap-start border border-dashed"
+          style={{
+            color: ADVANCED_TABS.includes(activeTab) ? 'white' : 'var(--text-secondary)',
+            borderColor: 'var(--border-base)',
+            background: ADVANCED_TABS.includes(activeTab) ? 'var(--accent-bg)' : 'transparent',
+          }}
+          aria-label="Toggle advanced technical tabs" aria-expanded={showAdvanced}>
+          <Terminal className="mr-2" size={16} /> Advanced
+          <ChevronDown className="ml-1 transition-transform" size={14} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none' }} />
+        </button>
+        {showAdvanced && (<>
+          <TabButton active={activeTab === 'health'} onClick={() => setActiveTab('health')} icon={Activity}>System</TabButton>
+          <TabButton active={activeTab === 'logs'} onClick={() => setActiveTab('logs')} icon={FileText}>Logs</TabButton>
+          <TabButton active={activeTab === 'cache'} onClick={() => setActiveTab('cache')} icon={Database}>Cache</TabButton>
+          <TabButton active={activeTab === 'ratelimit'} onClick={() => setActiveTab('ratelimit')} icon={Shield}>Rate Limits</TabButton>
+        </>)}
         <TabButton active={activeTab === 'tracking'} onClick={() => setActiveTab('tracking')} icon={MapPin}>Tracking</TabButton>
         <TabButton active={activeTab === 'reports'} onClick={() => setActiveTab('reports')} icon={Download}>Reports</TabButton>
       </div>
 
       {activeTab === 'dashboard' && (
-        <CommandCenter onNavigate={setActiveTab} stats={{ bikes: bikes.length, users: users.length, coupons: coupons.length, categories: categories.length }} />
+        <CommandCenter onNavigate={(tab) => { if (ADVANCED_TABS.includes(tab)) setShowAdvanced(true); setActiveTab(tab); }} stats={{ bikes: bikes.length, users: users.length, coupons: coupons.length, categories: categories.length }} />
       )}
 
       {activeTab === 'settings' && (
@@ -905,11 +930,11 @@ const AdminDashboard = () => {
             <div className="glass p-6 rounded-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-                  <AlertTriangle size={18} className="text-amber-500" /> Refund Circuit Breaker
+                  <AlertTriangle size={18} className="text-amber-500" /> Refund Safety Switch
                 </h3>
                 {finance.overview.circuitBreaker.isTripped && (
-                  <button onClick={handleUnlockBreaker} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors" aria-label="Unlock circuit breaker" >
-                    Unlock Breaker
+                  <button onClick={handleUnlockBreaker} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors" aria-label="Reset refund safety switch" >
+                    Reset Safety Switch
                   </button>
                 )}
               </div>
@@ -917,7 +942,7 @@ const AdminDashboard = () => {
                 <div>
                   <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Status</p>
                   <p className="font-semibold" style={{ color: finance.overview.circuitBreaker.isTripped ? 'var(--danger-text)' : 'var(--success-text)' }}>
-                    {finance.overview.circuitBreaker.isTripped ? 'TRIPPED' : 'Normal'}
+                    {finance.overview.circuitBreaker.isTripped ? 'Paused' : 'On'}
                   </p>
                 </div>
                 <div>
@@ -925,7 +950,7 @@ const AdminDashboard = () => {
                   <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{finance.overview.circuitBreaker.totalRefunded.toLocaleString()} TK</p>
                 </div>
                 <div>
-                  <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Remaining Cap</p>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs uppercase">Refund Limit Left</p>
                   <p className="font-semibold" style={{ color: finance.overview.circuitBreaker.remaining < 10000 ? 'var(--warning-text)' : 'var(--text-primary)' }}>{finance.overview.circuitBreaker.remaining.toLocaleString()} TK</p>
                 </div>
                 <div>
@@ -955,8 +980,8 @@ const AdminDashboard = () => {
                       {(finance.fraudEvents?.events ?? []).map(ev => (
                         <tr key={ev._id} style={{ borderBottom: '1px solid var(--border-base)' }}>
                           <td className="py-2 px-3" style={{ color: 'var(--text-secondary)' }}>{new Date(ev.createdAt ?? '').toLocaleString()}</td>
-                          <td className="py-2 px-3" style={{ color: 'var(--text-primary)' }}>{ev.eventType}</td>
-                          <td className="py-2 px-3 font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>{ev.ip}</td>
+                          <td className="py-2 px-3" style={{ color: 'var(--text-primary)' }}>{String(ev.eventType ?? '').replace(/_/g, ' ')}</td>
+                          <td className="py-2 px-3 font-mono text-xs" style={{ color: 'var(--text-secondary)' }}>{maskIp(ev.ip)}</td>
                           <td className="py-2 px-3">
                             <span className="px-2 py-0.5 rounded text-xs font-medium" style={{
                               background: ev.severity === 'critical' ? 'var(--danger-bg)' : ev.severity === 'high' ? 'var(--warning-bg)' : 'var(--info-bg)',
