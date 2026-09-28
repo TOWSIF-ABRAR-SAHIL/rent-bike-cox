@@ -37,18 +37,18 @@ jobs:
       !contains(github.event.head_commit.message, 'chore:')
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy to Vercel
-        if: env.VERCEL_TOKEN != ''
-        uses: amondnet/vercel-action@v25
+      - uses: actions/setup-node@v4
         with:
-          vercel-token: ${{ env.VERCEL_TOKEN }}
-          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
-          working-directory: frontend-next
-          vercel-args: '--prod'
-      - name: No Vercel token configured
-        if: env.VERCEL_TOKEN == ''
-        run: echo "VERCEL_TOKEN not set; relying on Vercel GitHub integration"
+          node-version: 20
+      - name: Deploy to Vercel
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID != ''
+        run: |
+          cd frontend-next
+          npx -y vercel@latest link --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID" --yes
+          npx -y vercel@latest deploy --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --prod --yes
+      - name: No Vercel prod project configured
+        if: env.VERCEL_TOKEN == '' || env.VERCEL_PROJECT_ID == ''
+        run: echo "VERCEL_TOKEN or VERCEL_PROJECT_ID not set; relying on Vercel GitHub integration"
 
   deploy-frontend-next:
     name: Deploy Frontend-Next Preview to Vercel
@@ -63,14 +63,15 @@ jobs:
       !contains(github.event.head_commit.message, 'chore:')
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
       - name: Deploy preview to Vercel
         if: env.VERCEL_TOKEN != '' && env.VERCEL_PROJECT_ID_NEXT != ''
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ env.VERCEL_TOKEN }}
-          vercel-org-id: ${{ env.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ env.VERCEL_PROJECT_ID_NEXT }}
-          working-directory: frontend-next
+        run: |
+          cd frontend-next
+          npx -y vercel@latest link --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID_NEXT" --yes
+          npx -y vercel@latest deploy --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --yes
       - name: No preview project configured
         if: env.VERCEL_TOKEN == '' || env.VERCEL_PROJECT_ID_NEXT == ''
         run: echo "VERCEL_PROJECT_ID_NEXT not set; create a second Vercel project with root frontend-next and add its project ID as a secret"
