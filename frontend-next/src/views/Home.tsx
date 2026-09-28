@@ -69,7 +69,12 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [fetchError, setFetchError] = useState('');
   const [slowNetwork, setSlowNetwork] = useState(false);
-  const [heroSlide, setHeroSlide] = useState(0);
+  // Start the carousel on a bike that actually has a photo (first paint matters).
+  const [heroSlide, setHeroSlide] = useState(() => {
+    const seed = initialBikes ?? [];
+    const i = seed.findIndex(b => (b.images || []).length > 0);
+    return i >= 0 ? i : 0;
+  });
   const [bikeRatings, setBikeRatings] = useState<Record<string, ReviewStats>>(initialRatings ?? {});
   const [faqs, setFaqs] = useState<Faq[]>(initialFaqs ?? []);
   const [rentalPackages, setRentalPackages] = useState<{ name: string; price: number }[] | null>(null);
@@ -274,10 +279,15 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       {/* ============ HERO ============ */}
       <section className="relative bg-gradient-to-br from-slate-50 via-white to-orange-50">
         <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          <div className="absolute -left-24 top-0 h-full w-72 opacity-90"
-            style={{ background: 'linear-gradient(115deg, #f97316 0%, #fb923c 45%, transparent 46%)' }} />
-          <div className="absolute -left-10 top-10 h-full w-40 opacity-60"
-            style={{ background: 'linear-gradient(115deg, transparent 55%, #fed7aa 56%, transparent 70%)' }} />
+          <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-orange-200/50 blur-3xl" />
+          <div className="absolute top-24 right-[-7rem] h-80 w-80 rounded-full bg-amber-100/80 blur-3xl" />
+          <div className="absolute left-0 top-0 h-56 w-72"
+            style={{
+              backgroundImage: 'radial-gradient(#fdba74 1.3px, transparent 1.3px)',
+              backgroundSize: '18px 18px',
+              maskImage: 'linear-gradient(to bottom right, black 30%, transparent 75%)',
+              WebkitMaskImage: 'linear-gradient(to bottom right, black 30%, transparent 75%)',
+            }} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10 lg:pb-32 sm:pt-20 relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
