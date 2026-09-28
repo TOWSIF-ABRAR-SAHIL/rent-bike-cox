@@ -38,12 +38,12 @@ const steps = [
 ];
 
 const hotspots = [
-  { name: 'Laboni Beach' },
-  { name: 'Marine Drive' },
-  { name: 'Inani Beach' },
-  { name: 'Himchari' },
-  { name: 'Kolatoli' },
-  { name: 'Sea Beach' },
+  { name: 'Laboni Beach', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=70&auto=format&fit=crop' },
+  { name: 'Marine Drive', img: 'https://images.unsplash.com/photo-1519046904884-53103b34b206?w=800&q=70&auto=format&fit=crop' },
+  { name: 'Inani Beach', img: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&q=70&auto=format&fit=crop' },
+  { name: 'Himchari', img: 'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=800&q=70&auto=format&fit=crop' },
+  { name: 'Kolatoli', img: 'https://images.unsplash.com/photo-1509233725247-49e657c54213?w=800&q=70&auto=format&fit=crop' },
+  { name: 'Sea Beach', img: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=70&auto=format&fit=crop' },
 ];
 
 /** Storefront data prefetched by `app/page.tsx`; `null` means the prefetch failed
@@ -479,8 +479,8 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       <section id="vehicles" className="bg-[#f4f6fa] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Explore Most Popular Vehicles</h2>
-            <p className="text-slate-500 text-sm max-w-xl mx-auto">Here&apos;s a list of the most loved rides in Cox&apos;s Bazar, based on our riders&apos; preferences</p>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Most Popular Bikes</h2>
+            <p className="text-slate-500 text-sm max-w-xl mx-auto">Here is a list of some of the most loved bikes globally, based on user votes and reviews</p>
             {heroLocation && (
               <button onClick={handleClearLocation}
                 className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 border border-orange-300 text-xs font-bold text-orange-700 hover:bg-orange-200 transition-all"
@@ -557,6 +557,21 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
           )}
         </div>
       </section>
+
+      {/* ============ TRUST STRIP ============ */}
+      <div className="bg-[#0d0d12] py-4 overflow-hidden" aria-hidden="true">
+        <div className="flex whitespace-nowrap animate-marquee w-max">
+          {[0, 1].map(copy => (
+            <div key={copy} className="flex shrink-0 items-center">
+              {['Free Cancellation', 'Trust & Security', 'Verified Fleet', 'Latest Bikes', '24/7 Support', 'Best Rate in Cox\u2019s Bazar'].map(item => (
+                <span key={`${copy}-${item}`} className="mx-6 text-sm font-bold text-white flex items-center gap-6">
+                  {item} <span className="text-orange-500">✦</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* ============ FACTS BAND ============ */}
       <section className="relative overflow-hidden bg-[#0d0d12] py-16">
@@ -682,12 +697,13 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Featured Destinations</h2>
             <p className="text-slate-500 text-sm">Ride to the most loved spots along the world&apos;s longest beach</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {hotspots.map((spot, i) => {
-              const img = bikes[i % Math.max(bikes.length, 1)]?.images?.[0];
+              const img = spot.img;
+              const isLead = i === 0;
               return (
                 <Link key={spot.name} href="/search"
-                  className="relative rounded-xl overflow-hidden h-44 group border border-slate-200 bg-slate-200 block">
+                  className={`relative rounded-xl overflow-hidden group border border-slate-200 bg-slate-200 block ${isLead ? 'col-span-2 row-span-2 min-h-[280px] lg:min-h-[368px]' : 'h-44 lg:h-[176px]'}`}>
                   {img ? (
                     <Image src={img} alt={spot.name}
                       fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw" className="object-cover transition-transform duration-500 group-hover:scale-110"
