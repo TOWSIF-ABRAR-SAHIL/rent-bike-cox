@@ -1,5 +1,6 @@
 const logger = require('../utils/logger');
 const { isClientFacing, statusMessage, validationMessage } = require('../utils/httpError');
+const { reportServerError } = require('../utils/sentry');
 
 // Multer's own codes. Messages are ours: multer's text names internal parser state.
 const UPLOAD_ERRORS = {
@@ -85,6 +86,7 @@ function errorHandler(err, req, res, _next) {
     ...meta,
     stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
   });
+  reportServerError(err, req);
   // The correlation id is the same one in the log line above, so a user reporting
   // "it broke" can be matched to the stack trace without the trace leaving the server.
   res.status(500).json({

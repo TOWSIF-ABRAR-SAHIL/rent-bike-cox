@@ -50,6 +50,11 @@ start without it. `models/User.js` only encrypts NID, licence, and phone number 
 it is present, so booting without it silently stores identity documents in cleartext.
 `PII_HASH_PEPPER` is optional and falls back to `ENCRYPTION_KEY`.
 
+Optional: `SENTRY_DSN` (backend) and `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`
+(frontend). When unset, `backend/utils/sentry.js` and both
+`frontend-next/sentry.*.config.ts` are inert — 500s are only logged, and the
+Next build skips the Sentry wrapper entirely.
+
 ### Data migrations
 
 `node scripts/migrateFixes.js` — **dry run by default**, pass `--apply` to write.

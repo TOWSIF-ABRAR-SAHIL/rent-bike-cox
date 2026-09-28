@@ -37,3 +37,43 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://rent-bike-cox.vercel.app
+  # Staging mirror: deploy via dashboard ("New +" -> "Web Service" -> same repo,
+  # name rent-bike-backend-staging) or `render blueprint launch`. Then set its env:
+  # a SEPARATE staging MONGODB_URI + its own ENCRYPTION_KEY (never reuse prod's),
+  # FRONTEND_URL=https://rent-bike-next-towsif-abrar.vercel.app, and run the E2E
+  # seed against it: E2E_API_URL=<staging-url>/api npm run test:e2e
+  - type: web
+    name: rent-bike-backend-staging
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: PII_HASH_PEPPER
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SSLCOMMERZ_STORE_ID
+        sync: false
+      - key: SSLCOMMERZ_STORE_PASS
+        sync: false
+      - key: SSLCOMMERZ_IS_LIVE
+        value: "false"
+      - key: BACKEND_URL
+        sync: false
+      - key: FRONTEND_URL
+        value: https://rent-bike-next-towsif-abrar.vercel.app
+      - key: DISABLE_JOBS
+        value: "false"

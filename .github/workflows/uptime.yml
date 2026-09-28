@@ -1,0 +1,31 @@
+name: Uptime
+
+# Free uptime monitor: pings prod backend, prod frontend, and the preview
+# frontend every 15 minutes. A failed run notifies per the repo's Actions
+# notification settings. Render free-tier cold starts (~30s) are tolerated
+# via a generous timeout, not via retries that would mask real downtime.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping live surfaces
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backend health
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 https://rent-bike-backend.onrender.com/api/health)
+          echo "backend: $code"
+          [ "$code" = "200" ]
+      - name: Frontend prod
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 https://rent-bike-cox.vercel.app/)
+          echo "frontend: $code"
+          [ "$code" = "200" ]
+      - name: Frontend preview
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 90 https://rent-bike-next-towsif-abrar.vercel.app/)
+          echo "preview: $code"
+          [ "$code" = "200" ]

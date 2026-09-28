@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -36,4 +37,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry only when a DSN exists; without one the export is the
+// plain config (SDK init files no-op on undefined dsn).
+const withSentry =
+  process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN
+    ? (c: NextConfig) => withSentryConfig(c, { silent: true })
+    : (c: NextConfig) => c;
+
+export default withSentry(nextConfig);

@@ -1,5 +1,9 @@
 require('dotenv').config();
 
+// Error reporting (Sentry) — inert unless SENTRY_DSN is set. Initialised
+// before anything else so boot-time failures are captured too.
+require('./utils/sentry').init();
+
 // PII (NID, licence, phone number) is encrypted at rest only when ENCRYPTION_KEY
 // is present — models/User.js silently stores those fields in cleartext otherwise.
 // That failure mode is invisible, so production refuses to boot without it.
