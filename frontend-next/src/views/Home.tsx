@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 
 import api from '../api/axios';
 import { normalizeFaqs } from '../lib/faqContent';
-import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Calendar, Navigation, BadgeCheck, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
+import { Search, MapPin, Clock, ArrowRight, Shield, CreditCard, Headphones, Zap, Bike, Car, Truck, RefreshCw, Star, Calendar, BadgeCheck, Users, ChevronDown, PlusCircle, Phone } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
@@ -18,6 +18,10 @@ import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
 import dynamic from 'next/dynamic';
+const ZoneTeaserMap = dynamic(() => import('../components/ZoneTeaserMap'), {
+  ssr: false,
+  loading: () => <div className="skeleton rounded-2xl" style={{ height: 380 }} />,
+});
 const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
   ssr: false,
   loading: () => <div className="skeleton rounded-2xl" style={{ height: 400 }} />,
@@ -87,6 +91,8 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
     }).catch(() => {});
   }, []);
   const [openFaq, setOpenFaq] = useState(0);
+  const [mapInView, setMapInView] = useState(false);
+  const mapRef = useRef<HTMLDivElement | null>(null);
   const [heroLocation, setHeroLocation] = useState('');
 
   const router = useRouter();
@@ -107,6 +113,19 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHeroLocation(getSavedPickupLocation());
   }, []);
+
+  // Leaflet is heavy: mount the map only once it scrolls near the viewport.
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el || mapInView) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (typeof IntersectionObserver === 'undefined') { setMapInView(true); return; }
+    const obs = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) { setMapInView(true); obs.disconnect(); }
+    }, { rootMargin: '400px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [mapInView]);
 
   useEffect(() => {
     if (!loading) {
@@ -234,6 +253,14 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
     });
     return best || pool[0] || null;
   }, [bikes, bikeRatings]);
+
+  /** Map follows the category cards: only those bike IDs reach the live feed. */
+  const mapBikeIds = useMemo(() => {
+    if (!activeCategory) return undefined;
+    return bikes
+      .filter((b: BikeType) => (typeof b.category === 'string' ? undefined : b.category?.slug) === activeCategory)
+      .map((b: BikeType) => b._id);
+  }, [bikes, activeCategory]);
 
   /** Top 4 for the Featured row: rated first, verified fill the rest. */
   const featuredBikes = useMemo(() => {
@@ -450,6 +477,30 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
             View all Categories <ArrowRight size={15} />
           </a>
         </div>
+      </section>
+
+      {/* ============ EXPLORE ON MAP ============ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+        <div ref={mapRef} className="rounded-2xl overflow-hidden border border-slate-200">
+          {!mapInView ? (
+            <div className="skeleton h-[320px] sm:h-[380px]" aria-label="Loading map" />
+          ) : user ? (
+            <LiveFleetMap
+              key={activeCategory || 'all'}
+              height="380px"
+              showRecenter={true}
+              filterBikeIds={mapBikeIds}
+            />
+          ) : (
+            <ZoneTeaserMap />
+          )}
+        </div>
+        {user && activeCategory && (
+          <p className="text-center text-xs text-slate-500 mt-3">
+            Showing {mapBikeIds?.length ?? 0} {activeCategory} on the map •
+            <button onClick={() => handleCategoryClick(activeCategory)} className="ml-1 font-bold text-orange-600 hover:text-orange-500">Clear filter</button>
+          </p>
+        )}
       </section>
 
       {/* ============ FEATURED BIKES ============ */}
@@ -840,38 +891,6 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
               <Phone size={16} /> 01891-154443
             </a>
           </div>
-        </div>
-      </section>
-
-      {/* ============ LIVE FLEET ============ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Live Fleet</h2>
-            <p className="text-sm mt-1 text-slate-500">Track our available vehicles in real-time</p>
-          </div>
-          <span className="w-11 h-11 rounded-full bg-orange-50 border border-orange-200 flex items-center justify-center">
-            <Navigation size={19} className="text-orange-600" />
-          </span>
-        </div>
-        <div className="rounded-2xl overflow-hidden border border-slate-200">
-          {user ? (
-            <LiveFleetMap height="400px" showRecenter={true} />
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 bg-slate-50 px-6 py-14 text-center">
-              <Navigation size={28} className="text-orange-500" />
-              <p className="text-lg font-bold text-slate-900">See live vehicle locations</p>
-              <p className="max-w-sm text-sm text-slate-500">
-                Sign in to track our available vehicles on the live map in real-time.
-              </p>
-              <Link
-                href="/login"
-                className="mt-1 rounded-lg bg-orange-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-orange-600"
-              >
-                Sign in to view map
-              </Link>
-            </div>
-          )}
         </div>
       </section>
 

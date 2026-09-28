@@ -85,6 +85,7 @@ const popupTemplate = (b: LiveMarker): string => {
       <div class="stat"><span class="stat-label">Updated</span><span class="stat-value">${new Date(b.updatedAt ?? '').toLocaleTimeString()}</span></div>
     </div>
     ${b.image ? `<img src="${b.image}" class="popup-image" />` : ''}
+    <a href="/bike/${b._id}" class="popup-view">View details →</a>
   </div>`;
 };
 
@@ -434,6 +435,8 @@ const LiveFleetMap = ({ height = '500px', showRecenter = true, filterBikeIds, fu
         .stat-label { font-size: 10px; color: #999; }
         .stat-value { font-size: 13px; font-weight: 600; color: #333; }
         .popup-image { width: 100%; height: 80px; object-fit: cover; border-radius: 0 0 8px 8px; }
+        .popup-view { display: block; text-align: center; margin: 8px; padding: 8px; border-radius: 8px; background: #171717; color: #fff !important; font-size: 13px; font-weight: 700; text-decoration: none; }
+        .popup-view:hover { background: #000; }
         .tracking-legend {
           background: rgba(255,255,255,0.95); padding: 8px 12px; border-radius: 8px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-size: 12px; line-height: 1.8;
