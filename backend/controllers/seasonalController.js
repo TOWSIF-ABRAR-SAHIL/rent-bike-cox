@@ -1,6 +1,6 @@
 const SeasonalRate = require('../models/SeasonalRate');
 const { clearCache } = require('../utils/seasonalPricing');
-const { defaultCache } = require('../utils/cache');
+const { getSharedCache } = require('../utils/redisCache');
 const logger = require('../utils/logger');
 const { clientMessage } = require('../utils/httpError');
 
@@ -27,7 +27,7 @@ exports.get = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    defaultCache.del('seasonal:active');
+    await (await getSharedCache()).del('seasonal:active');
     const { name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly } = req.body;
     const rate = new SeasonalRate({
       name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly,
@@ -44,7 +44,7 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    defaultCache.del('seasonal:active');
+    await (await getSharedCache()).del('seasonal:active');
     const { name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly } = req.body;
     const rate = await SeasonalRate.findByIdAndUpdate(req.params.id, { name, multiplier, type, isActive, priority, startDate, endDate, daysOfWeek, month, dayOfMonth, recurringYearly }, { new: true, runValidators: true });
     if (!rate) return res.status(404).json({ message: 'Rate not found' });
@@ -58,7 +58,7 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
   try {
-    defaultCache.del('seasonal:active');
+    await (await getSharedCache()).del('seasonal:active');
     const rate = await SeasonalRate.findByIdAndDelete(req.params.id);
     if (!rate) return res.status(404).json({ message: 'Rate not found' });
     clearCache();
@@ -71,10 +71,11 @@ exports.remove = async (req, res) => {
 
 exports.active = async (_req, res) => {
   try {
-    const cached = defaultCache.get('seasonal:active');
+    const cache = await getSharedCache();
+    const cached = await cache.get('seasonal:active');
     if (cached) return res.json(cached);
     const rates = await SeasonalRate.find({ isActive: true }).sort({ priority: -1 }).lean();
-    defaultCache.set('seasonal:active', rates, 300000);
+    await cache.set('seasonal:active', rates, 300000);
     res.json(rates);
   } catch (err) {
     // Public endpoint (GET /api/seasonal-rates, no session): an unauthenticated

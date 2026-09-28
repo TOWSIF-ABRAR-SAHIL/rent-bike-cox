@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const os = require('os');
-const { defaultCache } = require('../utils/cache');
+const { getSharedCache, sharedBackendName } = require('../utils/redisCache');
 const logger = require('../utils/logger');
 
 exports.getSystemHealth = async (req, res) => {
@@ -60,8 +60,8 @@ exports.getSystemHealth = async (req, res) => {
       },
       cache: {
         status: 'active',
-        type: 'in-memory',
-        ...defaultCache.stats()
+        type: sharedBackendName(),
+        ...await (await getSharedCache()).stats()
       },
       timestamp: new Date().toISOString()
     };

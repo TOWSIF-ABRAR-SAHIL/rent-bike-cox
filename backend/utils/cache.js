@@ -45,8 +45,13 @@ class MemoryCache {
     this.store.clear();
   }
 
+  keys() {
+    return [...this.store.keys()];
+  }
+
   stats() {
     return {
+      backend: 'memory',
       size: this.store.size,
       maxSize: this.maxSize,
       hits: this.hits,

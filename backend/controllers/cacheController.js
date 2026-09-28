@@ -1,28 +1,33 @@
 const { defaultCache } = require('../utils/cache');
+const { getSharedCache } = require('../utils/redisCache');
 const logger = require('../utils/logger');
 
-exports.getCacheStatus = (req, res) => {
+exports.getCacheStatus = async (req, res) => {
   try {
-    const stats = defaultCache.stats();
+    const cache = await getSharedCache();
+    const stats = await cache.stats();
     const keys = [];
-    for (const [key, entry] of defaultCache.store) {
-      keys.push({
-        key,
-        expiresAt: new Date(entry.expiresAt).toISOString(),
-        ttl: Math.max(0, Math.round((entry.expiresAt - Date.now()) / 1000)),
-        valueType: typeof entry.value === 'object' ? (Array.isArray(entry.value) ? 'array' : 'object') : typeof entry.value,
-      });
+    for (const key of await cache.keys()) {
+      const row = { key };
+      // Memory backend exposes expiry metadata; Redis lists keys only.
+      const entry = cache === defaultCache ? defaultCache.store.get(key) : undefined;
+      if (entry) {
+        row.expiresAt = new Date(entry.expiresAt).toISOString();
+        row.ttl = Math.max(0, Math.round((entry.expiresAt - Date.now()) / 1000));
+        row.valueType = typeof entry.value === 'object' ? (Array.isArray(entry.value) ? 'array' : 'object') : typeof entry.value;
+      }
+      keys.push(row);
     }
-    res.json({ stats, keys, total: defaultCache.store.size });
+    res.json({ stats, keys, total: keys.length });
   } catch (error) {
     logger.error('getCacheStatus error:', error.message);
     res.status(500).json({ message: 'Failed to get cache status' });
   }
 };
 
-exports.flushCache = (req, res) => {
+exports.flushCache = async (req, res) => {
   try {
-    defaultCache.flush();
+    await (await getSharedCache()).flush();
     logger.info('Cache flushed by admin', { adminId: req.user.id });
     res.json({ message: 'Cache flushed successfully' });
   } catch (error) {
@@ -31,11 +36,11 @@ exports.flushCache = (req, res) => {
   }
 };
 
-exports.deleteCacheKey = (req, res) => {
+exports.deleteCacheKey = async (req, res) => {
   try {
     const { key } = req.params;
     if (!key) return res.status(400).json({ message: 'Key is required' });
-    defaultCache.del(key);
+    await (await getSharedCache()).del(key);
     logger.info('Cache key deleted by admin', { key, adminId: req.user.id });
     res.json({ message: `Key "${key}" deleted` });
   } catch (error) {
