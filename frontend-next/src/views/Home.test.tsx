@@ -21,6 +21,12 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+const pushMock = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // The live fleet map is a client-only leaflet bundle; nothing here needs it.
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 
@@ -50,6 +56,7 @@ const bike = (id: string, model: string): Bike => ({
 beforeEach(() => {
   get.mockReset();
   get.mockResolvedValue({ data: [] });
+  pushMock.mockReset();
 });
 
 describe("Home view server-prefetch seeding", () => {
@@ -113,5 +120,18 @@ describe("Home view server-prefetch seeding", () => {
         }),
       { timeout: 2000 }
     );
+  });
+});
+
+describe("Home hero bike search", () => {
+  it("navigates to /search with the chosen filters", async () => {
+    render(<Home initialBikes={[]} initialCategories={[]} initialFaqs={[]} initialRatings={{}} />);
+
+    fireEvent.change(screen.getByPlaceholderText("Search model or brand"), {
+      target: { value: "nTorq" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /find bike/i }));
+
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/search?q=nTorq"));
   });
 });

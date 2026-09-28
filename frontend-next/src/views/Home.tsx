@@ -1,6 +1,7 @@
 "use client";
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 
 import api from '../api/axios';
@@ -74,6 +75,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
 
   const { toggle: toggleCompare, has: hasCompare } = useCompare();
   const { toggle: toggleWishlist, has: hasWish } = useWishlist();
+  const router = useRouter();
 
   // The server render already answered these queries, so the first client effect
   // for each resource is skipped (no duplicate request, no skeleton flash). Later
@@ -166,7 +168,12 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
 
   const handleHeroSearch = () => {
     savePickupLocation(heroLocation);
-    document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth' });
+    const params = new URLSearchParams();
+    if (search.trim()) params.set('q', search.trim());
+    if (activeCategory) params.set('category', activeCategory);
+    if (heroLocation) params.set('zone', heroLocation);
+    const qs = params.toString();
+    router.push(`/search${qs ? `?${qs}` : ''}`);
   };
 
   const handleClearLocation = () => {
@@ -257,8 +264,8 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
                 <Shield size={12} /> 100% Trusted rental platform in Cox&apos;s Bazar
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-black leading-[1.08] mb-5">
-                <span className="text-orange-500">{get('home.hero.title', 'Find Your Best')}</span><br />
-                <span className="text-slate-900">{get('home.hero.highlight', 'Bike, Car & Jeep For Rental')}</span>
+                <span className="text-orange-500">{get('home.hero.title', 'Make Your Ride Easy With')}</span><br />
+                <span className="text-slate-900">{get('home.hero.highlight', 'Rent Bike Cox\u2019s Bazar')}</span>
               </h1>
               <p className="text-slate-500 text-base sm:text-lg mb-7 max-w-lg leading-relaxed">
                 {get('home.hero.subtitle', 'Experience comfort and freedom on the world\u2019s longest beach. Verified bikes, cars & beach jeeps with transparent hourly pricing.')}
@@ -271,15 +278,18 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
                   Learn More
                 </Link>
               </div>
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+                <div className="flex items-center">
+                  {['R', 'S', 'T', '+'].map((ch, i) => (
+                    <span key={i} className={`w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-xs font-black text-white shadow ${i > 0 ? '-ml-2.5' : ''} ${['bg-orange-500', 'bg-teal-700', 'bg-neutral-900', 'bg-amber-500'][i]}`} aria-hidden="true">{ch}</span>
+                  ))}
+                  <span className="ml-2.5 font-bold text-slate-900">Trusted riders</span>
+                  <span className="text-slate-500 ml-1">across Cox&apos;s Bazar</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <Users size={16} className="text-orange-500" />
                   <span className="font-bold text-slate-900">{bikes.length}+ Vehicles</span>
                   <span className="text-slate-500">ready to ride</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-orange-500" />
-                  <span className="font-bold text-slate-900">From 200 TK/hr</span>
                 </div>
               </div>
               <div className="mt-4 max-w-md">
@@ -324,21 +334,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
         {/* Search widget overlapping */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mb-2">
           <div className="bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] border border-slate-100 p-4 sm:p-5 translate-y-1/2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_auto] gap-3">
-              <div>
-                <label htmlFor="hero-location" className="block text-xs font-bold text-slate-900 mb-1.5">Pickup Location</label>
-                <div className="relative">
-                  <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <select id="hero-location" value={heroLocation} onChange={(e) => setHeroLocation(e.target.value)}
-                    aria-label="Pickup location"
-                    className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 appearance-none">
-                    <option value="">Anywhere in Cox&apos;s Bazar</option>
-                    {PICKUP_SPOTS.map(spot => (
-                      <option key={spot} value={spot}>{spot}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.2fr_1fr_auto] gap-3">
               <div>
                 <label htmlFor="hero-category" className="block text-xs font-bold text-slate-900 mb-1.5">Vehicle Type</label>
                 <div className="relative">
@@ -349,6 +345,20 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
                     <option value="">Any Type</option>
                     {categories.map(cat => (
                       <option key={cat._id} value={cat.slug}>{cat.name}s</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="hero-location" className="block text-xs font-bold text-slate-900 mb-1.5">Pickup Location</label>
+                <div className="relative">
+                  <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select id="hero-location" value={heroLocation} onChange={(e) => setHeroLocation(e.target.value)}
+                    aria-label="Pickup location"
+                    className="w-full pl-10 pr-3 py-3 rounded-lg text-sm bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 appearance-none">
+                    <option value="">Anywhere in Cox&apos;s Bazar</option>
+                    {PICKUP_SPOTS.map(spot => (
+                      <option key={spot} value={spot}>{spot}</option>
                     ))}
                   </select>
                 </div>
@@ -366,7 +376,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
               <div className="flex items-end">
                 <button onClick={handleHeroSearch}
                   className="w-full lg:w-auto inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-lg text-sm transition-all shadow-lg shadow-orange-500/30">
-                  <Search size={16} /> Search
+                  <Search size={16} /> Find Bike
                 </button>
               </div>
             </div>
