@@ -7,7 +7,9 @@ const logger = require('../utils/logger');
 
 exports.getRevenueAnalytics = async (req, res) => {
   try {
-    const { ownerId, role } = req.user;
+    // NOTE: there is no per-renter scoping here — these routes are Admin-only and
+    // the previous `{ ownerId, role } = req.user` destructure produced nothing but
+    // a misleading hint that revenue was filtered per renter.
     const { days = 30 } = req.query;
     const numDays = parseInt(days) || 30;
     const since = new Date(Date.now() - numDays * 24 * 60 * 60 * 1000);

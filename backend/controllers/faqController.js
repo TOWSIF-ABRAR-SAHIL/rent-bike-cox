@@ -1,5 +1,5 @@
 const FAQ = require('../models/FAQ');
-const { sanitize } = require('../utils/sanitize');
+const { sanitize, escapeRegex } = require('../utils/sanitize');
 const logger = require('../utils/logger');
 
 const defaultFaqs = [
@@ -55,7 +55,7 @@ exports.search = async (req, res) => {
     if (!q || q.trim().length < 2) {
       return res.json([]);
     }
-    const regex = new RegExp(q.trim(), 'i');
+    const regex = new RegExp(escapeRegex(q.trim()), 'i');
     const faqs = await FAQ.find({
       isActive: true,
       $or: [

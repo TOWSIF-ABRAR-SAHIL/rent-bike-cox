@@ -14,6 +14,9 @@ const announcementSchema = new mongoose.Schema({
     frequency: { type: String, enum: ['always', 'once', 'daily'], default: 'always' }
   },
   isActive: { type: Boolean, default: true },
+  // Set when an admin switches an announcement off by hand, so the scheduled
+  // maintenance job does not switch it straight back on.
+  manuallyDisabled: { type: Boolean, default: false },
   isDismissible: { type: Boolean, default: true },
   priority: { type: Number, default: 0 },
   style: {

@@ -38,12 +38,14 @@ class PushService {
     return result;
   }
 
-  async unsubscribe(endpoint) {
+  async unsubscribe(endpoint, userId) {
+    // Scoped to the caller: matching on the endpoint alone let any authenticated
+    // account switch off push notifications for another user's device.
     const result = await PushSubscription.findOneAndUpdate(
-      { endpoint },
+      { endpoint, user: userId },
       { active: false },
     );
-    logger.info('Push subscription deactivated', { endpoint: endpoint.substring(0, 50) });
+    logger.info('Push subscription deactivated', { endpoint: endpoint.substring(0, 50), userId });
     return result;
   }
 

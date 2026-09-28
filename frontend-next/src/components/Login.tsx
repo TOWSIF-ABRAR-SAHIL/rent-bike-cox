@@ -42,7 +42,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
+    <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center p-4 gradient-hero relative overflow-hidden">
       <div className="absolute inset-0">
         <div className="absolute top-20 right-20 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px]" />
         <div className="absolute bottom-20 left-10 w-72 h-72 bg-orange-500/10 rounded-full blur-[80px]" />

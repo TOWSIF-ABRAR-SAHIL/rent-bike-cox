@@ -21,14 +21,43 @@ Each has own `node_modules/`, `.env`, `package.json`. Lockfiles committed.
 # One-time after clone
 git config core.hooksPath .githooks   # enables commit-msg hook
 
-cd backend && npm run dev          # nodemon on :5000
-cd frontend && npm run dev         # vite on :5173
+node scripts/dev.js                # both packages; prefixed logs, Ctrl-C stops both
+cd backend && npm run dev          # backend alone (nodemon on :5000)
+cd frontend && npm run dev         # frontend alone (vite on :5173)
 cd frontend && npm run lint        # eslint (no typecheck in stack)
 cd frontend && npm run build       # prod build
 docker-compose up --build          # Docker (backend + mongo)
 ```
 
-Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with `npx vitest run` in either package.
+`scripts/dev.js` (zero-dependency, no root `package.json`) is the preferred way to run the
+stack: it resolves the ports, forces `PORT` into the backend's environment, points the
+frontend's API URL at the backend it started, waits for both to answer, and kills both process
+groups on exit. It exists because `dotenv` does not override an already-set `PORT` — a shell
+exporting `PORT=0` makes the backend bind a random port while still logging "Server running on
+port 0". See `.freebuff/run.md` for the run notes.
+
+Test suites: Vitest. Backend 232 tests, frontend 26 tests (258 total). Run with `npx vitest run` in either package.
+
+`backend/test/regressions.test.mjs` holds the regression tests for the payment, coupon,
+booking-window, and PII-hashing fixes — 33 of the backend cases. They are unit-level by
+design: the logic under test was extracted into pure functions (`utils/couponRules.js`,
+`buildOverlapFilter`, `utils/safeAmount.js`, `security/utils/piiHash.js`) so it can be
+verified without a database.
+
+See `docs/Audit-Findings.md` for the full audit, what was fixed, and what was verified.
+
+### Required in production
+
+`ENCRYPTION_KEY` is **required** when `NODE_ENV=production` — the server refuses to
+start without it. `models/User.js` only encrypts NID, licence, and phone number when
+it is present, so booting without it silently stores identity documents in cleartext.
+`PII_HASH_PEPPER` is optional and falls back to `ENCRYPTION_KEY`.
+
+### Data migrations
+
+`node scripts/migrateFixes.js` — **dry run by default**, pass `--apply` to write.
+Covers coupon `usedBy` normalisation, `nidHash`/`phoneHash` backfill, and returning
+bikes stranded out of service by the old global lock. Review the output before applying.
 
 ## Architecture
 
@@ -39,8 +68,10 @@ Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with 
 ### Routes (backend)
 | Prefix | File | Access |
 |---|---|---|
-| `GET /api/health` | inline in server.js + `routes/health.js` | public |
-| `GET /api/health/info` | routes/health.js | public (memory, uptime, PID) |
+| `GET /api/health` | inline in server.js + `routes/health.js` | public — `{ status, timestamp }` only (used by the Docker healthcheck) |
+| `GET /api/health/liveness` | routes/health.js | public — `{ status, timestamp }` only |
+| `GET /api/health/readiness` | routes/health.js | public — `{ status, checks, timestamp }` (DB + gateway) |
+| `GET /api/health/info` | routes/health.js | **Admin** — pid, env, uptime, node version, heap detail |
 | `GET /api/seed-temp` | inline (dev only, `NODE_ENV !== 'production'`) | public |
 | `/api/auth` | `routes/auth.js` | register (file upload), login |
 | `/api/dashboard` | `routes/dashboard.js` | public (settings, bikes, categories) + renter + admin |
@@ -49,11 +80,11 @@ Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with 
 | `/api/coupons` | `routes/coupons.js` | admin CRUD |
 | `/api/policies` | `routes/policy.js` | public GET, admin CRUD |
 | `/api/financial` | `routes/financial.js` | admin only |
-| `/api/documents` | `routes/documents.js` | authenticated |
+| `/api/documents` | — | **removed** — returned the raw NID/licence number rather than the uploaded image (`nidImage`/`licenseImage`) and had no caller |
 | `/api/pricing` | `routes/pricing.js` | auth (preview) |
 | `/api/audit` | `routes/audit.js` | admin |
 | `/api/fraud` | `routes/fraud.js` | admin |
-| `/api/payouts` | `routes/payouts.js` | admin |
+| `/api/payouts` | `routes/payout.js` | admin (list / approve / pay — payouts are **created** by `jobs/payoutJob.js`, there is no route for it) |
 | `/api/maintenance` | `routes/maintenance.js` | auth (Renter + Admin) |
 | `/api/availability` | `routes/availability.js` | public |
 | `/api/fleet` | `routes/fleet.js` | auth (Renter + Admin) |
@@ -91,10 +122,11 @@ Test suites: Vitest. Backend 131 tests, frontend 26 tests (157 total). Run with 
 | `DELETE /api/admin/cache/key/:key` | `routes/cache.js` | admin (delete single key) |
 | `GET /api/admin/rate-limits` | `routes/rateLimit.js` | admin (limiter configs) |
 | `POST /api/tracking` | `routes/tracking.js` | IoT device (X-API-Key auth) — accepts lat, lng, speed, heading, battery, accuracy |
-| `GET /api/tracking` | `routes/tracking.js` | public (all live locations with speed/battery/heading) |
-| `GET /api/tracking/stats` | `routes/tracking.js` | auth (aggregated stats per bike: avg/max speed, total points) |
-| `GET /api/tracking/history/:bikeId` | `routes/tracking.js` | auth (last N trail points for path polyline) |
-| `GET /api/tracking/:bikeId` | `routes/tracking.js` | auth (single bike location + latest telemetry) |
+| `GET /api/tracking` | `routes/tracking.js` | auth required, or public when `TRACKING_PUBLIC=true`; scoped by role — Admin all, Renter own fleet, customer only bookable vehicles not currently rented |
+| `GET /api/tracking/stats` | `routes/tracking.js` | Renter + Admin, scoped to owned bikes (aggregated stats per bike) |
+| `GET /api/tracking/history/:bikeId` | `routes/tracking.js` | Renter + Admin + ownership (last N trail points for path polyline) |
+| `GET /api/tracking/:bikeId` | `routes/tracking.js` | Renter + Admin + ownership (single bike location + latest telemetry) |
+| `GET /api/payment/admin/unconfirmed` | `routes/payment.js` | admin — read-only reconciliation report of bookings with a gateway tranId that were never confirmed |
 | `/api/{*splat}` | catch-all | 404 |
 
 ### Models (20+)
@@ -221,11 +253,38 @@ express.urlencoded({ extended: true, limit: '1mb' })
 | dashboard | 1 min | 120 |
 | fleet | 1 min | 40 |
 
+Mount limiters on the exact routes that need them, never on a path prefix: `app.use('/api/dashboard/bikes', …)` also matches the public storefront reads
+`GET /api/dashboard/bikes/available` and `GET /api/dashboard/bikes/:id`, so a 10/hour
+ceiling becomes "Too many file uploads" on the eleventh bike someone looks at. `upload`
+is therefore mounted per-route (and skips non-`multipart/form-data` bodies), and `search`
+skips `/suggestions` because it is a 250 ms-debounced type-ahead where one ten-character
+query costs ten of the thirty requests.
+
+Build every limiter with `makeLimiter(name, options)` from `middleware/rateLimitFactory.js`.
+It registers the **options** for the admin Rate Limits view; `express-rate-limit` v8 hands
+back a bare middleware (`resetKey`, `getKey`, nothing else), so registering the limiter
+itself leaves every card blank (`Rate NaN/m`). `test/apiContract.test.mjs` fails if
+`server.js` ever calls `registerLimiter` directly.
+
 ### CORS whitelist
 `FRONTEND_URL` env, `https://rent-bike-cox.vercel.app`, `https://sandbox.sslcommerz.com`, `https://sslcommerz.com`. `http://localhost:5173` only in dev mode (`NODE_ENV !== 'production'`). No loose `origin.includes()`. CORS errors return 403.
 
 ### Upload middleware
 `middleware/uploadMiddleware.js` — multer → Cloudinary (if credentials configured) or memory storage fallback. Max 5MB, JPG/JPEG/PNG only. Folders: `rent-bike-cox/nids/`, `rent-bike-cox/licenses/`, `rent-bike-cox/bikes/`. File size/type errors return 400.
+
+The declared mimetype is checked in multer's `fileFilter`; the **bytes** are checked in
+`middleware/fileContentGuard.js`, which wraps the storage — `fileFilter` runs before the file
+body is read, so nothing can be validated there. The guard reads the first 8 bytes, rejects a
+mismatch, and hands the storage a stream that replays them, so the check works for
+`CloudinaryStorage` (which pipes to the CDN and never returns a buffer) and for `memoryStorage`
+alike, and a rejected upload never reaches the CDN. Two traps to keep in mind when touching it:
+
+- multer defines `file.stream` with `Object.defineProperty(..., { configurable: true })` — no
+  `writable`, so `file.stream = other` is **silently ignored**. Replace it with
+  `Object.defineProperty` (`replaceStream`), or the storage reads a stream you already consumed
+  from: the upload loses its first bytes and multer waits forever for a storage callback, so an
+  oversized request hangs instead of answering 400.
+- A storage must implement `_removeFile`; multer calls it on its abort path.
 
 ### Settings
 Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whitelist-only update: `basePricePerHour`, `packages`, `businessRules` (booking rules, payment rules, cancellation rules, fines).
@@ -245,27 +304,58 @@ Global pricing in `Settings` model (singleton). Seeded on-demand if missing. Whi
 | `node seedTracking.js` | GPS trail points + currentLocation for all bikes | Must run from `backend/`; creates LocationHistory docs |
 
 ### Error handler
-404 catch-all at `/api/{*splat}`. Centralized `middleware/errorHandler.js` — no stack traces. Distinct messages for CORS, file size, file type, and generic 500. Request logger tracks correlation ID, method, URL, status, and duration.
+404 catch-all at `/api/{*splat}`. Centralized `middleware/errorHandler.js` — no stack traces.
+Distinct messages for CORS, upload limits, file type, JSON parse failures, duplicate keys and
+a generic 500. Request logger tracks correlation ID, method, URL, status, and duration.
+
+**Never put `err.message` (or `err.stack`) in a response body.** It is whatever the failing
+layer decided to say: mongoose prints the Atlas hostname, the collection and the duplicated
+value of a duplicate-key error; `CastError` prints the model and path; axios prints the
+upstream URL; SMTP prints the relay it refused. Two directions have to stay shut:
+
+- **Controllers** use `clientMessage(err, fallback)` from `utils/httpError.js` — our own text,
+  or a schema validation message, never a driver's — and `clientStatus(err, fallback)` for the
+  status. Throw `HttpError(status, message)` when a caller should read the reason. Every catch
+  must also `logger.error` it, so sanitising does not hide the failure from the logs.
+- **The handler** forwards a message only through `isClientFacing(err)`, which checks a `Symbol`
+  that only `HttpError` sets. Do not gate on `err.expose`: `http-errors` — the package behind
+  body-parser and express's own 4xx errors — sets `expose: true` on every client error, and
+  trusting it returned body-parser's raw parse text. Anything else keeps its status with canned
+  text, and 500 bodies carry the `correlationId` that the matching log line carries.
+
+`test/errorExposure.test.mjs` enforces both halves: runtime probes with hostile errors, plus a
+sweep of every `.json(`/`.send(` call in the backend that fails if its argument mentions an
+error's message or stack. An intentional exception needs a `// error-detail-ok: <reason>`
+comment within five lines above the call, and the test caps how many of those may exist.
 
 ### Background jobs
+Every job is started from the `server.listen` callback in `server.js` — a module that
+exports `start*` and is never referenced there does nothing at all, silently, forever.
+`test/jobWiring.test.mjs` fails if any module in `jobs/` is in that state. Timers are
+stopped through the `onShutdown` hook passed to `gracefulShutdown` (for jobs that export
+a stop function; `dataRetention`, `maintenanceReminder` and `checkoutCleanup` `unref()`
+their only timer instead).
+
 | Job | Interval | Purpose |
 |-----|----------|---------|
-| checkoutCleanup | 60s | Auto-expire pending bookings (5min timeout) |
-| expiredIntentCleanup | — | Clean up expired payment intents |
-| bookingStateTransition | — | Move bookings through state machine |
-| dataRetention | 24h | Delete old data (2-year policy) |
+| checkoutCleanup (`utils/checkoutCleanup.js`) | 60s | Auto-expire pending bookings (5min timeout) |
+| bookingStateTransition | 60s | Move bookings through state machine |
+| dataRetention | 24h | **Review-only** report of retirable accounts — mutates nothing |
 | maintenanceReminder | 12h | Alert for upcoming maintenance |
 | autoHeal | 30min | DB ping, stuck bookings, memory monitoring |
 | cleanupScheduler | 1h | Old notifications, archived messages cleanup |
 | scheduledMaintenance | 6h | Expired announcements/coupons deactivation |
+| emailCampaignSender | 60s | Sends queued/scheduled email campaigns (never in the request thread) |
+| payoutJob | 7d, plus once on boot | Schedule renter payouts for the previous 7 days; idempotent, and waits for the Mongo connection before its first run |
 
-Additional job scripts (not on interval — manually triggered):
+`payoutJob` running on boot is deliberate: a 7-day interval never fires on a host that
+redeploys more often than weekly, which is why payouts had never been generated. All jobs
+respect `DISABLE_JOBS=true` and guard on `mongoose.connection.readyState !== 1`.
+
+Additional script (not on an interval — manually triggered):
 | Script | Purpose |
 |--------|---------|
 | `utils/templateRenderer.js` | Renders notification templates with variables |
-| `jobs/emailCampaignSender.js` | Sends scheduled email campaigns |
-
-All jobs respect `DISABLE_JOBS=true` env var and have MongoDB connection guards (`mongoose.connection.readyState !== 1`).
 
 ## Frontend specifics
 
@@ -284,6 +374,25 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - 18 accent CSS variables (text + bg + border for accent, success, warning, danger, info, purple)
 - Footer uses dedicated `--footer-text`/`--footer-muted` variables
 - Z-index hierarchy: content z-10 → navbar z-50 → dropdown z-[100] → modal z-[200] → toast z-[300]
+
+### Mobile layout (fixed bottom bars)
+Two bars are pinned to the bottom below 768px: `BottomNav` (`z-50`) and `CompareBar`
+(`z-[100]`, sits on top of it). Their geometry lives in `index.css` — **never hard-code a
+bottom offset again**, which is how the compare bar ended up 11px inside the nav:
+
+- `--bottom-nav-h` — `0px`, and `calc(4.25rem + env(safe-area-inset-bottom, 0px))` under
+  `max-width: 767px`. It matches `BottomNav`'s `min-height: 4.25rem` + `safe-area-bottom`, so the
+  bars meet flush and the labels clear the home indicator.
+- `--compare-bar-h` — `0px`, `4.5rem` while `body.has-compare-bar` (toggled by `CompareBar`,
+  which is `fixed` on desktop too).
+- `.pb-bottom-nav` — `padding-bottom: calc(--bottom-nav-h + --compare-bar-h)`. Applied to the
+  `<footer>`, which is `main`'s **sibling**; padding `main` does not lift the footer.
+- Any new fixed bottom bar must add itself to this sum, or it will cover the footer.
+
+Use `dvh`, not `vh`, for anything that must match the visible viewport (full-height pages,
+modal `max-h`): on mobile `100vh` includes the URL bar area, so `100vh`-sized content pushes its
+primary action below the fold. `#root` already sets `min-height: 100dvh`. `.no-scrollbar` hides a
+scrollbar on horizontal scrollers where one looks like a rendering fault (the 67px compare bar).
 
 ### Pages (all React.lazy loaded)
 - `/` — Home (hero carousel, vehicle ratings, testimonials)
@@ -366,7 +475,19 @@ Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`),
 - **`context` hooks** — must be in separate files from providers (ESLint enforced)
 - **N+1 review requests** — Home.jsx uses `GET /reviews/stats?bikeIds=a,b,c` (bulk) instead of one request per bike; never add per-bike loops for review stats
 - **`res.headersSent`** — controllers must check `if (!res.headersSent)` before responding; rate-limit middleware can already send a response, causing ERR_HTTP_HEADERS_SENT
-- **Rate limits** — global 300/min, dashboard 120/min per IP; keep generous for real usage, tighten only for auth/booking routes
+- **Rate limits** — global 300/min, dashboard 120/min per IP; keep generous for real usage, tighten only for auth/booking routes. The strict auth limiter applies to `/api/auth/login|register|forgot-password|verify-otp|reset-password` **only** (the rest of `/api/auth` gets 100/15min), since capping `/profile` and `/refresh` at 5/15min broke normal use behind NAT. The payment limiter **skips** `/success|/fail|/cancel|/ipn` because the gateway calls them from a handful of shared IPs, and the search limiter skips `/suggestions`. Never mount a limiter on a path **prefix** that also carries GETs — that is how the 10/hour upload ceiling ended up throttling the public storefront with "Too many file uploads"
+- **`Bike.availability` is a manual out-of-service switch**, not a booking lock. Booking conflicts are decided per time window by `createBookingAtomically` (insert-then-verify, tie-broken on ObjectId order) so a vehicle can hold multiple non-overlapping bookings. Overlap logic lives in `buildOverlapFilter` and is shared by the booking engine, the availability endpoint, and the pricing preview — never re-implement it inline
+- **Money is taka everywhere**, despite `*Paisa` names in `utils/safeAmount.js` (aliases to the `*Taka` helpers) and in stored fields like `Payout.totalAmountPaisa` and `Refund.amountPaisa`. The one genuine paisa boundary is the coupon model's `discountFixedPaisa` / `maxDiscountPaisa` / `minBookingAmountPaisa`, converted in `utils/couponRules.js`
+- **Coupon rules live in `utils/couponRules.js`** (pure, unit-tested). Both booking creation and the pricing preview call it, so the preview cannot disagree with what is charged. `usedBy` is `[{ user, usedAt, booking }]` — legacy rows hold bare ObjectIds, so read it via `userUsageCount()`, never `entry.user` directly
+- **Ledger rows carry a content-hash `idempotencyKey`** with a unique sparse index, and `createJournalEntry` takes a `session`. Always pass the session so journals commit with the transaction they describe
+- **`utils/withOptionalTransaction.js`** replaces direct `session.withTransaction()` calls. `docker-compose.yml` runs a standalone `mongo:7`, where transactions throw; this helper falls back to a sessionless run. Never call `res.*` inside the callback — it can run more than once
+- **Access tokens carry a `tv` (tokenVersion) claim** checked by `authMiddleware` (60s cached). Bump `User.tokenVersion` and call `invalidateTokenVersionCache(userId)` to revoke tokens before their 15-minute expiry
+- **Admin components must only read fields their endpoint returns.** A component that reads a missing field renders a blank, a zero or `NaN` instead of failing, and that is how the Rate Limits tab printed `Rate NaN/m` and System Health printed `Heap Used 0 B` / `Cores 0` / `Environment Unknown`. `test/apiContract.test.mjs` pairs a component with the real controller response and fails on any read that is `undefined`, `null` or `NaN` — add a `CONTRACTS` entry when a new admin view starts reading a response. Endpoint field names follow the ones in `/api/health/info` (`heapUsed`, `heapTotal`, `rss` in **bytes**), not rounded megabytes
+- **Report history records exactly one row per generation**, from `middleware/reportHistory.js`, triggered by the `res.locals.report` record that `reportController.generateReport` publishes (`rowCount` plus the effective date range). Never add a second recording hook: patching both `res.send` and `res.setHeader` is what wrote a duplicate row — without `fileSize` — for every download. `GET /api/admin/reports/history` is paginated (`?page`, `?limit` max 100) and returns `{ reports, page, pages, total, limit }`
+- **`ENCRYPTION_KEY` gates PII encryption** — NID, licence, and phone are encrypted only when it is set. Production refuses to boot without it. Duplicate detection uses `nidHash`/`phoneHash` via `security/utils/piiHash.js`, not the plaintext fields
+- **`GET /api/tracking` requires a session** unless `TRACKING_PUBLIC=true`; the homepage map is shown to signed-in visitors only. The feed is also scoped by role — Admin sees every vehicle, a Renter sees their own fleet, and a signed-in customer sees only bookable vehicles that are not currently out on rent (so a rider's live position is never published). Per-vehicle tracking endpoints need Renter/Admin **and** ownership
+- **`POST /api/admin/campaigns/:id/send` queues**, it does not send inline: it flips the campaign to `sending` and `jobs/emailCampaignSender.js` does the work in batches, persisting progress and pausing itself on a high bounce rate
+- **All search input must go through `escapeRegex`** (`utils/sanitize.js`) before reaching `$regex` or `new RegExp`; `sanitize()` strips all HTML and is for user text, while `sanitizeEmail()` is for content that is meant to be HTML (email templates, campaign bodies)
 
 ## Business rules
 See `RULES.md` for full pricing, fine policies, and operational constraints. Base: 200 TK/hr minimum. Tier-based pricing per vehicle. Seasonal rates. 30-minute buffer between bookings. 10-minute start time minimum. 5-minute checkout timeout. Advance: 50% ≤24h, 30% >24h. Cancellation: 24h+ full refund, 12-24h 50%, <12h none, no-show none. Business rules editable live via Settings model (businessRules JSON in admin Settings tab).

@@ -1,16 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const counter = require('../models/Counter');
 
-async function generateIntentId() {
-  const year = new Date().getFullYear();
-  const seq = await counter.findOneAndUpdate(
-    { name: 'paymentIntent' },
-    { $inc: { seq: 1 } },
-    { upsert: true, new: true }
-  );
-  return `PI-${year}-${String(seq.seq).padStart(6, '0')}`;
-}
-
 async function generateRefundId() {
   const year = new Date().getFullYear();
   const seq = await counter.findOneAndUpdate(
@@ -41,4 +31,4 @@ async function generateBookingCode() {
   return `RBC-${year}-${String(seq.seq).padStart(6, '0')}`;
 }
 
-module.exports = { generateIntentId, generateRefundId, generatePayoutId, generateBookingCode };
+module.exports = { generateRefundId, generatePayoutId, generateBookingCode };

@@ -22,7 +22,7 @@ router.post('/unsubscribe', auth, async (req, res) => {
     if (!endpoint) {
       return res.status(400).json({ message: 'Endpoint is required' });
     }
-    await PushService.unsubscribe(endpoint);
+    await PushService.unsubscribe(endpoint, req.user.id);
     res.json({ message: 'Unsubscribed successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to unsubscribe' });

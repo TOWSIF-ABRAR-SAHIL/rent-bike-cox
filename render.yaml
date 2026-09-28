@@ -12,6 +12,15 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Required: the server refuses to boot in production without it, because
+      # NID / driving licence / phone are otherwise stored in cleartext.
+      # Generate with: openssl rand -hex 32   (then set the value in the dashboard)
+      - key: ENCRYPTION_KEY
+        sync: false
+      # Optional pepper for nidHash / phoneHash duplicate detection; falls back to
+      # ENCRYPTION_KEY when unset. Rotating it invalidates existing hashes.
+      - key: PII_HASH_PEPPER
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

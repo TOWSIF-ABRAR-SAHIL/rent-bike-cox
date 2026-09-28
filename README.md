@@ -66,6 +66,21 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - Cloudinary account
 - SSLCommerz sandbox account
 
+### Both at once (recommended)
+
+After installing dependencies once in each workspace, start both from the repo root:
+
+```bash
+node scripts/dev.js
+```
+
+This runs the backend and the Vite dev server together with prefixed output, waits until both
+answer, tails their logs to `.logs/`, and stops both on Ctrl-C. `--backend-port` /
+`--frontend-port` override the ports (default 5000 and 5173) and the frontend's API URL follows
+the backend automatically. It also forces the backend port: some shells export `PORT=0`, and
+`dotenv` will not override an existing `PORT`, which otherwise makes the backend bind a random
+port that the frontend cannot reach.
+
 ### Backend
 
 ```bash

@@ -12,14 +12,30 @@ async function deactivateExpiredAnnouncements() {
     const now = new Date();
 
     // Deactivate announcements past their endDate
+    // Field paths are nested under `schedule`. Querying bare `startDate`/`endDate`
+    // matched nothing at all, so this job never expired or activated a single
+    // announcement. Expiry is not a manual choice, so manuallyDisabled stays false.
     const result = await Announcement.updateMany(
-      { isActive: true, endDate: { $lt: now } },
+      { isActive: true, 'schedule.endDate': { $lt: now } },
       { $set: { isActive: false } }
     );
 
-    // Auto-activate announcements whose startDate has arrived
+    // Auto-activate announcements whose startDate has arrived.
+    //
+    // Skips anything an admin switched off deliberately: without this exclusion the
+    // job flipped every manually disabled banner back on within six hours, so there
+    // was no way to permanently disable a scheduled announcement.
     const activated = await Announcement.updateMany(
-      { isActive: false, startDate: { $lte: now }, $or: [{ endDate: { $gt: now } }, { endDate: null }] },
+      {
+        isActive: false,
+        manuallyDisabled: { $ne: true },
+        'schedule.startDate': { $lte: now },
+        $or: [
+          { 'schedule.endDate': { $gt: now } },
+          { 'schedule.endDate': { $exists: false } },
+          { 'schedule.endDate': null },
+        ],
+      },
       { $set: { isActive: true } }
     );
 

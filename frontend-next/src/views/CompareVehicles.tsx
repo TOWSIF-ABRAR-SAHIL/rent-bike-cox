@@ -61,9 +61,14 @@ const CompareVehicles = () => {
           )}
         </div>
 
-        {/* Comparison Grid */}
+        {/* Comparison Grid.
+            The wrapper used to be `min-w-0` on mobile, which squeezed three vehicles into
+            ~135px columns and truncated every model name — no comparison is possible when you
+            cannot read which column is which. A floor per value column keeps them readable and
+            lets the existing overflow-x-auto scroll instead; one vehicle still fits a phone
+            without scrolling. */}
         <div className="overflow-x-auto">
-          <div className="min-w-0 lg:min-w-[600px]">
+          <div style={{ minWidth: `${112 + items.length * 160}px` }}>
             {/* Vehicle Headers */}
             <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
               {items.map(bike => (
@@ -85,7 +90,7 @@ const CompareVehicles = () => {
             <div className="mt-6 glass rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-base)' }}>
               {specs.map((spec, i) => (
                 <div key={spec.key} className="flex" style={{ borderBottom: i < specs.length - 1 ? '1px solid var(--border-base)' : 'none' }}>
-                  <div className="w-32 sm:w-40 px-4 py-3 text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-muted)', background: 'var(--input-bg)' }}>
+                  <div className="w-28 sm:w-40 px-4 py-3 text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-muted)', background: 'var(--input-bg)' }}>
                     {spec.label}
                   </div>
                   {items.map(bike => (
@@ -127,7 +132,7 @@ const CompareVehicles = () => {
       {showPicker && (
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowPicker(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative w-full sm:max-w-lg glass rounded-t-2xl sm:rounded-2xl p-5 max-h-[80vh] overflow-y-auto animate-slide-up" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full sm:max-w-lg glass rounded-t-2xl sm:rounded-2xl p-5 max-h-[80dvh] overflow-y-auto animate-slide-up" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Add Vehicle to Compare</h3>
             <div className="space-y-2">
               {availableToAdd.map(bike => (

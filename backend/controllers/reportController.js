@@ -143,7 +143,7 @@ exports.generateReport = async (req, res) => {
         headers = ['Model', 'Brand', 'Category', 'Status', 'Condition', 'Price/hr (TK)', 'Renter'];
         rows = bikes.map(b => [
           b.model, b.brand, b.category?.name || 'N/A',
-          b.isUnderMaintenance ? 'Maintenance' : b.availability ? 'Available' : 'Booked',
+          b.isUnderMaintenance ? 'Maintenance' : b.availability ? 'In service' : 'Out of service',
           b.condition, b.pricePerHour, b.renter || 'N/A'
         ]);
         break;
@@ -160,12 +160,25 @@ exports.generateReport = async (req, res) => {
         break;
       }
       case 'payments': {
-        const PaymentIntent = require('../models/PaymentIntent');
-        const payments = await PaymentIntent.find(dateFilter).lean();
-        headers = ['Tran ID', 'Amount (TK)', 'Currency', 'Status', 'Method', 'Date'];
+        // Reads real gateway transactions straight off the bookings that carry
+        // them. This previously read PaymentIntent, a collection nothing ever
+        // wrote to, so the report was always empty.
+        const payments = await Booking.find({
+          ...dateFilter,
+          tranId: { $exists: true, $ne: null },
+        }).populate('user', 'name email').populate('bike', 'model brand').lean();
+
+        headers = ['Invoice', 'Tran ID', 'Customer', 'Vehicle', 'Advance (TK)', 'Total (TK)', 'Payment Status', 'Method', 'Date'];
         rows = payments.map(p => [
-          p.tranId || p._id, p.amount || 0, p.currency || 'BDT',
-          p.status || '', p.paymentMethod || '', p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-BD') : ''
+          p.invoiceNumber || 'N/A',
+          p.tranId,
+          p.user?.name || 'N/A',
+          p.bike ? `${p.bike.brand} ${p.bike.model}` : 'N/A',
+          p.advancePaid || 0,
+          p.totalPrice || 0,
+          p.paymentStatus || '',
+          p.paymentMethod || '',
+          p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-BD') : (p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-BD') : '')
         ]);
         break;
       }
@@ -324,6 +337,17 @@ exports.generateReport = async (req, res) => {
       default:
         return res.status(400).json({ message: `Unknown report type: ${type}` });
     }
+
+    // Published for middleware/reportHistory.js: it records one history row when the body
+    // is sent. Built here so the stored range is the effective one and rowCount is the
+    // number of rows actually written (nothing ever set rowCount before, so every row
+    // claimed 0 even for a report holding 32 bookings).
+    res.locals.report = {
+      reportType: type,
+      format,
+      rowCount: rows.length,
+      dateRange: { from: start, to: end },
+    };
 
     const generatedBy = req.user?.name || req.user?.id || 'Admin';
     const dateRange = { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };

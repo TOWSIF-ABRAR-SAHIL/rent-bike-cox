@@ -20,6 +20,18 @@ function gracefulShutdown(server, mongoose, options = {}) {
     await new Promise(resolve => server.close(resolve));
     logger.info('HTTP server closed');
 
+    // Stop background timers before the database connection goes away, so a job
+    // cannot start a write against a closing connection. The caller supplies the
+    // stops, because only server.js knows which jobs were started.
+    if (typeof options.onShutdown === 'function') {
+      try {
+        options.onShutdown();
+        logger.info('Background jobs stopped');
+      } catch (err) {
+        logger.error('Error stopping background jobs', { error: err.message });
+      }
+    }
+
     try {
       if (mongoose && mongoose.connection.readyState === 1) {
         await mongoose.connection.close();

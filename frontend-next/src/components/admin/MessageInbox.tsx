@@ -214,7 +214,7 @@ const MessageInbox = () => {
 
       {selected && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4" onClick={() => { setSelected(null); setReplyText(''); }}>
-          <div className="glass rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto border" style={{ borderColor: 'var(--border-base)' }} onClick={e => e.stopPropagation()}>
+          <div className="glass rounded-2xl p-6 max-w-2xl w-full max-h-[85dvh] overflow-y-auto border" style={{ borderColor: 'var(--border-base)' }} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>Message from {selected.name}</h3>

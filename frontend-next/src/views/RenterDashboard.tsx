@@ -138,7 +138,7 @@ const AddBikeModal = ({ open, onClose, categories, initialCategory, onSubmit, su
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Add new vehicle">
       <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }} onClick={onClose} />
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl animate-slide-up" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-base)' }}>
+      <div className="relative w-full max-w-2xl max-h-[90dvh] overflow-y-auto rounded-3xl animate-slide-up" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-base)' }}>
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4" style={{ background: 'var(--card-bg)', borderBottom: '1px solid var(--border-base)' }}>
           <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Add New Vehicle</h2>
           <button onClick={onClose} className="p-2 rounded-lg transition-all hover:opacity-80" style={{ color: 'var(--text-muted)' }} aria-label="Close modal">
@@ -553,7 +553,9 @@ const RenterDashboard = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Live Vehicle Tracking</h2>
           </div>
-          <div style={{ height: 'calc(100vh - 250px)' }}>
+          {/* dvh, not vh: with the mobile URL bar showing, 100vh is taller than the visible
+              area, so the map panel would extend below the fold. */}
+          <div style={{ height: 'calc(100dvh - 250px)' }}>
             <LiveFleetMap fullHeight sidePanel />
           </div>
         </div>

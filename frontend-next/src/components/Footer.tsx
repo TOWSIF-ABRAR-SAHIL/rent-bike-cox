@@ -9,7 +9,10 @@ const Footer = () => {
   const { get } = useSiteContent();
 
   return (
-    <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
+    // pb-bottom-nav lifts the copyright line above the fixed mobile bottom nav; it is 0 on
+    // desktop. The nav overlapped this footer because `main` — not the footer — carried the
+    // mobile bottom padding, and the footer is `main`'s sibling.
+    <footer className="pb-bottom-nav" style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
       <div className="h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">

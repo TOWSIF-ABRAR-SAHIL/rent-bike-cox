@@ -1,6 +1,7 @@
 const Bike = require('../models/Bike');
 const Coupon = require('../models/Coupon');
-const { calculateBookingPrice, applyCoupon } = require('../utils/pricing');
+const { calculateBookingPrice } = require('../utils/pricing');
+const { validateCouponForBooking, applyCouponToTotal } = require('../utils/couponRules');
 const { checkAvailability } = require('../utils/bookingLock');
 const { roundPaisa, multiplyPaisa } = require('../utils/safeAmount');
 const logger = require('../utils/logger');
@@ -30,33 +31,42 @@ exports.pricingPreview = async (req, res) => {
 
     const pricing = await calculateBookingPrice(bike.pricePerHour, startTime, endTime, bike.packages);
 
+    // The preview must agree with what createBooking will actually charge, so it
+    // runs the same shared rules — including FIXED coupons and the discount cap.
     let couponResult = null;
+    let couponError = null;
     if (couponCode) {
       const code = couponCode.toUpperCase().trim();
-      const couponDoc = await Coupon.findOne({
-        code,
-        isActive: true,
-        $and: [
-          { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
-          { $or: [{ maxUses: 0 }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }] },
-        ],
+      const couponDoc = await Coupon.findOne({ code });
+      const priorBookings = await require('../models/Booking')
+        .countDocuments({ user: req.user.id, status: { $ne: 'Cancelled' } });
+
+      const check = validateCouponForBooking({
+        coupon: couponDoc,
+        totalTaka: pricing.totalPrice,
+        userId: req.user.id,
+        bikeCategoryId: bike.category?._id || bike.category,
+        hasPriorBookings: priorBookings > 0,
       });
 
-      if (couponDoc) {
-        const discountedPrice = applyCoupon(pricing.totalPrice, couponDoc.discountPercent);
-        const discountedAdvance = roundPaisa(multiplyPaisa(discountedPrice, pricing.advancePercent));
+      if (check.valid) {
+        const { discountedTotal, discountTaka } = applyCouponToTotal(pricing.totalPrice, couponDoc);
         couponResult = {
           code: couponDoc.code,
           discountPercent: couponDoc.discountPercent,
-          discountedPrice,
-          discountedAdvance,
+          discountTaka,
+          discountedPrice: discountedTotal,
+          discountedAdvance: roundPaisa(multiplyPaisa(discountedTotal, pricing.advancePercent)),
         };
+      } else {
+        couponError = check.message;
       }
     }
 
     res.json({
       available: availability.available,
       conflictMessage: availability.available ? null : availability.message,
+      couponError,
       pricing: {
         totalPrice: couponResult ? couponResult.discountedPrice : pricing.totalPrice,
         minAdvance: couponResult ? couponResult.discountedAdvance : pricing.minAdvance,
@@ -65,6 +75,7 @@ exports.pricingPreview = async (req, res) => {
         isShortRental: pricing.isShortRental,
         advancePercent: pricing.advancePercent,
         packageName: pricing.packageName,
+        discountTaka: couponResult ? couponResult.discountTaka : 0,
         couponApplied: couponResult ? { code: couponResult.code, discount: couponResult.discountPercent } : null,
       },
     });

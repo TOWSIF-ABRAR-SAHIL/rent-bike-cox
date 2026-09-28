@@ -13,6 +13,10 @@ function generateAccessToken(user, fingerprint) {
     id: user._id || user.id,
     role: user.role,
     type: 'access',
+    // Compared against User.tokenVersion by authMiddleware, so a password change
+    // or reset revokes access tokens immediately instead of leaving them valid
+    // for the remainder of their 15-minute life.
+    tv: user.tokenVersion || 0,
   };
   if (user.name) payload.name = user.name;
   if (user.email) payload.email = user.email;

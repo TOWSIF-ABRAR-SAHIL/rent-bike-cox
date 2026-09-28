@@ -30,20 +30,27 @@ exports.getSystemHealth = async (req, res) => {
     const cpuInfo = os.cpus();
     const cpuUsage = os.loadavg()[0] / cpuInfo.length * 100;
 
+    // Field names match what the System Health tab reads *and* what the public
+    // /api/health/info reports (heapUsed/heapTotal/rss in bytes), instead of the
+    // rounded megabyte `{used, total}` pair that made the tab show "Heap Used 0 B"
+    // for every value plus "Cores 0" and "Environment Unknown".
     const health = {
       server: {
         status: 'online',
         uptime: Math.floor(serverUptime),
-        memory: {
-          used: Math.round(memUsage.heapUsed / 1024 / 1024),
-          total: Math.round(memUsage.heapTotal / 1024 / 1024),
-          percentage: Math.round(memUsage.heapUsed / memUsage.heapTotal * 100)
-        },
-        cpu: {
-          usage: Math.round(cpuUsage * 100) / 100,
-          cores: cpuInfo.length
-        },
+        environment: process.env.NODE_ENV || 'development',
         nodeVersion: process.version
+      },
+      memory: {
+        heapUsed: memUsage.heapUsed,
+        heapTotal: memUsage.heapTotal,
+        rss: memUsage.rss,
+        percentage: Math.round(memUsage.heapUsed / memUsage.heapTotal * 100)
+      },
+      cpu: {
+        model: (cpuInfo[0]?.model || '').trim() || 'Unknown',
+        cores: cpuInfo.length,
+        usage: Math.round(cpuUsage * 100) / 100
       },
       database: {
         status: dbStatus,

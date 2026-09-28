@@ -7,13 +7,28 @@ const VELOCITY_WINDOWS = {
   booking: { windowMs: 60 * 60 * 1000, maxCount: 5 },
 };
 
+/**
+ * Resolve the caller's IP.
+ *
+ * Uses `req.ip`, which Express derives from the socket and the `trust proxy`
+ * setting. The previous implementation read the *leftmost* X-Forwarded-For entry,
+ * which is whatever the client sent — so every fraud fingerprint, recorded IP, and
+ * block decision was attacker-controlled and trivially rotated away from.
+ */
 function getClientIp(req) {
-  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-         req.headers['x-real-ip'] || req.connection?.remoteAddress || 'unknown';
+  return req.ip || req.socket?.remoteAddress || req.connection?.remoteAddress || 'unknown';
 }
 
-function buildFingerprint(ip, phone) {
-  return `${ip}:${phone || 'none'}`;
+/**
+ * Fingerprint for velocity checks and blocks.
+ *
+ * Keyed on IP alone. It used to append a phone number, but only some call sites
+ * passed one — booking used `ip:<phone>` while payment used `ip:none`, so a block
+ * earned in one path never applied to the other and neither could see the other's
+ * event history. One key everywhere is what makes the counter meaningful.
+ */
+function buildFingerprint(ip) {
+  return String(ip || 'unknown');
 }
 
 async function checkVelocity(fingerprint, eventType) {
@@ -76,9 +91,18 @@ async function isFingerprintBlocked(fingerprint) {
   return !!recent;
 }
 
-async function getVelocityReport(ip, phone, hours = 1) {
-  const since = new Date(Date.now() - hours * 60 * 60 * 1000);
-  const query = { createdAt: { $gte: since } };
+/**
+ * Fraud event summary.
+ *
+ * Takes an options object: the admin report called this as `({ startDate, endDate })`
+ * against the old `(ip, phone, hours)` signature, so `query.ip` was set to that
+ * object and always matched nothing — the fraud report was permanently empty.
+ *
+ * @param {{ip?: string, phone?: string, hours?: number, startDate?: Date|string, endDate?: Date|string}} [options]
+ */
+async function getVelocityReport({ ip, phone, hours = 1, startDate, endDate } = {}) {
+  const since = startDate ? new Date(startDate) : new Date(Date.now() - hours * 60 * 60 * 1000);
+  const query = { createdAt: endDate ? { $gte: since, $lte: new Date(endDate) } : { $gte: since } };
   if (ip) query.ip = ip;
   if (phone) query.phone = phone;
 

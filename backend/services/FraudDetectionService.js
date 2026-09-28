@@ -8,7 +8,7 @@ const notificationService = require('./NotificationService');
 class FraudDetectionService {
   async runFraudChecks({ bookingId, userId, ip, amountPaisa, bikePricePerHour, accountAge, correlationId }) {
     const results = { score: 0, flags: [], decision: 'ALLOW', checks: [] };
-    const fingerprint = buildFingerprint(ip, null);
+    const fingerprint = buildFingerprint(ip);
 
     const blocked = await isFingerprintBlocked(fingerprint);
     if (blocked) {

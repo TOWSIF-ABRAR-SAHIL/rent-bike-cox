@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { encrypt, decrypt } = require('../security/utils/cryptoUtils');
+const { hashIdentifier } = require('../security/utils/piiHash');
 const ENCRYPTION_AVAILABLE = !!process.env.ENCRYPTION_KEY;
 
 const UserSchema = new mongoose.Schema({
@@ -8,7 +9,11 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true, select: false },
   role: { type: String, enum: ['Admin', 'Renter', 'User'], default: 'User' },
   nid: { type: String, required: true },
-  nidHash: { type: String, unique: true, sparse: true },
+  // Keyed hashes used only for duplicate detection. `select: false` keeps them out
+  // of ordinary query results; they are still unique, and sparse so rows written
+  // before hashing existed don't collide.
+  nidHash: { type: String, unique: true, sparse: true, select: false },
+  phoneHash: { type: String, unique: true, sparse: true, select: false },
   license: { type: String, required: true },
   nidImage: { type: String, default: '' },
   licenseImage: { type: String, default: '' },
@@ -23,6 +28,12 @@ const UserSchema = new mongoose.Schema({
   },
   isVerified: { type: Boolean, default: false },
   date: { type: Date, default: Date.now },
+  // Stamped on every successful login/refresh. The retention job previously keyed
+  // off `date` (registration) and anonymised long-standing active customers.
+  lastLoginAt: { type: Date },
+  // Bumped on password change/reset. Embedded in access tokens and checked by
+  // authMiddleware, which is what actually revokes tokens before their 15m expiry.
+  tokenVersion: { type: Number, default: 0 },
 });
 
 UserSchema.pre('save', async function () {
@@ -30,13 +41,15 @@ UserSchema.pre('save', async function () {
 
   if (this.isNew || this.isModified('nid')) {
     if (this.nid && !this.nid.startsWith('{')) {
-      const crypto = require('crypto');
-      const nidHash = crypto.createHash('sha256').update(this.nid).digest('hex');
-      const existing = await mongoose.model('User').findOne({ nidHash }).lean();
-      if (existing && existing._id.toString() !== this._id.toString()) {
-        throw new Error('A user with this NID already exists');
+      // Keyed, not a bare SHA-256 — a 10-digit NID's whole keyspace is enumerable.
+      const nidHash = hashIdentifier(this.nid);
+      if (nidHash) {
+        const existing = await mongoose.model('User').findOne({ nidHash }).lean();
+        if (existing && existing._id.toString() !== this._id.toString()) {
+          throw new Error('A user with this NID already exists');
+        }
+        this.nidHash = nidHash;
       }
-      this.nidHash = nidHash;
       this.nid = encrypt(this.nid);
     }
   }
@@ -44,6 +57,8 @@ UserSchema.pre('save', async function () {
     this.license = encrypt(this.license);
   }
   if (this.isModified('phoneNumber') && this.phoneNumber && !this.phoneNumber.startsWith('{')) {
+    const phoneHash = hashIdentifier(this.phoneNumber);
+    if (phoneHash) this.phoneHash = phoneHash;
     this.phoneNumber = encrypt(this.phoneNumber);
   }
 });

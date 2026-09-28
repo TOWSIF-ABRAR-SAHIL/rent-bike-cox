@@ -1,4 +1,15 @@
 require('dotenv').config();
+
+// PII (NID, licence, phone number) is encrypted at rest only when ENCRYPTION_KEY
+// is present — models/User.js silently stores those fields in cleartext otherwise.
+// That failure mode is invisible, so production refuses to boot without it.
+if (!process.env.ENCRYPTION_KEY) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('[startup] ENCRYPTION_KEY is required in production — refusing to start with unencrypted PII.');
+    process.exit(1);
+  }
+  console.warn('[startup] ENCRYPTION_KEY is not set — PII (NID, licence, phone) will be stored in cleartext. Set it before deploying.');
+}
 const express = require('express');
 const http = require('http');
 const { Server: SocketIOServer } = require('socket.io');
@@ -14,7 +25,6 @@ const paymentRoutes = require('./routes/payment');
 const couponRoutes = require('./routes/coupon');
 const policyRoutes = require('./routes/policy');
 const financialRoutes = require('./routes/financial');
-const documentRoutes = require('./routes/documents');
 const pricingRoutes = require('./routes/pricing');
 const { startCleanupScheduler } = require('./utils/checkoutCleanup');
 const correlationId = require('./middleware/correlationId');
@@ -53,16 +63,24 @@ const cacheRoutes = require('./routes/cache');
 const rateLimitRoutes = require('./routes/rateLimit');
 const trackingRoutes = require('./routes/tracking');
 const { setIO } = require('./controllers/trackingController');
-const { registerLimiter } = require('./controllers/rateLimitController');
+const { makeLimiter } = require('./middleware/rateLimitFactory');
 const { getMetrics } = require('./utils/metrics');
-const { startExpiredIntentCleanup } = require('./jobs/expiredIntentCleanup');
 const { startBookingStateTransition } = require('./jobs/bookingStateTransition');
 const { startDataRetention } = require('./jobs/dataRetention');
 const { startMaintenanceReminder } = require('./jobs/maintenanceReminder');
 const { startAutoHeal } = require('./jobs/autoHeal');
 const { startCleanupScheduler: startDataCleanupScheduler } = require('./jobs/cleanupScheduler');
 const { startScheduledMaintenance } = require('./jobs/scheduledMaintenance');
-const { startEmailCampaignSender } = require('./jobs/emailCampaignSender');
+const { startEmailCampaignSender, stopEmailCampaignSender } = require('./jobs/emailCampaignSender');
+const { startPayoutJob, stopPayoutJob } = require('./jobs/payoutJob');
+// Timers are stopped on SIGTERM so a redeploy cannot leave a job writing to a
+// connection that is being closed. dataRetention, maintenanceReminder and
+// checkoutCleanup export no stop function; their intervals are unref()'d, so
+// they cannot hold the process open either.
+const { stopBookingStateTransition } = require('./jobs/bookingStateTransition');
+const { stopAutoHeal } = require('./jobs/autoHeal');
+const { stopCleanupScheduler: stopDataCleanupScheduler } = require('./jobs/cleanupScheduler');
+const { stopScheduledMaintenance } = require('./jobs/scheduledMaintenance');
 const mongoSanitize = require('./middleware/sanitize');
 const hpp = require('hpp');
 const securityHeaders = require('./security/middleware/securityHeaders');
@@ -309,19 +327,41 @@ if (process.env.NODE_ENV !== 'production') {
 });
 }
 
-// Rate limiting on auth routes
-const authLimiter = rateLimit({
+// Rate limiting on auth routes.
+//
+// Applied to credential endpoints only. Mounted on the whole /api/auth router it
+// also capped /profile, /refresh and /export-data at 5 requests per 15 minutes per
+// IP, which broke ordinary use behind NAT — the SPA alone calls /auth/refresh on a
+// timer.
+const authLimiter = makeLimiter('auth', {
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { message: 'Too many attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api/auth', authLimiter);
-registerLimiter('auth', authLimiter);
+app.use([
+  '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/verify-otp',
+  '/api/auth/reset-password',
+], authLimiter);
+
+// Looser ceiling for the remaining authenticated auth endpoints. Not registered:
+// the admin view lists the credential limiters, and this one never rejects ordinary
+// use, so it has no ceiling worth showing.
+const authGeneralLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { message: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth', authGeneralLimiter);
 
 // Rate limiting on booking/payment routes (prevent abuse)
-const bookingLimiter = rateLimit({
+const bookingLimiter = makeLimiter('booking', {
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: { message: 'Too many booking requests, please try again later' },
@@ -329,19 +369,22 @@ const bookingLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/booking', bookingLimiter);
-registerLimiter('booking', bookingLimiter);
 
-const paymentLimiter = rateLimit({
+const paymentLimiter = makeLimiter('payment', {
   windowMs: 15 * 60 * 1000,
   max: 20,
   message: { message: 'Too many payment requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  // The gateway callbacks (success/fail/cancel/ipn) arrive from SSLCommerz's own
+  // egress IPs, so counting them against a per-IP limit throttled real customers:
+  // ~20 payment events in 15 minutes and the gateway started getting 429s.
+  // Verification of these callbacks is what protects them, not the rate limit.
+  skip: (req) => /^\/(success|fail|cancel|ipn)/.test(req.path),
 });
 app.use('/api/payment', paymentLimiter);
-registerLimiter('payment', paymentLimiter);
 
-const financialLimiter = rateLimit({
+const financialLimiter = makeLimiter('financial', {
   windowMs: 15 * 60 * 1000,
   max: 60,
   message: { message: 'Too many requests, please try again later' },
@@ -349,18 +392,19 @@ const financialLimiter = rateLimit({
   legacyHeaders: false,
 });
 app.use('/api/financial', financialLimiter);
-registerLimiter('financial', financialLimiter);
 
-const uploadLimiter = rateLimit({
+const uploadLimiter = makeLimiter('upload', {
   windowMs: 60 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  // Only requests that actually carry a file count. A JSON PUT to the same path
+  // (editing a vehicle without new photos) is not an upload.
+  skip: (req) => !String(req.headers['content-type'] || '').startsWith('multipart/form-data'),
   message: { message: 'Too many file uploads, please try again later' },
 });
-registerLimiter('upload', uploadLimiter);
 
-const globalLimiter = rateLimit({
+const globalLimiter = makeLimiter('global', {
   windowMs: 60 * 1000,
   max: 300,
   standardHeaders: true,
@@ -369,20 +413,24 @@ const globalLimiter = rateLimit({
 });
 
 app.use('/api', globalLimiter);
-registerLimiter('global', globalLimiter);
 
 // Additional targeted rate limiters
-const searchLimiter = rateLimit({
+const searchLimiter = makeLimiter('search', {
   windowMs: 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  // The suggestions endpoint is a type-ahead: AdvancedSearch debounces by only
+  // 250 ms, so a single ten-character query spends ten of the thirty requests and
+  // two more searches in the same minute return 429 on a plain keystroke. Reads
+  // that a person triggers by typing are not the abuse this ceiling is for; the
+  // global 300/min limit still applies to them.
+  skip: (req) => req.path.startsWith('/suggestions'),
   message: { message: 'Too many search requests, please try again later' },
 });
 app.use('/api/search', searchLimiter);
-registerLimiter('search', searchLimiter);
 
-const dashboardLimiter = rateLimit({
+const dashboardLimiter = makeLimiter('dashboard', {
   windowMs: 60 * 1000,
   max: 120,
   standardHeaders: true,
@@ -390,9 +438,21 @@ const dashboardLimiter = rateLimit({
   message: { message: 'Too many dashboard requests, please try again later' },
 });
 app.use('/api/dashboard', dashboardLimiter);
-registerLimiter('dashboard', dashboardLimiter);
 
-const fleetLimiter = rateLimit({
+// Image uploads. This limiter was defined and registered but never mounted, so
+// the documented 10 uploads/hour ceiling did not exist anywhere.
+//
+// Mounted on the exact routes that accept a file, never on a path prefix.
+// `app.use('/api/dashboard/bikes', …)` also matches the *public* storefront reads
+// GET /api/dashboard/bikes/available and GET /api/dashboard/bikes/:id, and
+// `app.use('/api/vehicle-docs', …)` matched the document list reads — so ten bike
+// views in an hour returned "Too many file uploads" against a plain GET. A
+// route-level mount cannot catch those at all.
+app.post('/api/dashboard/bikes', uploadLimiter);        // upload.array('bikeImages', 5)
+app.put('/api/dashboard/admin/bikes/:id', uploadLimiter); // upload.array('bikeImages', 5)
+app.post('/api/vehicle-docs/bike/:bikeId', uploadLimiter); // upload.single('file')
+
+const fleetLimiter = makeLimiter('fleet', {
   windowMs: 60 * 1000,
   max: 40,
   standardHeaders: true,
@@ -400,7 +460,6 @@ const fleetLimiter = rateLimit({
   message: { message: 'Too many fleet requests, please try again later' },
 });
 app.use('/api/fleet', fleetLimiter);
-registerLimiter('fleet', fleetLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -410,7 +469,9 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/policies', policyRoutes);
 app.use('/api/financial', financialRoutes);
-app.use('/api/documents', documentRoutes);
+// GET /api/documents/:userId/:type was removed: it returned the raw NID/licence
+// *number* rather than the uploaded image fields (nidImage/licenseImage) and had no
+// frontend caller, so it only served to widen PII exposure.
 app.use('/api/pricing', pricingRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/fraud', fraudRoutes);
@@ -474,7 +535,6 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   logger.info(`Server running on port ${PORT}`, { env: process.env.NODE_ENV });
   startCleanupScheduler();
-  startExpiredIntentCleanup();
   startBookingStateTransition();
   startDataRetention();
   startMaintenanceReminder();
@@ -482,6 +542,18 @@ server.listen(PORT, () => {
   startDataCleanupScheduler();
   startScheduledMaintenance();
   startEmailCampaignSender();
+  // Payouts had no caller anywhere: this function was exported and never invoked,
+  // and no route creates a payout, so renter payouts were never generated at all.
+  startPayoutJob();
 });
 
-gracefulShutdown(server, mongoose);
+gracefulShutdown(server, mongoose, {
+  onShutdown: () => {
+    stopPayoutJob();
+    stopBookingStateTransition();
+    stopAutoHeal();
+    stopDataCleanupScheduler();
+    stopScheduledMaintenance();
+    stopEmailCampaignSender();
+  },
+});

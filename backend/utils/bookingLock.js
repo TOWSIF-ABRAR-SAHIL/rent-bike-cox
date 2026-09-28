@@ -1,46 +1,62 @@
-const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const Bike = require('../models/Bike');
 const { BUFFER_MINUTES } = require('./pricing');
 const { addPaisa, subtractPaisa } = require('./safeAmount');
+const { withOptionalTransaction } = require('./withOptionalTransaction');
 const logger = require('./logger');
 
 const ACTIVE_STATUSES = ['Pending', 'Confirmed'];
 const bufferMs = BUFFER_MINUTES * 60 * 1000;
 
 /**
- * Check if a bike is available for the given time window, including buffer.
- * excludeBookingId: skip this booking (for extensions).
- * excludeUserId: ignore this user's Pending bookings (prevents self-conflict from abandoned checkouts).
- * session: optional Mongoose session for transactional reads.
+ * Build the overlap filter for a requested window.
+ *
+ * Pure and shared by both the pre-check and the post-insert verification, so a
+ * conflict can never be seen by one and missed by the other. Pending and
+ * Confirmed bookings reserve their window; this is what makes back-to-back
+ * bookings on the same vehicle possible.
+ *
+ * @param {string} bikeId
+ * @param {Date|string} startTime
+ * @param {Date|string} endTime
+ * @param {{excludeBookingId?: string, excludeUserId?: string}} [opts]
  */
-async function checkAvailability(bikeId, startTime, endTime, excludeBookingId = null, excludeUserId = null, session = null) {
+function buildOverlapFilter(bikeId, startTime, endTime, { excludeBookingId, excludeUserId } = {}) {
   const start = new Date(startTime);
   const end = new Date(endTime);
 
-  const bufferStart = new Date(start.getTime() - bufferMs);
-  const bufferEnd = new Date(end.getTime() + bufferMs);
-
-  const matchQuery = {
+  const filter = {
     bike: bikeId,
-    startTime: { $lt: bufferEnd },
-    endTime: { $gt: bufferStart },
+    startTime: { $lt: new Date(end.getTime() + bufferMs) },
+    endTime: { $gt: new Date(start.getTime() - bufferMs) },
   };
 
   if (excludeUserId) {
-    matchQuery.$or = [
+    // Ignore the requesting user's own pending checkouts, so an abandoned
+    // checkout of theirs cannot block them from re-booking the same window.
+    filter.$or = [
       { status: 'Confirmed' },
       { $and: [{ status: 'Pending' }, { user: { $ne: excludeUserId } }] },
     ];
   } else {
-    matchQuery.status = { $in: ACTIVE_STATUSES };
+    filter.status = { $in: ACTIVE_STATUSES };
   }
 
   if (excludeBookingId) {
-    matchQuery._id = { $ne: excludeBookingId };
+    filter._id = { $ne: excludeBookingId };
   }
 
-  const query = Booking.findOne(matchQuery)
+  return filter;
+}
+
+/**
+ * Check whether a bike is free for the given window, including the buffer.
+ * excludeBookingId: skip this booking (for extensions).
+ * excludeUserId: ignore this user's own pending bookings.
+ * session: optional Mongoose session for transactional reads.
+ */
+async function checkAvailability(bikeId, startTime, endTime, excludeBookingId = null, excludeUserId = null, session = null) {
+  const query = Booking.findOne(buildOverlapFilter(bikeId, startTime, endTime, { excludeBookingId, excludeUserId }))
     .select('startTime endTime status user')
     .populate('user', 'name');
 
@@ -60,123 +76,58 @@ async function checkAvailability(bikeId, startTime, endTime, excludeBookingId = 
 }
 
 /**
- * CAS lock: set availability false only if currently true.
- * session: optional Mongoose session.
- */
-async function atomicLockBike(bikeId, session = null) {
-  const opts = { new: true };
-  if (session) opts.session = session;
-
-  return Bike.findOneAndUpdate(
-    { _id: bikeId, availability: true },
-    { $set: { availability: false } },
-    opts
-  );
-}
-
-/**
- * Release bike lock — only if no other active bookings exist.
- * session: optional Mongoose session.
- */
-async function releaseBikeLock(bikeId, session = null) {
-  const existsQuery = Booking.exists({
-    bike: bikeId,
-    status: { $in: ACTIVE_STATUSES },
-  });
-  if (session) existsQuery.session(session);
-
-  const hasActive = await existsQuery;
-  if (!hasActive) {
-    const opts = {};
-    if (session) opts.session = session;
-    await Bike.findByIdAndUpdate(bikeId, { $set: { availability: true } }, opts);
-  }
-}
-
-/**
- * Transactional booking: check + lock + create in one atomic unit.
- * Falls back to CAS if replica set unavailable (Atlas M0).
- * Returns { success, booking?, message? }
+ * Create a booking only if the requested window is genuinely free.
+ *
+ * Vehicles are no longer globally locked while a booking exists (that hid every
+ * booked bike from the marketplace); conflicts are decided by the window. Because
+ * Atlas M0 offers no transactions, correctness comes from inserting first and
+ * then checking whether an *older* booking overlaps — ObjectId order is the
+ * tie-break, so exactly one of two racing bookings survives.
+ *
+ * @returns {Promise<{success: boolean, booking?: object, message?: string}>}
  */
 async function createBookingAtomically(bikeId, startTime, endTime, bookingData, excludeUserId = null) {
-  let session;
-  try {
-    session = await mongoose.startSession();
-    await session.startTransaction({
-      readConcern: { level: 'snapshot' },
-      writeConcern: { w: 'majority' },
-    });
-
-    const availability = await checkAvailability(bikeId, startTime, endTime, null, excludeUserId, session);
-    if (!availability.available) {
-      await session.abortTransaction();
-      return { success: false, message: availability.message };
-    }
-
-    const bike = await atomicLockBike(bikeId, session);
-    if (!bike) {
-      await session.abortTransaction();
-      return { success: false, message: 'Bike is no longer available. Another booking may have been confirmed.' };
-    }
-
-    const [booking] = await Booking.create([{ ...bookingData, bike: bikeId }], { session });
-
-    await session.commitTransaction();
-    return { success: true, booking };
-  } catch (err) {
-    if (session) {
-      try { await session.abortTransaction(); } catch {}
-    }
-
-    if (err.name === 'MongoServerError' && err.code === 48) {
-      logger.warn('Transactions not supported — falling back to CAS');
-      return createBookingCAS(bikeId, startTime, endTime, bookingData, excludeUserId);
-    }
-
-    throw err;
-  } finally {
-    if (session) session.endSession();
-  }
-}
-
-/**
- * CAS fallback: check availability then lock, non-transactional.
- * Used when replica set is not available (e.g., Atlas M0).
- */
-async function createBookingCAS(bikeId, startTime, endTime, bookingData, excludeUserId = null) {
   const availability = await checkAvailability(bikeId, startTime, endTime, null, excludeUserId);
   if (!availability.available) {
     return { success: false, message: availability.message };
   }
 
-  const bike = await atomicLockBike(bikeId);
-  if (!bike) {
-    return { success: false, message: 'Bike is no longer available. Another booking may have been confirmed.' };
+  const booking = await Booking.create({ ...bookingData, bike: bikeId });
+
+  const earlier = await Booking.findOne({
+    ...buildOverlapFilter(bikeId, startTime, endTime, { excludeUserId }),
+    _id: { $lt: booking._id },
+  }).select('_id').lean();
+
+  if (earlier) {
+    // Someone else's booking for this window already existed; step aside.
+    await Booking.deleteOne({ _id: booking._id });
+    logger.info('Booking lost the race for a window', {
+      bikeId: String(bikeId),
+      losingBooking: booking._id.toString(),
+      winningBooking: earlier._id.toString(),
+    });
+    return {
+      success: false,
+      message: 'Bike is not available during this time. Another booking was just created for an overlapping period.',
+    };
   }
 
-  const booking = await Booking.create({ ...bookingData, bike: bikeId });
   return { success: true, booking };
 }
 
 /**
- * Extend an existing booking: check buffer after current endTime, create new lock if needed.
+ * Extend an existing booking: check the window after the current endTime and
+ * update the booking, all inside one transaction where the deployment supports it.
  */
 async function extendBookingAtomically(bookingId, newEndTime, additionalPrice) {
-  let session;
-  try {
-    session = await mongoose.startSession();
-    await session.startTransaction({
-      readConcern: { level: 'snapshot' },
-      writeConcern: { w: 'majority' },
-    });
+  return withOptionalTransaction(async (session) => {
+    const bookingQuery = Booking.findById(bookingId);
+    if (session) bookingQuery.session(session);
+    const booking = await bookingQuery;
 
-    const booking = await Booking.findById(bookingId).session(session);
-    if (!booking) {
-      await session.abortTransaction();
-      return { success: false, message: 'Booking not found' };
-    }
+    if (!booking) return { success: false, message: 'Booking not found' };
     if (booking.status !== 'Confirmed') {
-      await session.abortTransaction();
       return { success: false, message: 'Only confirmed bookings can be extended' };
     }
 
@@ -184,73 +135,39 @@ async function extendBookingAtomically(bookingId, newEndTime, additionalPrice) {
     const newEnd = new Date(newEndTime);
 
     if (newEnd <= currentEnd) {
-      await session.abortTransaction();
       return { success: false, message: 'New end time must be after current end time' };
     }
 
     const availability = await checkAvailability(booking.bike, currentEnd, newEnd, booking._id, null, session);
     if (!availability.available) {
-      await session.abortTransaction();
       return { success: false, message: availability.message };
     }
 
-    const updated = await Booking.findByIdAndUpdate(
-      bookingId,
-      {
-        $set: { endTime: newEnd },
-        $inc: { totalPrice: additionalPrice },
+    const update = {
+      $set: {
+        endTime: newEnd,
+        remainingBalance: subtractPaisa(addPaisa(booking.totalPrice, additionalPrice), booking.advancePaid),
       },
-      { new: true, session }
-    );
+      $inc: { totalPrice: additionalPrice },
+    };
 
-    updated.remainingBalance = subtractPaisa(updated.totalPrice, updated.advancePaid);
-    await updated.save({ session });
+    const opts = { new: true };
+    if (session) opts.session = session;
 
-    await session.commitTransaction();
+    const updated = await Booking.findByIdAndUpdate(bookingId, update, opts);
     return { success: true, booking: updated };
-  } catch (err) {
-    if (session) {
-      try { await session.abortTransaction(); } catch {}
-    }
-
-    if (err.name === 'MongoServerError' && err.code === 48) {
-      return extendBookingCAS(bookingId, newEndTime, additionalPrice);
-    }
-
-    throw err;
-  } finally {
-    if (session) session.endSession();
-  }
-}
-
-async function extendBookingCAS(bookingId, newEndTime, additionalPrice) {
-  const booking = await Booking.findById(bookingId);
-  if (!booking) return { success: false, message: 'Booking not found' };
-  if (booking.status !== 'Confirmed') return { success: false, message: 'Only confirmed bookings can be extended' };
-
-  const currentEnd = new Date(booking.endTime);
-  const newEnd = new Date(newEndTime);
-  if (newEnd <= currentEnd) return { success: false, message: 'New end time must be after current end time' };
-
-  const availability = await checkAvailability(booking.bike, currentEnd, newEnd, booking._id);
-  if (!availability.available) return { success: false, message: availability.message };
-
-  booking.endTime = newEnd;
-  booking.totalPrice = addPaisa(booking.totalPrice, additionalPrice);
-  booking.remainingBalance = subtractPaisa(booking.totalPrice, booking.advancePaid);
-  await booking.save();
-
-  return { success: true, booking };
+  });
 }
 
 /**
- * Create a walk-in booking (admin only): immediate confirm + lock.
+ * Create a walk-in booking (admin only): created already paid and confirmed.
  */
 async function createWalkInBooking(bikeId, startTime, endTime, bookingData) {
   const result = await createBookingAtomically(bikeId, startTime, endTime, bookingData);
   if (!result.success) return result;
 
   result.booking.status = 'Confirmed';
+  result.booking.state = 'CONFIRMED';
   result.booking.paymentStatus = 'Partial';
   result.booking.paymentMethod = 'Walk-in Cash';
   result.booking.isWalkIn = true;
@@ -260,13 +177,23 @@ async function createWalkInBooking(bikeId, startTime, endTime, bookingData) {
   return result;
 }
 
+/**
+ * List a bike back into service. `Bike.availability` is a manual out-of-service
+ * switch owned by the renter/admin — booking state no longer writes to it — so
+ * this only exists for admin tooling that wants to clear the flag explicitly.
+ */
+async function setBikeInService(bikeId, inService = true) {
+  return Bike.findByIdAndUpdate(bikeId, { $set: { availability: inService } }, { new: true });
+}
+
 module.exports = {
   checkAvailability,
-  atomicLockBike,
-  releaseBikeLock,
+  buildOverlapFilter,
+  setBikeInService,
   lockBikeForBooking: createBookingAtomically,
   createBookingAtomically,
-  createBookingCAS,
   extendBookingAtomically,
   createWalkInBooking,
+  ACTIVE_STATUSES,
+  BUFFER_MINUTES,
 };

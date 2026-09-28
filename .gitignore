@@ -24,6 +24,16 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+.logs/
+
+# Audit agent workspace (never commit)
+.freebuff/
+
+# Figma design exports (large binaries, kept locally)
+figma/
+
+# One-command dev launcher (local only)
+scripts/
 
 # Backend
 backend/.env

@@ -1,4 +1,6 @@
 const PayoutService = require('../services/PayoutService');
+const logger = require('../utils/logger');
+const { clientMessage, clientStatus } = require('../utils/httpError');
 
 exports.getPayouts = async (req, res) => {
   try {
@@ -37,7 +39,8 @@ exports.approvePayout = async (req, res) => {
     });
     res.json(payout);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('approvePayout error', { payoutId: req.params.payoutId, error: err.message });
+    res.status(clientStatus(err, 400)).json({ message: clientMessage(err, 'Could not approve the payout') });
   }
 };
 
@@ -49,6 +52,7 @@ exports.markPayoutPaid = async (req, res) => {
     });
     res.json(payout);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    logger.error('markPayoutPaid error', { payoutId: req.params.payoutId, error: err.message });
+    res.status(clientStatus(err, 400)).json({ message: clientMessage(err, 'Could not mark the payout as paid') });
   }
 };

@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
-const { releaseBikeLock } = require('../utils/bookingLock');
 const bus = require('../events/EventBus');
 const jobLogger = require('./logger');
 
@@ -29,7 +28,6 @@ async function transitionBookingStates() {
         reason: 'Automatic: rental period ended',
       });
       await booking.save();
-      await releaseBikeLock(booking.bike);
       bus.emit('booking.autoCompleted', { bookingId: booking._id.toString() });
       completed++;
     }
@@ -44,7 +42,6 @@ async function transitionBookingStates() {
       booking.status = 'Expired';
       booking.state = 'EXPIRED';
       await booking.save();
-      await releaseBikeLock(booking.bike);
       expired++;
     }
 

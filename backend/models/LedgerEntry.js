@@ -20,6 +20,9 @@ ledgerEntrySchema.index({ bookingId: 1, createdAt: 1 });
 ledgerEntrySchema.index({ reference: 1 });
 ledgerEntrySchema.index({ account: 1, createdAt: 1 });
 ledgerEntrySchema.index({ createdAt: 1 }, { expireAfterSeconds: 365 * 24 * 60 * 60 });
+// Sparse + unique so journal writes are idempotent across transaction retries.
+// Sparse because rows written before this key existed must not collide.
+ledgerEntrySchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
 ledgerEntrySchema.set('toJSON', { virtuals: true });
 

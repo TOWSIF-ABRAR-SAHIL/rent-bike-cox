@@ -6,7 +6,9 @@ const logger = require('../utils/logger');
 exports.getVehicleHistory = async (req, res) => {
   try {
     const { bikeId } = req.params;
-    const { ownerId, role } = req.user;
+    // `id` is the JWT claim; destructuring `ownerId` left the renter constraint
+    // undefined, which Mongoose strips from the query entirely.
+    const { id: ownerId, role } = req.user;
     const { from, to, type, page = 1, limit = 20 } = req.query;
 
     const bikeQuery = { _id: bikeId };
@@ -132,7 +134,7 @@ exports.getVehicleHistory = async (req, res) => {
 exports.getVehicleStats = async (req, res) => {
   try {
     const { bikeId } = req.params;
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
     const { days = 90 } = req.query;
 
     const bikeQuery = { _id: bikeId };
@@ -199,7 +201,7 @@ exports.getVehicleStats = async (req, res) => {
 exports.exportVehicleHistory = async (req, res) => {
   try {
     const { bikeId } = req.params;
-    const { ownerId, role } = req.user;
+    const { id: ownerId, role } = req.user;
 
     const bikeQuery = { _id: bikeId };
     if (role !== 'Admin') bikeQuery.renter = ownerId;

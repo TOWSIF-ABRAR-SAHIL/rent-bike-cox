@@ -18,17 +18,24 @@ async function cleanupOldNotifications() {
       createdAt: { $lt: ninetyDaysAgo },
     });
 
-    // Archive old contact messages (> 60 days)
+    // Close out stale contact messages (> 60 days).
+    //
+    // Two compounding bugs lived here: the archive step matched `status: 'archived'`
+    // and wrote the same value back (a no-op reporting modifiedCount 0), and the
+    // delete step then looked for that same status. The schema's enum is
+    // ['new','open','inProgress','waitingReply','resolved','closed'] — 'archived'
+    // is not a valid status, so nothing was ever archived or deleted.
     const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    const staleStatuses = ['new', 'open', 'inProgress', 'waitingReply', 'resolved'];
     const archivedMessages = await ContactMessage.updateMany(
-      { status: 'archived', createdAt: { $lt: sixtyDaysAgo } },
-      { $set: { status: 'archived' } }
+      { status: { $in: staleStatuses }, createdAt: { $lt: sixtyDaysAgo } },
+      { $set: { status: 'closed' } }
     );
 
-    // Delete contact messages older than 1 year
+    // Delete contact messages closed over a year ago.
     const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
     const deletedMessages = await ContactMessage.deleteMany({
-      status: 'archived',
+      status: 'closed',
       createdAt: { $lt: oneYearAgo },
     });
 

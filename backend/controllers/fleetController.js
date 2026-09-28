@@ -26,16 +26,23 @@ exports.getFleetSummary = async (req, res) => {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
+    // Scope every Booking query by this fleet's actual bike ids. The Bike filter
+    // used to be spread straight into these queries, but it carries `renter` — a
+    // field Booking does not have — so the constraint was dropped and a renter's
+    // dashboard reported platform-wide booking counts and revenue as its own.
+    const fleetBikes = await Bike.find(bikeQuery).select('_id').lean();
+    const bikeIdList = fleetBikes.map(b => b._id);
+    const bookingScope = role === 'Admin' ? {} : { bike: { $in: bikeIdList } };
+
     const bookingsThisMonth = await Booking.countDocuments({
-      ...bikeQuery,
-      bike: role === 'Admin' ? { $exists: true } : undefined,
+      ...bookingScope,
       createdAt: { $gte: monthStart, $lte: monthEnd },
     });
 
     const revenueThisMonth = await Booking.aggregate([
       {
         $match: {
-          ...(role === 'Admin' ? {} : { bike: { $exists: true } }),
+          ...bookingScope,
           createdAt: { $gte: monthStart, $lte: monthEnd },
           status: { $in: ['Confirmed', 'Active', 'Completed'] },
         },
@@ -43,12 +50,9 @@ exports.getFleetSummary = async (req, res) => {
       { $group: { _id: null, total: { $sum: '$totalPrice' } } },
     ]);
 
-    const bikeIds = await Bike.find(bikeQuery).select('_id').lean();
-    const bikeIdList = bikeIds.map(b => b._id);
-
     const activeBookings = await Booking.countDocuments({
       status: { $in: ['Pending', 'Confirmed', 'Active'] },
-      ...(role === 'Admin' ? {} : { bike: { $in: bikeIdList } }),
+      ...bookingScope,
     });
 
     res.json({
@@ -239,7 +243,7 @@ exports.exportFleet = async (req, res) => {
         bike.category?.name || 'N/A',
         bike.pricePerHour,
         bike.condition,
-        bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'Active' : 'Unavailable',
+        bike.isUnderMaintenance ? 'Maintenance' : bike.availability ? 'In service' : 'Out of service',
         bike.currentMileage || 0,
         bike.nextServiceDue ? new Date(bike.nextServiceDue).toLocaleDateString() : 'N/A',
         bike.renter?.name || 'N/A',

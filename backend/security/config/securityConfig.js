@@ -19,14 +19,11 @@ const securityConfig = {
     lockDuration: 15 * 60 * 1000,
     windowMs: 15 * 60 * 1000,
   },
-  rateLimits: {
-    auth: { windowMs: 15 * 60 * 1000, max: 10 },
-    booking: { windowMs: 60 * 60 * 1000, max: 10 },
-    payment: { windowMs: 60 * 60 * 1000, max: 5 },
-    coupon: { windowMs: 60 * 1000, max: 3 },
-    upload: { windowMs: 60 * 60 * 1000, max: 10 },
-    general: { windowMs: 60 * 1000, max: 100 },
-  },
+  // NOTE: rate limits are defined in server.js, which is the single source of
+  // truth and registers each limiter with the admin rate-limit view. The block that
+  // used to live here (auth 10, payment 5/hour, booking 10/hour) was never read by
+  // anything and contradicted the values actually enforced, so it was removed
+  // rather than left to mislead the next reader.
   upload: {
     maxSizeBytes: 5 * 1024 * 1024,
     maxDocSizeBytes: 1 * 1024 * 1024,

@@ -8,7 +8,7 @@ const NotFound = () => {
   const { get } = useSiteContent();
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+    <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center p-4">
       <div className="text-center animate-fade-in">
         <h1 className="text-6xl sm:text-8xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent mb-4">404</h1>
         <p className="text-lg mb-6" style={{ color: 'var(--text-secondary)' }}>{get('notFound.title', 'Page not found')}</p>

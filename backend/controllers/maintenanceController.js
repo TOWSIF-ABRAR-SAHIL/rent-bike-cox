@@ -64,13 +64,22 @@ exports.getMaintenanceLogs = async (req, res) => {
     const type = req.query.type;
     const status = req.query.status;
 
+    // Every other handler in this file scopes by vehicle ownership; this listing
+    // did not, so any authenticated account could read another operator's
+    // maintenance costs, notes, and technician identity for any vehicle.
+    const bike = await Bike.findById(bikeId).select('renter').lean();
+    if (!bike) return res.status(404).json({ message: 'Bike not found' });
+    if (bike.renter && bike.renter.toString() !== req.user.id && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Not authorized to view this vehicle\u2019s maintenance logs' });
+    }
+
     const filter = { bike: bikeId };
     if (type) filter.type = type;
     if (status) filter.status = status;
 
     const total = await MaintenanceLog.countDocuments(filter);
     const logs = await MaintenanceLog.find(filter)
-      .populate('performedBy', 'name email')
+      .populate('performedBy', 'name')
       .sort({ performedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);

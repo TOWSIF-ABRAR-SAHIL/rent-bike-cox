@@ -64,10 +64,13 @@ async function healthCheck() {
 }
 
 async function createAlertIfMissing(Model, data) {
+  // Deduped on type + title only. Including `isRead: false` meant that as soon as
+  // an admin read the alert, the next pass recreated it — the same warning came
+  // back every 30 minutes forever.
   const exists = await Model.findOne({
     type: data.type,
     title: data.title,
-    isRead: false,
+    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
   });
   if (!exists) {
     await Model.create(data);
