@@ -8,13 +8,13 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, maxlength: 254, lowercase: true, trim: true },
   password: { type: String, required: true, select: false },
   role: { type: String, enum: ['Admin', 'Renter', 'User'], default: 'User' },
-  nid: { type: String, required: true },
+  nid: { type: String, default: '' },
   // Keyed hashes used only for duplicate detection. `select: false` keeps them out
   // of ordinary query results; they are still unique, and sparse so rows written
   // before hashing existed don't collide.
   nidHash: { type: String, unique: true, sparse: true, select: false },
   phoneHash: { type: String, unique: true, sparse: true, select: false },
-  license: { type: String, required: true },
+  license: { type: String, default: '' },
   nidImage: { type: String, default: '' },
   licenseImage: { type: String, default: '' },
   phoneNumber: { type: String, required: true },

@@ -44,14 +44,20 @@ async function storeRefreshToken(refreshToken, userId, familyId, req) {
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, nid, license, phoneNumber, address } = req.body;
+    const { name, email, password, role, nid, license, phoneNumber, address } = req.body;
     const cleanName = sanitize(name);
     const cleanNid = sanitize(nid);
     const cleanLicense = sanitize(license);
     const cleanAddress = sanitize(address);
+    // The signup form only collects NID/license for renters, and never offers
+    // Admin — force anything else down to a plain customer.
+    const cleanRole = role === 'Renter' ? 'Renter' : 'User';
 
-    if (!cleanName || !email || !password || !cleanNid || !cleanLicense || !phoneNumber) {
-      return res.status(400).json({ message: 'Name, email, password, NID, license, and phone number are required' });
+    if (!cleanName || !email || !password || !phoneNumber) {
+      return res.status(400).json({ message: 'Name, email, password, and phone number are required' });
+    }
+    if (cleanRole === 'Renter' && (!cleanNid || !cleanLicense)) {
+      return res.status(400).json({ message: 'NID and license are required for renter accounts' });
     }
 
     const pwCheck = checkPasswordStrength(password);
@@ -66,14 +72,17 @@ exports.register = async (req, res) => {
 
     // Duplicate detection goes through the keyed hashes when a pepper is
     // configured. Querying the plaintext fields only worked while encryption was
-    // off, so enabling it silently disabled these checks.
-    const nidDigest = hashIdentifier(cleanNid);
+    // off, so enabling it silently disabled these checks. Customers register
+    // without an NID, so skip that check when none was given.
+    const nidDigest = cleanNid ? hashIdentifier(cleanNid) : null;
     const phoneDigest = hashIdentifier(phoneNumber);
 
-    const existingNid = nidDigest
-      ? await User.findOne({ nidHash: nidDigest })
-      : await User.findOne({ nid: cleanNid });
-    if (existingNid) return res.status(400).json({ message: 'An account with this NID already exists' });
+    if (cleanNid) {
+      const existingNid = nidDigest
+        ? await User.findOne({ nidHash: nidDigest })
+        : await User.findOne({ nid: cleanNid });
+      if (existingNid) return res.status(400).json({ message: 'An account with this NID already exists' });
+    }
 
     const existingPhone = phoneDigest
       ? await User.findOne({ phoneHash: phoneDigest })
@@ -90,9 +99,9 @@ exports.register = async (req, res) => {
       name: cleanName,
       email,
       password: hashedPassword,
-      role: 'User',
-      nid: cleanNid,
-      license: cleanLicense,
+      role: cleanRole,
+      nid: cleanNid || '',
+      license: cleanLicense || '',
       nidImage,
       licenseImage,
       phoneNumber,

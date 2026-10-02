@@ -62,8 +62,11 @@ const Signup = () => {
       router.push('/');
     } catch (err) {
       const apiErr = err as ApiError;
-      const data = apiErr.response?.data as { message?: string } | undefined;
-      setError(data?.message || 'Signup failed');
+      // The API returns per-field detail in `errors` — surface it so the user
+      // knows exactly what to fix instead of a bare "Validation failed".
+      const data = apiErr.response?.data as { message?: string; errors?: { field?: string; message?: string }[] } | undefined;
+      const detail = data?.errors?.map(e => e.message).filter(Boolean).join('. ');
+      setError(detail || data?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -110,7 +113,7 @@ const Signup = () => {
               </div>
               <div className="relative">
                 <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                <input type="text" name="phoneNumber" placeholder="Phone Number" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
+                <input type="text" name="phoneNumber" placeholder="Phone (01XXXXXXXXX)" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
             </div>
 

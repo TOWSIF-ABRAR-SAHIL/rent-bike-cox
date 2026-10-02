@@ -15,9 +15,12 @@ const registerRules = [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be 2-100 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
   body('password').isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters'),
-  body('nid').trim().isLength({ min: 10, max: 17 }).withMessage('NID must be 10-17 characters'),
-  body('license').trim().isLength({ min: 3, max: 30 }).withMessage('License must be 3-30 characters'),
-  body('phoneNumber').trim().matches(/^01[3-9]\d{8}$/).withMessage('Valid BD phone number required'),
+  body('role').optional().isIn(['User', 'Renter']).withMessage('Role must be User or Renter'),
+  // NID/license are collected by the signup form for Renters only, so they are
+  // required only then — a plain customer must be able to register without them.
+  body('nid').if(body('role').equals('Renter')).trim().isLength({ min: 10, max: 17 }).withMessage('NID must be 10-17 characters'),
+  body('license').if(body('role').equals('Renter')).trim().isLength({ min: 3, max: 30 }).withMessage('License must be 3-30 characters'),
+  body('phoneNumber').trim().matches(/^01[3-9]\d{8}$/).withMessage('Valid BD phone number required (01XXXXXXXXX)'),
   body('address').optional().trim().isLength({ max: 200 }).withMessage('Address max 200 characters'),
   handleValidation,
 ];
