@@ -175,6 +175,26 @@ async function migrateStaleCampaigns() {
   return { campaignIds: stale.map(c => String(c._id)) };
 }
 
+/**
+ * Leftover unique (non-sparse) index on `users.nid` from when NID itself was
+ * unique. Customers now register with nid '' and the second one collides on
+ * the empty string (11000 "Email or NID already exists"). Duplicate detection
+ * lives on the sparse `nidHash`, so this index is safe to drop.
+ */
+async function migrateNidIndex() {
+  const indexes = await mongoose.connection.db.collection('users').indexes();
+  const stale = indexes.find(i => i.name === 'nid_1' && i.unique && !i.sparse);
+  if (!stale) {
+    log('nidIndex: no stale unique non-sparse nid_1 index');
+    return { dropped: false };
+  }
+  log('nidIndex: stale unique non-sparse nid_1 index blocks customer signups — would drop it');
+  if (APPLY) {
+    await mongoose.connection.db.collection('users').dropIndex('nid_1');
+  }
+  return { dropped: true };
+}
+
 async function main() {
   const uri = process.env.MONGODB_URI || process.env.MONGODB_URI_ATLAS;
   if (!uri) {
@@ -190,6 +210,7 @@ async function main() {
     if (shouldRun('hashes')) await migrateHashes();
     if (shouldRun('availability')) await migrateAvailability();
     if (shouldRun('campaigns')) await migrateStaleCampaigns();
+    if (shouldRun('nidIndex')) await migrateNidIndex();
   } finally {
     await mongoose.disconnect();
   }

@@ -109,7 +109,7 @@ const Signup = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-                <input type="password" name="password" placeholder="Password" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
+                <input type="password" name="password" placeholder="Password (8+ chars, A-Z, 0-9, symbol)" onChange={handleChange} className="input-dark !pl-10 !py-2.5 text-sm" required />
               </div>
               <div className="relative">
                 <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
