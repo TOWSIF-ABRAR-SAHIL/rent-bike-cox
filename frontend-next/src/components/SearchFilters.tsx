@@ -4,7 +4,10 @@ import { X, SlidersHorizontal, ArrowUpDown, DollarSign } from 'lucide-react';
 
 import type { BikeCategory, PriceRange, SearchFilterState } from '@/types';
 
-const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClear }: { filters: SearchFilterState; categories: BikeCategory[]; priceRange: PriceRange; zones?: string[]; onFilterChange: (key: string, value: string) => void; onClear: () => void }) => {
+const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11 bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-orange-500';
+const labelCls = 'block text-xs mb-1.5 font-bold text-slate-500 uppercase tracking-wide';
+
+const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClear, compact = false }: { filters: SearchFilterState; categories: BikeCategory[]; priceRange: PriceRange; zones?: string[]; onFilterChange: (key: string, value: string) => void; onClear: () => void; compact?: boolean }) => {
   const activeFilters: { key: string; label: string }[] = [];
   if (filters.category) {
     const cat = categories.find((c: BikeCategory) => c.slug === filters.category);
@@ -22,14 +25,14 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
   };
 
   return (
-    <div className="glass rounded-2xl p-5 mb-6 animate-slide-up" style={{ border: '1px solid var(--border-base)' }}>
+    <div className={`bg-white rounded-2xl border border-slate-200 p-5 animate-slide-up ${compact ? '' : 'mb-6'}`}>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-          <SlidersHorizontal size={14} style={{ color: 'var(--accent-text)' }} />
+        <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+          <SlidersHorizontal size={14} className="text-orange-500" />
           Filters
         </h3>
         {(activeFilters.length > 0 || filters.sort !== 'newest') && (
-          <button onClick={onClear} className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-red-500/10" style={{ color: 'var(--danger-text)' }} aria-label="Clear all filters">
+          <button onClick={onClear} className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all text-red-600 hover:bg-red-50" aria-label="Clear all filters">
             Clear all
           </button>
         )}
@@ -39,9 +42,9 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {activeFilters.map(f => (
-            <span key={f.key} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+            <span key={f.key} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
               {f.label}
-              <button onClick={() => removeFilter(f.key)} className="ml-0.5 p-0.5 rounded-full hover:bg-black/10" aria-label={`Remove ${f.label} filter`}>
+              <button onClick={() => removeFilter(f.key)} className="ml-0.5 p-0.5 rounded-full hover:bg-orange-200/60" aria-label={`Remove ${f.label} filter`}>
                 <X size={10} />
               </button>
             </span>
@@ -49,16 +52,15 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid gap-4 ${compact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'}`}>
         {/* Category */}
         <div>
-          <label htmlFor="filter-category" className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>Category</label>
+          <label htmlFor="filter-category" className={labelCls}>Category</label>
           <select
             id="filter-category"
             value={filters.category}
             onChange={e => onFilterChange('category', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
+            className={inputCls}
           >
             <option value="">All Categories</option>
             {categories.map(c => (
@@ -69,13 +71,12 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
 
         {/* Condition */}
         <div>
-          <label htmlFor="filter-condition" className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>Condition</label>
+          <label htmlFor="filter-condition" className={labelCls}>Condition</label>
           <select
             id="filter-condition"
             value={filters.condition}
             onChange={e => onFilterChange('condition', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
+            className={inputCls}
           >
             <option value="all">All Conditions</option>
             <option value="excellent">Excellent</option>
@@ -87,13 +88,12 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
 
         {/* Availability */}
         <div>
-          <label htmlFor="filter-availability" className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>Availability</label>
+          <label htmlFor="filter-availability" className={labelCls}>Availability</label>
           <select
             id="filter-availability"
             value={filters.availability}
             onChange={e => onFilterChange('availability', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
+            className={inputCls}
           >
             <option value="all">All</option>
             <option value="true">Available Now</option>
@@ -102,8 +102,8 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
         </div>
 
         {/* Price Range - Dual Inputs */}
-        <div className="sm:col-span-2">
-          <label className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>
+        <div className={compact ? '' : 'sm:col-span-2'}>
+          <label className={labelCls}>
             <DollarSign size={12} className="inline" /> Price Range (TK/hr)
           </label>
           <div className="flex items-center gap-2">
@@ -112,18 +112,16 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
               placeholder={String(priceRange.min || '') || 'Min'}
               value={filters.minPrice}
               onChange={e => onFilterChange('minPrice', e.target.value)}
-              className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-              style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
+              className={`${inputCls} flex-1`}
               aria-label="Minimum price"
             />
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+            <span className="text-xs text-slate-400">—</span>
             <input
               type="number"
               placeholder={String(priceRange.max || '') || 'Max'}
               value={filters.maxPrice}
               onChange={e => onFilterChange('maxPrice', e.target.value)}
-              className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-              style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
+              className={`${inputCls} flex-1`}
               aria-label="Maximum price"
             />
           </div>
@@ -138,12 +136,7 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
               const isActive = filters.minPrice === p.min && filters.maxPrice === p.max;
               return (
                 <button key={p.label} onClick={() => { onFilterChange('minPrice', p.min); onFilterChange('maxPrice', p.max); }}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
-                  style={{
-                    background: isActive ? 'var(--accent-bg)' : 'var(--input-bg)',
-                    color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
-                    border: `1px solid ${isActive ? 'var(--accent-border)' : 'var(--border-base)'}`,
-                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${isActive ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-slate-200 text-slate-500 hover:border-orange-300'}`}
                   aria-label={`Filter by ${p.label} TK`}>
                   {p.label}
                 </button>
@@ -153,16 +146,15 @@ const SearchFilters = ({ filters, categories, priceRange, onFilterChange, onClea
         </div>
 
         {/* Sort */}
-        <div className="sm:col-span-2">
-          <label htmlFor="filter-sort" className="block text-xs mb-1.5 font-medium" style={{ color: 'var(--text-muted)' }}>
+        <div className={compact ? '' : 'sm:col-span-2'}>
+          <label htmlFor="filter-sort" className={labelCls}>
             <ArrowUpDown size={12} className="inline" /> Sort By
           </label>
           <select
             id="filter-sort"
             value={filters.sort}
             onChange={e => onFilterChange('sort', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all min-h-11"
-            style={{ background: 'var(--input-bg)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
+            className={inputCls}
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>

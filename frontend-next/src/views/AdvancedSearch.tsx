@@ -3,12 +3,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import api from '../api/axios';
-import type { Bike, BikeCategory, PriceRange, SearchFilterState, Suggestion } from '@/types';
+import { useAuth } from '../context/useAuth';
+import type { Bike, BikeCategory, PriceRange, ReviewStats, SearchFilterState, Suggestion } from '@/types';
 import SearchFilters from '../components/SearchFilters';
 import SearchResults from '../components/SearchResults';
 import SearchAutocomplete from '../components/SearchAutocomplete';
 import LoadingSkeleton from '../components/LoadingSkeleton';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, ArrowUpDown } from 'lucide-react';
 
 const AdvancedSearch = () => {
   const router = useRouter();
@@ -24,6 +25,8 @@ const AdvancedSearch = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [ratings, setRatings] = useState<Record<string, ReviewStats>>({});
+  const { user } = useAuth();
   const searchRef = useRef<HTMLDivElement>(null);
 
   const [filters, setFilters] = useState<SearchFilterState>({
@@ -82,6 +85,17 @@ const AdvancedSearch = () => {
     fetchResults(1);
   }, [fetchResults]);
 
+  // One bulk request for every card's stars — never per-bike loops.
+  useEffect(() => {
+    if (results.length === 0) return;
+    const ids = results.map(b => b._id).join(',');
+    api.get(`/reviews/stats?bikeIds=${encodeURIComponent(ids)}`)
+      .then(res => {
+        if (res.data && typeof res.data === 'object') setRatings(res.data);
+      })
+      .catch(() => {});
+  }, [results]);
+
   const fetchSuggestions = useCallback(async (q: string): Promise<void> => {
     if (!q || q.length < 2) { setSuggestions([]); return; }
     try {
@@ -126,28 +140,39 @@ const AdvancedSearch = () => {
 
   const activeFilterCount = Object.values(filters).filter(v => v && v !== 'all' && v !== 'newest').length;
 
+  const filterPanel = (
+    <SearchFilters
+      filters={filters}
+      categories={categories}
+      zones={zones}
+      priceRange={priceRange}
+      onFilterChange={handleFilterChange}
+      onClear={handleClearFilters}
+      compact
+    />
+  );
+
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-base)' }}>
+    <div className="bg-[#f4f6fa] min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Search Vehicles</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>Find the perfect ride for your Cox&apos;s Bazar adventure</p>
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Browse Vehicles</h1>
+          <p className="mt-1 text-sm text-slate-500">Find the perfect ride for your Cox&apos;s Bazar adventure</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-6" ref={searchRef}>
+        <div className="flex flex-col sm:flex-row gap-3 mb-6" ref={searchRef}>
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search by brand, model, or keyword..."
               value={query}
               onChange={e => { setQuery(e.target.value); setShowSuggestions(true); }}
               onFocus={() => setShowSuggestions(true)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl text-sm outline-none transition-all"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)', color: 'var(--text-primary)' }}
-             aria-label="Search by brand, model, or keyword..."/>
+              className="w-full pl-11 pr-10 py-3 rounded-xl text-sm outline-none transition-all bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-orange-500 shadow-sm"
+              aria-label="Search by brand, model, or keyword..."/>
             {query && (
-              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md" style={{ color: 'var(--text-muted)' }} aria-label="Clear search">
+              <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-slate-400 hover:text-slate-600" aria-label="Clear search">
                 <X size={14} />
               </button>
             )}
@@ -157,79 +182,106 @@ const AdvancedSearch = () => {
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="inline-flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all sm:w-auto"
-            style={{ background: 'var(--bg-card)', color: showFilters ? 'var(--accent-text)' : 'var(--text-secondary)', border: `1px solid ${showFilters ? 'var(--accent-border)' : 'var(--border-base)'}` }}
+            className={`lg:hidden inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold transition-all bg-white border shadow-sm ${showFilters ? 'border-orange-500 text-orange-600' : 'border-slate-200 text-slate-600'}`}
             aria-label={showFilters ? 'Hide filters' : 'Show filters'}
             aria-expanded={showFilters}
           >
             <SlidersHorizontal size={16} />
             Filters
             {activeFilterCount > 0 && (
-              <span className="w-5 h-5 rounded-full text-xs flex items-center justify-center" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}>
+              <span className="w-5 h-5 rounded-full text-xs flex items-center justify-center bg-orange-500 text-white">
                 {activeFilterCount}
               </span>
             )}
           </button>
         </div>
 
-        {showFilters && (
-          <SearchFilters
-            filters={filters}
-            categories={categories}
-            zones={zones}
-            priceRange={priceRange}
-            onFilterChange={handleFilterChange}
-            onClear={handleClearFilters}
-          />
-        )}
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-6 items-start">
+          {/* Desktop sidebar */}
+          <aside className="hidden lg:block sticky top-4">{filterPanel}</aside>
 
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {pagination.total} vehicle{pagination.total !== 1 ? 's' : ''} found
-          </p>
-        </div>
+          {/* Results column */}
+          <div className="min-w-0">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-slate-500">
+                <b className="text-slate-900">{pagination.total}</b> vehicle{pagination.total !== 1 ? 's' : ''} found
+              </p>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-500">
+                <ArrowUpDown size={14} className="text-slate-400" />
+                <span className="sr-only">Sort by</span>
+                <select
+                  value={filters.sort}
+                  onChange={e => handleFilterChange('sort', e.target.value)}
+                  className="px-3 py-2 rounded-xl text-sm font-medium bg-white border border-slate-200 text-slate-800 outline-none focus:border-orange-500"
+                  aria-label="Sort results"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="rating">Rating: High to Low</option>
+                  <option value="popular">Most Popular</option>
+                  <option value="mileage">Mileage: High to Low</option>
+                </select>
+              </label>
+            </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <LoadingSkeleton key={i} rows={1} />
-            ))}
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <LoadingSkeleton key={i} rows={1} />
+                ))}
+              </div>
+            ) : results.length === 0 ? (
+              <div className="p-16 text-center rounded-2xl bg-white border border-slate-200">
+                <Search size={48} className="mx-auto mb-4 text-slate-300" />
+                <p className="text-lg font-black text-slate-900">No vehicles found</p>
+                <p className="text-sm mt-1 text-slate-500">Try adjusting your filters or search terms</p>
+                <button onClick={handleClearFilters} className="mt-4 px-4 py-2 rounded-lg text-sm font-bold bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                  aria-label="Clear all filters">
+                  Clear Filters
+                </button>
+              </div>
+            ) : (
+              <SearchResults bikes={results} ratings={ratings} isAuthed={!!user} />
+            )}
+
+            {pagination.pages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => fetchResults(p)}
+                    className={`w-9 h-9 rounded-lg text-sm font-bold transition-all border ${p === pagination.page ? 'bg-orange-500 border-orange-500 text-white shadow' : 'bg-white border-slate-200 text-slate-500 hover:border-orange-300'}`}
+                    aria-label={`Go to page ${p}`}
+                    aria-current={p === pagination.page ? 'page' : undefined}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        ) : results.length === 0 ? (
-          <div className="p-16 text-center rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-base)' }}>
-            <Search size={48} className="mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
-            <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No vehicles found</p>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Try adjusting your filters or search terms</p>
-            <button onClick={handleClearFilters} className="mt-4 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)' }}
-              aria-label="Clear all filters">
-              Clear Filters
+        </div>
+      </div>
+
+      {/* Mobile filter drawer */}
+      {showFilters && (
+        <div className="lg:hidden fixed inset-0 z-[200]" role="dialog" aria-modal="true" aria-label="Filters">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowFilters(false)} />
+          <div className="absolute inset-y-0 left-0 w-[86%] max-w-sm bg-[#f4f6fa] shadow-2xl overflow-y-auto p-4 animate-slide-in">
+            <div className="flex items-center justify-end mb-3">
+              <button onClick={() => setShowFilters(false)} className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600" aria-label="Close filters">
+                <X size={16} />
+              </button>
+            </div>
+            {filterPanel}
+            <button onClick={() => setShowFilters(false)} className="w-full py-3 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition-all mb-6">
+              Show {pagination.total} vehicle{pagination.total !== 1 ? 's' : ''}
             </button>
           </div>
-        ) : (
-          <SearchResults bikes={results} />
-        )}
-
-        {pagination.pages > 1 && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(p => (
-              <button
-                key={p}
-                onClick={() => fetchResults(p)}
-                className="w-9 h-9 rounded-lg text-sm font-medium transition-all"
-                aria-label={`Go to page ${p}`}
-                aria-current={p === pagination.page ? 'page' : undefined}
-                style={{
-                  background: p === pagination.page ? 'var(--accent-bg)' : 'transparent',
-                  color: p === pagination.page ? 'var(--accent-text)' : 'var(--text-muted)',
-                  border: `1px solid ${p === pagination.page ? 'var(--accent-border)' : 'var(--border-base)'}`,
-                }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
