@@ -27,7 +27,7 @@ const formatDisplayDate = (dateStr: string) => new Date(dateStr).toLocaleString(
 
 export interface ProceedArgs { duration: number; startTime: string | Date; endTime: string | Date; pricing: PricingInfo | undefined; }
 
-const BookingWidget = ({ bike, token, onProceed, headerActions }: { bike: Bike | null; token: string | null; onProceed: (args: ProceedArgs) => void; headerActions?: ReactNode }) => {
+const BookingWidget = ({ bike, token, onProceed, headerActions, hideHeader = false }: { bike: Bike | null; token: string | null; onProceed: (args: ProceedArgs) => void; headerActions?: ReactNode; hideHeader?: boolean }) => {
   const [duration, setDuration] = useState(1);
   const [startTime, setStartTime] = useState(() => getDefaultStartTime());
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
@@ -103,7 +103,8 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }: { bike: Bike |
 
   return (
     <div className="glass rounded-3xl p-6 space-y-5" style={{ border: '1px solid var(--border-base)' }}>
-      {/* Header */}
+      {/* Header — hidden when the page renders its own title block */}
+      {!hideHeader && (
       <div>
         <div className="flex items-start justify-between gap-3">
           <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{bike.model}</h1>
@@ -124,6 +125,7 @@ const BookingWidget = ({ bike, token, onProceed, headerActions }: { bike: Bike |
           )}
         </div>
       </div>
+      )}
 
       {/* Price + Rating */}
       <div className="flex items-baseline justify-between">
