@@ -8,12 +8,19 @@
  */
 'use strict';
 
-const VERSION = 'rbx-v1';
+const VERSION = 'rbx-v2';
 const STATIC_CACHE = `${VERSION}-static`;
 const PAGE_CACHE = `${VERSION}-pages`;
 const IMAGE_CACHE = `${VERSION}-images`;
 const OFFLINE_URL = '/offline';
 const IMAGE_LIMIT = 60;
+
+// Turbopack dev serves chunks at STABLE `/_next/static/chunks/*` URLs whose
+// content changes every rebuild — cache-first there freezes stale code
+// (e.g. an old map chunk requiring a module the new graph no longer ships,
+// which surfaced as "module factory is not available"). So on dev origins
+// the worker is fetch-transparent: push handlers stay, nothing is cached.
+const IS_DEV_ORIGIN = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -42,6 +49,7 @@ async function trimCache(name, limit) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
+  if (IS_DEV_ORIGIN) return; // dev: network only, never cache (see above)
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
     // Remote images only; API lives on another origin and is never cached.
