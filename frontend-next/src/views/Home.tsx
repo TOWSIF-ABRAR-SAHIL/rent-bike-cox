@@ -445,7 +445,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       </section>
 
       {/* ============ POPULAR CATEGORIES ============ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 lg:pt-24 pb-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 lg:pt-24 pb-6">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Popular Bike Categories</h2>
           <p className="text-slate-500 text-sm max-w-xl mx-auto">Most popular worldwide categories due to their reliability, affordability, and features</p>
@@ -480,7 +480,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       </section>
 
       {/* ============ EXPLORE ON MAP ============ */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div ref={mapRef} className="rounded-2xl overflow-hidden border border-slate-200">
           {!mapInView ? (
             <div className="skeleton h-[320px] sm:h-[380px]" aria-label="Loading map" />

@@ -11,7 +11,8 @@ const WhatsAppButton = () => {
   const url = `https://wa.me/${PHONE}?text=${encodeURIComponent(MESSAGE)}`;
 
   return (
-    <div className="fixed bottom-20 md:bottom-6 right-4 z-40 flex flex-col items-end">
+    <div className="fixed right-6 z-50 bottom-24 md:bottom-6 flex flex-col items-end">
+      {/* bottom-6 exact on desktop; bottom-24 clears the 4.25rem BottomNav on mobile */}
       <button
         onClick={() => setOpen(!open)}
         className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110 order-last"

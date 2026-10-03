@@ -3,21 +3,26 @@ import Link from 'next/link';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Lock } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 /**
  * Anonymous teaser map for the homepage categories section. Shows pickup-zone
  * pins only — public business info. Makes NO network calls (no session, no
  * tracking API), so no live position can ever leak to a signed-out visitor.
  * PRIVACY: never add live markers here; the live feed is session-gated.
+ *
+ * Pin coordinates are display offsets, not survey GPS: Laboni / Kolatoli /
+ * Sea Beach sit within ~1km of each other and their 30px pins would stack
+ * into one blob at zoom 10, so each is nudged apart to stay separately
+ * clickable. Names and ordering match PICKUP_SPOTS.
  */
 const ZONE_PINS: { name: string; lat: number; lng: number }[] = [
   { name: 'Laboni Beach', lat: 21.4272, lng: 91.97 },
   { name: 'Marine Drive', lat: 21.38, lng: 92.0 },
   { name: 'Inani Beach', lat: 21.13, lng: 92.05 },
   { name: 'Himchari', lat: 21.34, lng: 92.0 },
-  { name: 'Kolatoli', lat: 21.415, lng: 91.976 },
-  { name: 'Sea Beach', lat: 21.425, lng: 91.972 },
+  { name: 'Kolatoli', lat: 21.406, lng: 91.984 },
+  { name: 'Sea Beach', lat: 21.436, lng: 91.962 },
 ];
 
 const zoneIcon = L.divIcon({
@@ -44,14 +49,16 @@ const ZoneTeaserMap = () => {
           </Marker>
         ))}
       </MapContainer>
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] w-max max-w-[92%]">
-        <div className="flex items-center gap-3 bg-white/95 backdrop-blur rounded-xl shadow-xl border border-slate-200 pl-4 pr-2 py-2">
-          <MapPin size={18} className="text-orange-500 shrink-0" />
-          <p className="text-[13px] font-bold text-slate-900">See live bikes on this map</p>
-          <Link href="/login" className="inline-flex items-center gap-1.5 bg-neutral-900 hover:bg-black text-white text-[13px] font-bold px-4 py-2 rounded-lg transition-all shrink-0">
-            <Lock size={13} /> Sign in
-          </Link>
-        </div>
+      {/* Compact corner pill (no auth buttons — navbar owns those). Bottom-left
+          so it never covers the central pin cluster; z below Leaflet's marker
+          pane (600) so pins stay visible and clickable above it. */}
+      <div className="absolute bottom-3 left-3 z-[500]">
+        <Link href="/login"
+          className="flex items-center gap-2 bg-white/95 backdrop-blur rounded-full shadow-lg border border-slate-200 pl-3 pr-4 py-2 hover:shadow-xl transition-shadow"
+          aria-label="Sign in to see live bikes on this map">
+          <MapPin size={15} className="text-orange-500 shrink-0" />
+          <span className="text-xs font-bold text-slate-900 whitespace-nowrap">See live bikes on this map</span>
+        </Link>
       </div>
     </div>
   );
