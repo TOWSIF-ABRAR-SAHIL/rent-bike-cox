@@ -261,7 +261,7 @@ const BookingWidget = ({ bike, token, onProceed, headerActions, hideHeader = fal
               <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
             </div>
             <div className="flex justify-between mt-1">
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Advance ({pricing.advancePercent}%):</span>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Advance ({Math.round((pricing.advancePercent ?? 0) * 100)}%):</span>
               <span className="text-sm font-bold" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</span>
             </div>
           </div>

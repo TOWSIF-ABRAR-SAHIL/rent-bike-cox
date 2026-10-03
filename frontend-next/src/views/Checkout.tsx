@@ -1,5 +1,4 @@
 "use client";
-import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -10,6 +9,7 @@ import { CreditCard, AlertTriangle, Tag, MapPin, Clock, CheckCircle, Loader2, Ch
 import { SkeletonPage } from '../components/ui/Skeleton';
 import { useToast } from '../components/useToast';
 import { useAuth } from '../context/useAuth';
+import SafeImage from '../components/SafeImage';
 import { PICKUP_SPOTS, getSavedPickupLocation, savePickupLocation } from '../lib/pickupSpots';
 
 const POLL_INTERVAL_MS = 20000;
@@ -37,6 +37,7 @@ interface PreviewData {
   pricing?: PricingInfo;
   available?: boolean;
   conflictMessage?: string;
+  couponError?: string;
 }
 
 const formatDateTime = (date: string | Date) => {
@@ -47,6 +48,12 @@ const formatDateTime = (date: string | Date) => {
 };
 
 const formatDisplayDate = (dateStr: string | Date) => new Date(dateStr).toLocaleString('en-BD', { dateStyle: 'medium', timeStyle: 'short' });
+
+// Light-theme form primitives (page is always light, like Home/Search/Details).
+const cardCls = 'bg-white rounded-2xl border border-slate-200 p-5 sm:p-6';
+const inputCls = 'w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-900 placeholder:text-slate-400 outline-none focus:border-orange-500 transition-all min-h-11';
+const labelCls = 'block text-[11px] font-bold uppercase tracking-wide mb-1.5 text-slate-500';
+const sectionTitleCls = 'text-sm font-black mb-4 flex items-center gap-2 text-slate-900';
 
 const Checkout = () => {
   const { bikeId } = useParams();
@@ -251,11 +258,11 @@ const Checkout = () => {
   };
 
   if (!bookingData && fetchError) return (
-    <div className="min-h-[60vh] flex items-center justify-center p-4">
-      <div className="text-center glass rounded-2xl p-8 max-w-md">
-        <AlertTriangle size={40} className="mx-auto mb-4" style={{ color: 'var(--warning-text)' }} />
-        <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>No Booking Data</h2>
-        <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{fetchError}</p>
+    <div className="bg-[#f4f6fa] min-h-[60vh] flex items-center justify-center p-4">
+      <div className="text-center bg-white border border-slate-200 rounded-2xl p-8 max-w-md">
+        <AlertTriangle size={40} className="mx-auto mb-4 text-amber-500" />
+        <h2 className="text-xl font-black mb-2 text-slate-900">No Booking Data</h2>
+        <p className="text-sm mb-4 text-slate-500">{fetchError}</p>
         <button onClick={() => router.push(`/bike/${bikeId}`)} className="btn-primary" aria-label="Go to vehicle page">Select Booking Details</button>
       </div>
     </div>
@@ -268,70 +275,74 @@ const Checkout = () => {
   const endTime = bookingData.endTime;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+    <div className="bg-[#f4f6fa] animate-fade-in">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <nav className="flex items-center gap-1.5 text-xs mb-4 flex-wrap" style={{ color: 'var(--text-muted)' }}>
-          <Link href="/" className="hover:underline" style={{ color: 'var(--accent-text)' }}>Home</Link>
+      <div className="mb-6 sm:mb-8">
+        <nav className="flex items-center gap-1.5 text-xs mb-4 flex-wrap text-slate-400" aria-label="Breadcrumb">
+          <Link href="/" className="hover:underline text-orange-600 font-semibold">Home</Link>
           <ChevronRight size={12} />
-          <Link href="/search" className="hover:underline" style={{ color: 'var(--accent-text)' }}>Vehicles</Link>
+          <Link href="/search" className="hover:underline text-orange-600 font-semibold">Vehicles</Link>
           <ChevronRight size={12} />
-          <span style={{ color: 'var(--text-secondary)' }}>{displayBike?.model || 'Vehicle'}</span>
+          <span className="text-slate-500">{displayBike?.model || 'Vehicle'}</span>
           <ChevronRight size={12} />
-          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>Checkout</span>
+          <span className="font-bold text-slate-900">Checkout</span>
         </nav>
-        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Complete Your Booking</h1>
-        <div className="flex items-center gap-3 mt-3">
-          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--success-text)' }}>
-            <span className="w-2 h-2 rounded-full" style={{ background: 'var(--success-text)' }} /> Select
-          </span>
-          <span className="h-px flex-1 max-w-8" style={{ background: 'var(--border-base)' }} />
-          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
-            <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-text)' }} /> Details
-          </span>
-          <span className="h-px flex-1 max-w-8" style={{ background: 'var(--border-base)' }} />
-          <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-            <span className="w-2 h-2 rounded-full border-2" style={{ borderColor: 'var(--border-base)' }} /> Payment
-          </span>
-        </div>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Complete Your Booking</h1>
+        <ol className="flex items-center gap-2 sm:gap-3 mt-4" aria-label="Checkout progress">
+          {['Select', 'Details', 'Payment'].map((label, i) => {
+            const done = i < 2;
+            const current = i === 2;
+            return (
+              <li key={label} className="flex items-center gap-2 sm:gap-3">
+                {i > 0 && <span className={`h-px w-6 sm:w-8 ${done ? 'bg-teal-500' : 'bg-slate-200'}`} />}
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black ${
+                  done ? 'bg-teal-500 text-white' : current ? 'bg-orange-500 text-white' : 'bg-white border border-slate-200 text-slate-400'}`}>
+                  {done ? '✓' : i + 1}
+                </span>
+                <span className={`text-xs font-bold ${done ? 'text-teal-700' : current ? 'text-orange-600' : 'text-slate-400'}`}>{label}</span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       {error && (
-        <div ref={errorRef} className="border p-4 rounded-2xl mb-6 text-sm flex items-start gap-2" style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)', color: 'var(--danger-text)' }}>
+        <div ref={errorRef} className="border border-red-200 bg-red-50 text-red-700 p-4 rounded-2xl mb-6 text-sm flex items-start gap-2">
           <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
           <div className="flex-1">
             <span>{error}</span>
             {error.includes('go back') && (
-              <Link href={`/bike/${bikeId}`} className="block mt-2 font-semibold underline text-xs" style={{ color: 'var(--accent-text)' }}>
+              <Link href={`/bike/${bikeId}`} className="block mt-2 font-bold underline text-xs text-orange-600">
                 Go back to vehicle &rarr;
               </Link>
             )}
           </div>
-          <button onClick={() => setError('')} className="text-xs font-bold flex-shrink-0" style={{ color: 'var(--danger-text)' }} aria-label="Close">&times;</button>
+          <button onClick={() => setError('')} className="text-xs font-black flex-shrink-0 text-red-700" aria-label="Close">&times;</button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-11 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 lg:gap-8">
         {/* LEFT COLUMN — Form */}
-        <div className="lg:col-span-6 space-y-6">
+        <div className="lg:col-span-6 space-y-5">
           {/* Customer Information */}
-          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
-            <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <FileText size={16} style={{ color: 'var(--accent-text)' }} /> Customer Information
+          <div className={cardCls}>
+            <h2 className={sectionTitleCls}>
+              <FileText size={16} className="text-orange-500" /> Customer Information
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Full Name</label>
-                <input type="text" value={user?.name || ''} readOnly className="input-dark text-sm opacity-70 cursor-not-allowed" aria-label="Full name" />
+                <label className={labelCls}>Full Name</label>
+                <input type="text" value={user?.name || ''} readOnly className={`${inputCls} opacity-70 cursor-not-allowed bg-slate-50`} aria-label="Full name" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Email</label>
-                  <input type="email" value={user?.email || ''} readOnly className="input-dark text-sm opacity-70 cursor-not-allowed" aria-label="Email" />
+                  <label className={labelCls}>Email</label>
+                  <input type="email" value={user?.email || ''} readOnly className={`${inputCls} opacity-70 cursor-not-allowed bg-slate-50`} aria-label="Email" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Identity</label>
-                  <div className="input-dark text-sm flex items-center gap-1.5" style={{ color: 'var(--success-text)' }}>
+                  <label className={labelCls}>Identity</label>
+                  <div className="px-3 py-2.5 rounded-xl text-sm min-h-11 flex items-center gap-1.5 bg-teal-50 border border-teal-200 text-teal-700 font-bold">
                     <CheckCircle size={14} /> Verified
                   </div>
                 </div>
@@ -340,15 +351,15 @@ const Checkout = () => {
           </div>
 
           {/* Trip Details */}
-          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
-            <h2 className="text-sm font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <MapPin size={16} style={{ color: 'var(--accent-text)' }} /> Trip Details
+          <div className={cardCls}>
+            <h2 className={sectionTitleCls}>
+              <MapPin size={16} className="text-orange-500" /> Trip Details
             </h2>
             <div className="space-y-3">
               <div>
-                <label htmlFor="checkout-pickup" className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Pickup Location</label>
+                <label htmlFor="checkout-pickup" className={labelCls}>Pickup Location</label>
                 <select id="checkout-pickup" value={pickupLocation} onChange={(e) => setPickupLocation(e.target.value)}
-                  className="input-dark text-sm" aria-label="Pickup location">
+                  className={inputCls} aria-label="Pickup location">
                   <option value="">Anywhere in Cox&apos;s Bazar</option>
                   {PICKUP_SPOTS.map(spot => (
                     <option key={spot} value={spot}>{spot}</option>
@@ -356,77 +367,80 @@ const Checkout = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Destination / Trip Plan</label>
+                <label className={labelCls}>Destination / Trip Plan</label>
                 <textarea value={destination} onChange={(e) => setDestination(e.target.value)}
                   placeholder="e.g., Cox's Bazar Beach, Inani, Himchari"
                   rows={2}
-                  className="input-dark text-sm resize-none" aria-label="Destination or trip plan" />
+                  className={`${inputCls} resize-none`} aria-label="Destination or trip plan" />
               </div>
               <div>
-                <label className="block text-[11px] font-medium uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Special Requests (optional)</label>
+                <label className={labelCls}>Special Requests (optional)</label>
                 <textarea value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)}
                   placeholder="Any special requirements..."
                   rows={2}
-                  className="input-dark text-sm resize-none" aria-label="Special requests" />
+                  className={`${inputCls} resize-none`} aria-label="Special requests" />
               </div>
             </div>
           </div>
 
           {/* Coupon */}
-          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
-            <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <Tag size={16} style={{ color: 'var(--accent-text)' }} /> Coupon Code
+          <div className={cardCls}>
+            <h2 className={`${sectionTitleCls} !mb-3`}>
+              <Tag size={16} className="text-orange-500" /> Coupon Code
             </h2>
             <div className="flex gap-2">
               <input type="text" value={couponCode} onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="Enter coupon code" className="input-dark text-sm flex-1" aria-label="Coupon code" />
+                placeholder="Enter coupon code" className={`${inputCls} flex-1 uppercase`} aria-label="Coupon code" />
               <button onClick={() => setPreviewData(null)}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: 'var(--accent-bg)', color: 'var(--accent-text)', border: '1px solid var(--accent-border)' }}
+                className="px-5 py-2 rounded-xl text-sm font-bold transition-all bg-orange-500 hover:bg-orange-600 text-white"
                 aria-label="Apply coupon">
                 Apply
               </button>
             </div>
             {pricing?.couponApplied && (
-              <p className="text-xs mt-2 flex items-center gap-1" style={{ color: 'var(--success-text)' }}>
+              <p className="text-xs mt-2 flex items-center gap-1 font-bold text-teal-700">
                 <CheckCircle size={12} /> Coupon {pricing.couponApplied.code} applied (-{pricing.couponApplied.discount}%)
+              </p>
+            )}
+            {couponCode !== '' && previewData?.couponError && !pricing?.couponApplied && (
+              <p className="text-xs mt-2 flex items-center gap-1 font-bold text-red-600">
+                <AlertTriangle size={12} /> {previewData.couponError}
               </p>
             )}
           </div>
 
           {/* Terms */}
-          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
-            <label className="flex items-start cursor-pointer min-h-12 py-2 rounded-lg transition-colors" style={{ background: agreedToTerms ? 'var(--success-bg)' : 'transparent' }}>
+          <div className={cardCls}>
+            <label className={`flex items-start cursor-pointer min-h-12 py-2 px-3 -mx-3 rounded-xl transition-colors ${agreedToTerms ? 'bg-teal-50' : ''}`}>
               <input type="checkbox" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 mr-3 h-5 w-5 rounded flex-shrink-0"
-                style={{ accentColor: 'var(--accent-text)', borderColor: 'var(--border-strong)' }} />
-              <span className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                className="mt-0.5 mr-3 h-5 w-5 rounded flex-shrink-0 accent-orange-500" />
+              <span className="text-sm leading-relaxed text-slate-800">
                 I have read and agree to the{' '}
-                <Link href="/policies" target="_blank" className="font-medium underline" style={{ color: 'var(--accent-text)' }}>Terms &amp; Conditions</Link>
+                <Link href="/policies" target="_blank" className="font-bold underline text-orange-600">Terms &amp; Conditions</Link>
                 {' '}and{' '}
-                <Link href="/policies" target="_blank" className="font-medium underline" style={{ color: 'var(--accent-text)' }}>Rental Policy</Link>
+                <Link href="/policies" target="_blank" className="font-bold underline text-orange-600">Rental Policy</Link>
               </span>
             </label>
           </div>
 
           {/* Payment Methods (informational) */}
-          <div className="glass rounded-2xl p-6" style={{ border: '1px solid var(--border-base)' }}>
-            <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <CreditCard size={16} style={{ color: 'var(--accent-text)' }} /> Payment Methods
+          <div className={cardCls}>
+            <h2 className={`${sectionTitleCls} !mb-3`}>
+              <CreditCard size={16} className="text-orange-500" /> Payment Methods
             </h2>
             <div className="flex flex-wrap gap-2">
               {['bKash', 'Nagad', 'Bank Transfer', 'Visa', 'Mastercard'].map(method => (
-                <span key={method} className="px-3 py-1.5 rounded-lg text-xs font-medium" style={{ background: 'var(--input-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border-base)' }}>
+                <span key={method} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-50 text-slate-600 border border-slate-200">
                   {method}
                 </span>
               ))}
             </div>
-            <p className="text-[11px] mt-2" style={{ color: 'var(--text-muted)' }}>All payments processed securely via SSLCommerz</p>
+            <p className="text-[11px] mt-2 text-slate-400">All payments processed securely via SSLCommerz</p>
           </div>
 
           {/* Disabled Reason */}
           {isDisabled && !creating && disabledReason && (
-            <div ref={errorRef} className="rounded-xl p-3 text-sm font-medium flex items-center gap-2" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', color: 'var(--warning-text)' }}>
+            <div ref={errorRef} className="rounded-xl p-3 text-sm font-bold flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800">
               <AlertTriangle size={16} className="flex-shrink-0" />
               <span>{disabledReason}</span>
             </div>
@@ -436,10 +450,9 @@ const Checkout = () => {
           <button onClick={createBookingAndPay} disabled={isDisabled}
             className={`w-full py-4 min-h-12 rounded-xl font-bold text-white text-lg transition-all duration-300 flex items-center justify-center ${
               isDisabled
-                ? 'cursor-not-allowed'
+                ? 'cursor-not-allowed bg-slate-200 !text-slate-400'
                 : 'gradient-primary shadow-lg shadow-amber-500/25 hover:shadow-xl hover:-translate-y-0.5'
             }`}
-            style={isDisabled ? { background: 'var(--hover-bg)', color: 'var(--text-muted)' } : undefined}
             aria-label="Pay via SSLCommerz">
             {creating ? <Loader2 size={20} className="mr-2 animate-spin" /> : <CreditCard size={20} className="mr-2" />}
             {creating ? 'Processing...' : `Pay ${pricing?.minAdvance || '...'} TK via SSLCommerz`}
@@ -448,17 +461,17 @@ const Checkout = () => {
 
         {/* RIGHT COLUMN — Sticky Summary */}
         <div className="lg:col-span-5">
-          <div className="glass rounded-3xl p-6 space-y-5 sticky top-5" style={{ border: '1px solid var(--border-base)' }}>
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 space-y-5 sticky top-5 shadow-sm">
             {/* Vehicle Preview */}
-            <div className="flex items-center gap-4 pb-4 border-b" style={{ borderColor: 'var(--border-base)' }}>
-              {displayBike?.images?.[0] && (
-                <Image src={displayBike.images[0]} alt={displayBike.model ?? ''} width={64} height={64} className="rounded-xl object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/1a1a2e/666?text=N/A'; }} />
-              )}
-              <div className="min-w-0 flex-1">
-                <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>{displayBike?.model || 'Vehicle'}</h3>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{displayBike?.brand || ''} &bull; {(typeof displayBike?.category === 'string' ? undefined : displayBike?.category?.name) || 'Vehicle'}</p>
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-100">
+              <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 relative bg-slate-100">
+                <SafeImage src={displayBike?.images?.[0]} alt={displayBike?.model ?? ''} fill sizes="128px" className="object-cover" />
               </div>
-              <Link href={`/bike/${bikeId}`} className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--accent-text)' }}>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-sm text-slate-900 truncate">{displayBike?.model || 'Vehicle'}</h3>
+                <p className="text-xs text-slate-500">{displayBike?.brand || ''} &bull; {(typeof displayBike?.category === 'string' ? undefined : displayBike?.category?.name) || 'Vehicle'}</p>
+              </div>
+              <Link href={`/bike/${bikeId}`} className="text-xs font-bold flex-shrink-0 text-orange-600 hover:underline">
                 Change
               </Link>
             </div>
@@ -466,51 +479,51 @@ const Checkout = () => {
             {/* Booking Details — READ ONLY */}
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
-                  <Clock size={14} style={{ color: 'var(--accent-text)' }} />
+                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Clock size={14} className="text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Pickup</p>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(startTime ?? '')}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Pickup</p>
+                  <p className="text-sm font-bold text-slate-900">{formatDisplayDate(startTime ?? '')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
-                  <Clock size={14} style={{ color: 'var(--accent-text)' }} />
+                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <Clock size={14} className="text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Return</p>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{formatDisplayDate(endTime ?? '')}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Return</p>
+                  <p className="text-sm font-bold text-slate-900">{formatDisplayDate(endTime ?? '')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
-                  <span className="text-xs font-bold" style={{ color: 'var(--accent-text)' }}>{duration}h</span>
+                <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-black text-orange-600">{duration}h</span>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Duration</p>
-                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{duration} Hours</p>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">Duration</p>
+                  <p className="text-sm font-bold text-slate-900">{duration} Hours</p>
                 </div>
               </div>
               {pickupLocation && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
-                    <MapPin size={14} style={{ color: 'var(--accent-text)' }} />
+                  <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <MapPin size={14} className="text-orange-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Pickup Location</p>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{pickupLocation}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">Pickup Location</p>
+                    <p className="text-sm font-bold text-slate-900">{pickupLocation}</p>
                   </div>
                 </div>
               )}
               {destination && (
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent-bg)' }}>
-                    <MapPin size={14} style={{ color: 'var(--accent-text)' }} />
+                  <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    <MapPin size={14} className="text-orange-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Destination</p>
-                    <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{destination}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-400">Destination</p>
+                    <p className="text-sm font-bold text-slate-900">{destination}</p>
                   </div>
                 </div>
               )}
@@ -518,50 +531,51 @@ const Checkout = () => {
 
             {/* Price Breakdown */}
             {pricing && (
-              <div className="pt-4 border-t space-y-2" style={{ borderColor: 'var(--border-base)' }}>
+              <div className="pt-4 border-t border-slate-100 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: 'var(--text-secondary)' }}>Rental ({duration}h &times; {pricing.hourlyRate} TK)</span>
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
+                  <span className="text-slate-500">Rental ({duration}h &times; {pricing.hourlyRate} TK)</span>
+                  <span className="font-bold text-slate-900">{pricing.totalPrice} TK</span>
                 </div>
                 {pricing.couponApplied && (
-                  <div className="flex justify-between text-sm" style={{ color: 'var(--success-text)' }}>
+                  <div className="flex justify-between text-sm font-bold text-teal-700">
                     <span>Coupon Discount</span>
                     <span>-{pricing.couponApplied.discount}% off</span>
                   </div>
                 )}
-                <div className="border-t pt-2 mt-2" style={{ borderColor: 'var(--border-base)' }}>
+                <div className="border-t border-slate-100 pt-2 mt-2">
                   <div className="flex justify-between">
-                    <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Total Price</span>
-                    <span className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{pricing.totalPrice} TK</span>
+                    <span className="text-sm font-bold text-slate-900">Total Price</span>
+                    <span className="text-lg font-black text-slate-900">{pricing.totalPrice} TK</span>
                   </div>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: 'var(--text-secondary)' }}>Advance Required ({pricing.advancePercent}%)</span>
-                  <span className="font-bold" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</span>
+                  <span className="text-slate-500">Advance Required ({Math.round((pricing.advancePercent ?? 0) * 100)}%)</span>
+                  <span className="font-black text-orange-600">{pricing.minAdvance} TK</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span style={{ color: 'var(--text-secondary)' }}>Pay on Pickup</span>
-                  <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{(pricing.totalPrice ?? 0) - (pricing.minAdvance ?? 0)} TK</span>
+                  <span className="text-slate-500">Pay on Pickup</span>
+                  <span className="font-bold text-slate-900">{(pricing.totalPrice ?? 0) - (pricing.minAdvance ?? 0)} TK</span>
                 </div>
               </div>
             )}
 
             {/* Pay Now Highlight */}
             {pricing && (
-              <div className="rounded-xl p-4 text-center" style={{ background: 'var(--accent-bg)', border: '1px solid var(--accent-border)' }}>
-                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Pay Now</p>
-                <p className="text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>{pricing.minAdvance} TK</p>
+              <div className="rounded-xl p-4 text-center bg-orange-500">
+                <p className="text-xs uppercase tracking-wide mb-1 font-bold text-orange-100">Pay Now</p>
+                <p className="text-2xl font-black text-white">{pricing.minAdvance} TK</p>
               </div>
             )}
 
             {/* Support */}
             <div className="text-center pt-2">
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Need help? Call <a href="tel:01891154443" className="font-medium" style={{ color: 'var(--accent-text)' }}>01891-154443</a> (24/7)
+              <p className="text-xs text-slate-400">
+                Need help? Call <a href="tel:01891154443" className="font-bold text-orange-600">01891-154443</a> (24/7)
               </p>
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
