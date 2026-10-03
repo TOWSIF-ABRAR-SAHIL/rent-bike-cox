@@ -19,11 +19,11 @@ export interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 export { ThemeContext };
 
-function getInitialTheme(): ThemeMode {
-  if (typeof window === 'undefined') return 'dark';
+function getStoredTheme(): ThemeMode | null {
+  if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem('theme');
   if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
-  return 'dark';
+  return null;
 }
 
 function resolveTheme(theme: ThemeMode): ResolvedTheme {
@@ -39,9 +39,21 @@ function applyTheme(resolved: ResolvedTheme): void {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+  // Fixed 'dark' first render on BOTH server and client so hydration matches;
+  // the stored preference syncs in an effect right after mount (no visual
+  // flash: applyTheme runs before paint on the same commit).
+  const [theme, setTheme] = useState<ThemeMode>('dark');
 
   const resolved = resolveTheme(theme);
+
+  useEffect(() => {
+    const stored = getStoredTheme();
+    if (stored && stored !== theme) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setTheme(stored);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     applyTheme(resolved);
