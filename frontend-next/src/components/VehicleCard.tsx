@@ -67,7 +67,7 @@ const VehicleCard = ({ bike, rating, badge = null }: VehicleCardProps) => {
       </div>
       <div className="p-5 flex flex-col flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-[17px] font-black text-slate-900 leading-snug">
+          <h3 className="text-[17px] font-black text-slate-900 leading-snug min-h-[3.2em] line-clamp-2">
             <Link href={`/bike/${bike._id}`} className="hover:text-orange-600 transition-colors">{bike.model}</Link>
           </h3>
           {bike.isVerified && (
@@ -87,19 +87,19 @@ const VehicleCard = ({ bike, rating, badge = null }: VehicleCardProps) => {
             {rating ? <><b className="text-slate-800">({(rating.avgRating || 0).toFixed(1)})</b> {rating.total || 0} Reviews</> : 'No reviews'}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-y-2.5 gap-x-2 mt-4 text-[12px] text-slate-600">
-          <span className="inline-flex items-center gap-1.5"><Gauge size={13} className="text-slate-400" />{conditionLabel}</span>
-          <span className="inline-flex items-center gap-1.5"><Navigation size={13} className="text-slate-400" />{(bike.currentMileage ?? 0) > 0 ? `${bike.currentMileage} KM` : 'Low KM'}</span>
-          <span className="inline-flex items-center gap-1.5"><Bike size={13} className="text-slate-400" />{categoryName || 'Vehicle'}</span>
-          <span className="inline-flex items-center gap-1.5"><Clock size={13} className="text-slate-400" />From {packageStart ? `${packageStart}h` : '1h'}</span>
-          <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-slate-400" />Cox&apos;s Bazar</span>
-          <span className="inline-flex items-center gap-1.5"><Shield size={13} className="text-slate-400" />Inspected</span>
+        <div className="grid grid-cols-3 gap-y-2.5 gap-x-2 mt-4 mb-4 text-[11px] text-slate-600">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Gauge size={13} className="text-slate-400 shrink-0" />{conditionLabel}</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Navigation size={13} className="text-slate-400 shrink-0" />{(bike.currentMileage ?? 0) > 0 ? `${bike.currentMileage} KM` : 'Low KM'}</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Bike size={13} className="text-slate-400 shrink-0" />{categoryName || 'Vehicle'}</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Clock size={13} className="text-slate-400 shrink-0" />From {packageStart ? `${packageStart}h` : '1h'}</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><MapPin size={13} className="text-slate-400 shrink-0" />Cox&apos;s Bazar</span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap"><Shield size={13} className="text-slate-400 shrink-0" />Inspected</span>
         </div>
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-          <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-500">
-            <MapPin size={13} /> Cox&apos;s Bazar
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-500 whitespace-nowrap">
+            <MapPin size={13} className="shrink-0" /> Cox&apos;s Bazar
           </span>
-          <p className="text-xl font-black text-red-600">{bike.pricePerHour} <span className="text-xs font-bold text-slate-500">TK/hr</span></p>
+          <p className="text-xl font-black text-red-600 whitespace-nowrap">{bike.pricePerHour} <span className="text-xs font-bold text-slate-500">TK/hr</span></p>
         </div>
         <Link href={`/bike/${bike._id}`}
           className="mt-4 inline-flex items-center justify-center gap-2 w-full py-3 rounded-lg text-sm font-bold bg-neutral-900 hover:bg-black text-white transition-all">
