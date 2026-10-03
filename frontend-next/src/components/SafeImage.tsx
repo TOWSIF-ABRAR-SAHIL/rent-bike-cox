@@ -36,7 +36,7 @@ const SafeImage = ({ src, alt, fill, width, height, sizes, className, eager }: S
       alt={alt}
       {...(fill ? { fill: true as const } : { width: width ?? 400, height: height ?? 300 })}
       sizes={sizes}
-      {...(eager ? { priority: true as const } : {})}
+      {...(eager ? { priority: true as const, fetchPriority: 'high' as const, loading: 'eager' as const } : {})}
       className={className}
       onError={() => setFailed(true)}
     />

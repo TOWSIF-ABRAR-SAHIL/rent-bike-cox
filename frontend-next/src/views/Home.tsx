@@ -263,16 +263,6 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
       .map((b: BikeType) => b._id);
   }, [bikes, activeCategory]);
 
-  /** Top 4 for the Featured row: rated first, verified fill the rest. */
-  const featuredBikes = useMemo(() => {
-    const scored = bikes.map(b => {
-      const r = bikeRatings[b._id];
-      const score = r && (r.total || 0) > 0 ? (r.avgRating || 0) * 100 + Math.min(r.total ?? 0, 50) : (b.isVerified ? 1 : 0);
-      return { bike: b, score };
-    });
-    return scored.sort((a, b) => b.score - a.score).slice(0, 4).map(s => s.bike);
-  }, [bikes, bikeRatings]);
-
   const orgSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -507,29 +497,8 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
         )}
       </section>
 
-      {/* ============ FEATURED BIKES ============ */}
-      {featuredBikes.length > 0 && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-2">Featured &amp; Top Rated Bikes</h2>
-            <p className="text-slate-500 text-sm max-w-xl mx-auto">Here is a list of some of the most loved bikes globally, based on user votes and reviews</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredBikes.map(bike => {
-              const rating = bikeRatings[bike._id];
-              const isTopRated = rating && (rating.avgRating || 0) >= 4.5 && (rating.total || 0) > 0;
-              return (
-                <VehicleCard key={bike._id} bike={bike} rating={rating} badge={isTopRated ? 'top' : bike.isVerified ? 'featured' : null} />
-              );
-            })}
-          </div>
-          <div className="text-center mt-8">
-            <a href="#vehicles" className="inline-flex items-center gap-2 bg-neutral-900 text-white font-bold px-7 py-3 rounded-lg text-sm hover:bg-black transition-all">
-              View All Bikes <ArrowRight size={15} />
-            </a>
-          </div>
-        </section>
-      )}
+      {/* Featured row retired: the same 4 bikes render in Most Popular Bikes
+          below with identical top/featured badges — one list, no duplicates. */}
 
       {/* ============ HOW IT WORKS ============ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
