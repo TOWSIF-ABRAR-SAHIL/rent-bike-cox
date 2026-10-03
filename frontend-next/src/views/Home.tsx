@@ -19,11 +19,28 @@ import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useAuth } from '../context/useAuth';
 import useSiteContent from '../hooks/useSiteContent';
 import dynamic from 'next/dynamic';
-const ZoneTeaserMap = dynamic(() => import('../components/ZoneTeaserMap'), {
+/**
+ * Retry a dynamic import before giving up. A stale tab (old chunk hashes
+ * after `next dev` recompiles) fails the first attempt with a chunk 404;
+ * retrying lets the browser re-resolve instead of dropping to the boundary.
+ */
+const importWithRetry = <T,>(fn: () => Promise<T>, attempts = 3, delayMs = 800): Promise<T> => {
+  const attempt = async (left: number): Promise<T> => {
+    try {
+      return await fn();
+    } catch (e) {
+      if (left <= 1) throw e;
+      await new Promise(r => setTimeout(r, delayMs));
+      return attempt(left - 1);
+    }
+  };
+  return attempt(attempts);
+};
+const ZoneTeaserMap = dynamic(() => importWithRetry(() => import('../components/ZoneTeaserMap')), {
   ssr: false,
   loading: () => <div className="skeleton rounded-2xl" style={{ height: 380 }} />,
 });
-const LiveFleetMap = dynamic(() => import('../components/LiveFleetMap'), {
+const LiveFleetMap = dynamic(() => importWithRetry(() => import('../components/LiveFleetMap')), {
   ssr: false,
   loading: () => <div className="skeleton rounded-2xl" style={{ height: 400 }} />,
 });

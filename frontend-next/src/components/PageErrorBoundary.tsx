@@ -56,6 +56,16 @@ class PageErrorBoundary extends Component<PageErrorBoundaryProps, PageErrorBound
             <button onClick={this.handleRetry} className="btn-primary text-sm px-4 py-2 inline-flex items-center gap-2">
               <RefreshCw size={14} /> Try Again
             </button>
+            {process.env.NODE_ENV === 'development' && this.state.error && (
+              <details className="mt-4 text-left">
+                <summary className="text-xs cursor-pointer font-mono" style={{ color: 'var(--text-muted)' }}>
+                  Error detail (dev only)
+                </summary>
+                <pre className="mt-2 p-2 rounded-lg text-[11px] font-mono overflow-auto max-h-40" style={{ background: 'var(--input-bg)', color: 'var(--danger-text)' }}>
+                  {String(this.state.error?.message || this.state.error)}
+                </pre>
+              </details>
+            )}
           </div>
         </div>
       );
