@@ -13,6 +13,7 @@ import EmptyState from '../components/ui/EmptyState';
 import VehicleCard from '../components/VehicleCard';
 import ShowcaseImage from '../components/ShowcaseImage';
 import SafeImage from '../components/SafeImage';
+import PageErrorBoundary from '../components/PageErrorBoundary';
 import { NEWS } from '../data/homepage';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
 import { useAuth } from '../context/useAuth';
@@ -481,6 +482,8 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
 
       {/* ============ EXPLORE ON MAP ============ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Section-level boundary: a map crash (Leaflet/tiles) must never take down the whole homepage */}
+        <PageErrorBoundary fallbackMessage="The map failed to load. The rest of the page works fine — try again below.">
         <div ref={mapRef} className="rounded-2xl overflow-hidden border border-slate-200">
           {!mapInView ? (
             <div className="skeleton h-[320px] sm:h-[380px]" aria-label="Loading map" />
@@ -495,6 +498,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
             <ZoneTeaserMap />
           )}
         </div>
+        </PageErrorBoundary>
         {user && activeCategory && (
           <p className="text-center text-xs text-slate-500 mt-3">
             Showing {mapBikeIds?.length ?? 0} {activeCategory} on the map •
