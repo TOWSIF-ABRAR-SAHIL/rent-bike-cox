@@ -21,6 +21,7 @@ import TemplateManager from '../components/admin/TemplateManager';
 import FAQManager from '../components/admin/FAQManager';
 import MessageInbox from '../components/admin/MessageInbox';
 import CampaignManager from '../components/admin/CampaignManager';
+import DisputeManager from '../components/admin/DisputeManager';
 import SystemHealthTab from '../components/admin/SystemHealthTab';
 import LogsViewer from '../components/admin/LogsViewer';
 import CacheManager from '../components/admin/CacheManager';
@@ -322,6 +323,7 @@ const AdminDashboard = () => {
         <TabButton active={activeTab === 'faq'} onClick={() => setActiveTab('faq')} icon={HelpCircle}>FAQ</TabButton>
         <TabButton active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} icon={Inbox}>Messages</TabButton>
         <TabButton active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} icon={Send}>Campaigns</TabButton>
+        <TabButton active={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} icon={AlertTriangle}>Disputes</TabButton>
         <button onClick={() => setShowAdvanced(v => !v)}
           className="flex items-center px-4 py-3 min-h-11 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap snap-start border border-dashed"
           style={{
@@ -1112,6 +1114,7 @@ const AdminDashboard = () => {
       {activeTab === 'faq' && <TabErrorBoundary name="FAQ"><FAQManager /></TabErrorBoundary>}
       {activeTab === 'messages' && <TabErrorBoundary name="Messages"><MessageInbox /></TabErrorBoundary>}
       {activeTab === 'campaigns' && <TabErrorBoundary name="Campaigns"><CampaignManager /></TabErrorBoundary>}
+      {activeTab === 'disputes' && <TabErrorBoundary name="Disputes"><DisputeManager /></TabErrorBoundary>}
       {activeTab === 'health' && <TabErrorBoundary name="System Health"><SystemHealthTab /></TabErrorBoundary>}
       {activeTab === 'logs' && <TabErrorBoundary name="Logs"><LogsViewer /></TabErrorBoundary>}
       {activeTab === 'cache' && <TabErrorBoundary name="Cache"><CacheManager /></TabErrorBoundary>}

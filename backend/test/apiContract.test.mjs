@@ -26,6 +26,8 @@ const systemHealthController = require('../controllers/systemHealthController');
 const rateLimitController = require('../controllers/rateLimitController');
 const cacheController = require('../controllers/cacheController');
 const campaignController = require('../controllers/campaignController');
+const disputeController = require('../controllers/disputeController');
+const Dispute = require('../models/Dispute');
 const EmailCampaign = require('../models/EmailCampaign');
 const { defaultCache } = require('../utils/cache');
 const { RedisCache } = require('../utils/redisCache');
@@ -38,7 +40,7 @@ async function callController(handler) {
     status(code) { this.statusCode = code; return this; },
     json(body) { captured = body; return this; },
   };
-  await handler({ user: { id: 'contract-test' }, body: {}, params: {}, query: {} }, res);
+  await handler({ user: { id: 'contract-test', role: 'Admin' }, body: {}, params: {}, query: {} }, res);
   if (captured === undefined) throw new Error('controller did not call res.json');
   return captured;
 }
@@ -170,6 +172,53 @@ const CONTRACTS = [
         return body.campaigns;
       } finally {
         restore();
+      }
+    },
+  },
+  {
+    name: 'Disputes tab ← GET /api/disputes/admin/all + /admin/stats',
+    component: 'src/components/admin/DisputeManager.tsx',
+    roots: ['dp', 'stats', 'r'],
+    response: async () => {
+      // A representative populated dispute: every field the tab reads must
+      // appear here (user/bike/resolvedBy as the controller populates them).
+      const sample = {
+        _id: '64b000000000000000000099',
+        user: { name: 'Karim Uddin', email: 'karim@example.com', phoneNumber: '01811111111' },
+        booking: '64b000000000000000000088',
+        bike: { model: 'Ntorq 125', brand: 'TVS' },
+        reason: 'overcharge',
+        description: 'Charged extra for helmet',
+        status: 'Open',
+        resolution: '',
+        resolvedBy: { name: 'Admin' },
+        resolvedAt: null,
+        createdAt: new Date('2026-09-01T00:00:00.000Z'),
+      };
+      const originalFind = Dispute.find;
+      const originalCount = Dispute.countDocuments;
+      const originalAggregate = Dispute.aggregate;
+      // find → populate ×3 → sort → skip → limit → lean (controller order)
+      Dispute.find = () => ({
+        populate: () => ({ populate: () => ({ populate: () => ({
+          sort: () => ({ skip: () => ({ limit: () => ({ lean: async () => [sample] }) }) }),
+        }) }) }),
+      });
+      Dispute.countDocuments = async () => 1;
+      Dispute.aggregate = async (pipeline) => {
+        if (JSON.stringify(pipeline).includes('underReview')) {
+          return [{ total: 1, open: 1, underReview: 0, resolved: 0, rejected: 0 }];
+        }
+        return [{ _id: 'overcharge', count: 1 }];
+      };
+      try {
+        const list = await callController(disputeController.getAllDisputes);
+        const statsBody = await callController(disputeController.getDisputeStats);
+        return { disputes: list.disputes, stats: statsBody.stats, byReason: statsBody.byReason };
+      } finally {
+        Dispute.find = originalFind;
+        Dispute.countDocuments = originalCount;
+        Dispute.aggregate = originalAggregate;
       }
     },
   },
