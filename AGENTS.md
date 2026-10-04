@@ -379,10 +379,27 @@ Additional script (not on an interval — manually triggered):
 - Custom classes like `.glass`, `.gradient-primary` defined in `@layer utilities` with **plain CSS properties**
 
 ### Design system
-Dark theme (`#0a0a0f`), glassmorphism (`.glass`, `.glass-light`, `.glass-dark`), 4 gradient classes, CSS animations (`fadeIn`, `slideUp`, `slideIn`, `float`, `glowPulse`, `shimmer`). Print stylesheet for invoices (`.no-print`).
+**Light is the default theme** — the product design (`figma/`) is the light S-Rent layout, so
+`<html className="light">` is server-rendered and `ThemeContext` starts in `'light'`.
+Dark mode remains a user toggle (`html.dark`). Glassmorphism (`.glass`, `.glass-light`,
+`.glass-dark`), 4 gradient classes, CSS animations (`fadeIn`, `slideUp`, `slideIn`, `float`,
+`glowPulse`, `shimmer`). Print stylesheet for invoices (`.no-print`).
+
+Never hardcode a dark page background in `layout.tsx`/`body`: a dark pair on the server
+shows as a black flash on every client-side route.
+
+### Pickup spots
+
+`lib/pickupSpots.ts` is the single source of truth: `PICKUP_SPOTS` (names, in display order)
+and `PICKUP_SPOT_COORDS` (real lat/lng). The hero dropdown, checkout payload and the
+homepage teaser map all read it, so a spot can never exist in the dropdown but not on the
+map. The coordinates are genuine Cox's Bazar positions checked against OSM land polygons —
+an earlier set of hand-nudged "display offsets" rendered every pin in the Bay of Bengal.
+Verify any change against the tiles before committing (`src/lib/pickupSpots.test.ts` pins
+the coastal bounding box, but only a tile check proves land vs water).
 
 ### CSS Variables
-- Light mode: lavender base `#e8e4f0`, cards `#f3f0f8`, footer `#3d3550`
+- Light mode (default): white base/cards `#ffffff`, section band `#f4f6fa`, slate text, near-black footer `#0f1115`
 - Dark mode: base `#0a0a0f`, cards `#0d0d14`, footer `#0a0a0f`
 - 18 accent CSS variables (text + bg + border for accent, success, warning, danger, info, purple)
 - Footer uses dedicated `--footer-text`/`--footer-muted` variables

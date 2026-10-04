@@ -13,11 +13,19 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Content-hashed in a production build, so immutable caching is right there.
+    // In dev the Turbopack chunk URLs are stable, so the same header pins a
+    // year-old copy in the browser and every edit needs a manual cache clear
+    // (stale UI, HMR that appears to do nothing). Dev must not cache them.
+    const staticCacheControl =
+      process.env.NODE_ENV === "production"
+        ? "public, max-age=31536000, immutable"
+        : "no-store";
     return [
       {
         source: "/_next/static/(.*)",
         headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          { key: "Cache-Control", value: staticCacheControl },
         ],
       },
       {

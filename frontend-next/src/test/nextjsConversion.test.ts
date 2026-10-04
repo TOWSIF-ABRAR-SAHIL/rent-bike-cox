@@ -148,4 +148,35 @@ describe("Next.js conversion guard", () => {
       }
     });
   });
+
+  describe("theme default", () => {
+    // The product design (figma/) is the light S-Rent layout, so light is the
+    // out-of-the-box theme. If this drifts back to dark, every theme-variable
+    // page (login, dashboards, admin) renders against the design again, and the
+    // dark `html`/body pair reappears as a black flash before hydration.
+    const layout = () => fs.readFileSync(path.join(SRC, "app/layout.tsx"), "utf8");
+    const themeContext = () =>
+      fs.readFileSync(path.join(SRC, "context/ThemeContext.tsx"), "utf8");
+
+    it("server-renders the light theme with a light body background", () => {
+      const code = layout();
+      expect(code).toMatch(/<html[^>]*className="light"/);
+      expect(code).not.toMatch(/<html[^>]*className="dark"/);
+      expect(code).toMatch(/<body[^>]*bg-white/);
+      expect(code).not.toMatch(/bg-\[#0a0a0f\]/);
+    });
+
+    it("defaults the theme state and the system fallback to light", () => {
+      const code = themeContext();
+      expect(code).toMatch(/useState<ThemeMode>\('light'\)/);
+      expect(code).toMatch(/typeof window === 'undefined'\) return 'light'/);
+      expect(code).not.toMatch(/useState<ThemeMode>\('dark'\)/);
+    });
+
+    it("keeps the light palette neutral (white base, no violet tint)", () => {
+      const css = fs.readFileSync(path.join(SRC, "app/globals.css"), "utf8");
+      const light = css.slice(css.indexOf("html.light {"), css.indexOf("html.light {") + 400);
+      expect(light).toContain("--bg-base: #ffffff");
+    });
+  });
 });

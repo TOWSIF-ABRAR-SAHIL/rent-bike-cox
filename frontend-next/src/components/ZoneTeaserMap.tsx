@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin } from 'lucide-react';
+import { PICKUP_SPOTS, PICKUP_SPOT_COORDS } from '../lib/pickupSpots';
 
 /**
  * Anonymous teaser map for the homepage categories section. Shows pickup-zone
@@ -11,19 +12,13 @@ import { MapPin } from 'lucide-react';
  * tracking API), so no live position can ever leak to a signed-out visitor.
  * PRIVACY: never add live markers here; the live feed is session-gated.
  *
- * Pin coordinates are display offsets, not survey GPS: Laboni / Kolatoli /
- * Sea Beach sit within ~1km of each other and their 30px pins would stack
- * into one blob at zoom 10, so each is nudged apart to stay separately
- * clickable. Names and ordering match PICKUP_SPOTS.
+ * Coordinates come from `PICKUP_SPOT_COORDS` (real positions, verified on
+ * land) and the names/order come from `PICKUP_SPOTS`, so the map can never
+ * drift from the hero's pickup dropdown again.
  */
-const ZONE_PINS: { name: string; lat: number; lng: number }[] = [
-  { name: 'Laboni Beach', lat: 21.4272, lng: 91.97 },
-  { name: 'Marine Drive', lat: 21.38, lng: 92.0 },
-  { name: 'Inani Beach', lat: 21.13, lng: 92.05 },
-  { name: 'Himchari', lat: 21.34, lng: 92.0 },
-  { name: 'Kolatoli', lat: 21.406, lng: 91.984 },
-  { name: 'Sea Beach', lat: 21.436, lng: 91.962 },
-];
+const ZONE_PINS: { name: string; lat: number; lng: number }[] = PICKUP_SPOTS
+  .filter(name => PICKUP_SPOT_COORDS[name])
+  .map(name => ({ name, lat: PICKUP_SPOT_COORDS[name][0], lng: PICKUP_SPOT_COORDS[name][1] }));
 
 const zoneIcon = L.divIcon({
   className: '',

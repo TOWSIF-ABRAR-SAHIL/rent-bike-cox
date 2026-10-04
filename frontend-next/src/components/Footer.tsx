@@ -62,7 +62,7 @@ const Footer = () => {
 
       <div className="border-t mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4" style={{ borderColor: 'var(--footer-border)' }}>
         <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>&copy; 2026 {get('global.siteName', "Rent Bike Cox's Bazar")}. All rights reserved.</p>
-        <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>Built with React, Express & MongoDB</p>
+        <p className="text-xs" style={{ color: 'var(--footer-muted)' }}>Built with Next.js, Express & MongoDB</p>
       </div>
     </div>
   </footer>

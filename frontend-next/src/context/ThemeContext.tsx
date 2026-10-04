@@ -28,8 +28,10 @@ function getStoredTheme(): ThemeMode | null {
 
 function resolveTheme(theme: ThemeMode): ResolvedTheme {
   if (theme !== 'system') return theme;
-  if (typeof window === 'undefined') return 'dark';
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  // The S-Rent design is the light layout, so an unknown/system preference
+  // still resolves to light on the server (no dark flash before hydration).
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function applyTheme(resolved: ResolvedTheme): void {
@@ -39,10 +41,11 @@ function applyTheme(resolved: ResolvedTheme): void {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Fixed 'dark' first render on BOTH server and client so hydration matches;
+  // Fixed 'light' first render on BOTH server and client so hydration matches;
   // the stored preference syncs in an effect right after mount (no visual
-  // flash: applyTheme runs before paint on the same commit).
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  // flash: applyTheme runs before paint on the same commit). Light is the
+  // default because the product design (figma/) is the light S-Rent layout.
+  const [theme, setTheme] = useState<ThemeMode>('light');
 
   const resolved = resolveTheme(theme);
 

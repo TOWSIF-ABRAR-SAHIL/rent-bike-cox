@@ -63,8 +63,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.className} bg-[#0a0a0f] antialiased`}>
+    <html lang="en" className="light">
+      <body className={`${inter.className} bg-white antialiased`}>
         <Providers>
           <ScrollToTop />
           <ServiceWorkerRegister />

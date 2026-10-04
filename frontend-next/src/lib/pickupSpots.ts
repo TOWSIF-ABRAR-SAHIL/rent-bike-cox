@@ -16,6 +16,28 @@ export const PICKUP_SPOTS: string[] = [
   'Sea Beach',
 ];
 
+/**
+ * Real Cox's Bazar positions for each pickup spot, keyed by name.
+ *
+ * These are **not** display offsets. The teaser map used to nudge hand-written
+ * coordinates apart so the pins would not overlap at zoom 10, and every one of
+ * them ended up rendering in the Bay of Bengal. Each pair here was checked
+ * against the OSM land polygons at zoom 16 and sits on the beach, the coastal
+ * strip or the Himchari hills. Re-verify before changing them:
+ *
+ *   https://tile.openstreetmap.org/{z}/{x}/{y}.png  — water is #aad3df
+ *
+ * (x, y from the Web-Mercator formula; sample the pixel under the pin.)
+ */
+export const PICKUP_SPOT_COORDS: Record<string, [number, number]> = {
+  'Laboni Beach': [21.4243, 91.9743],
+  'Marine Drive': [21.32, 92.04],
+  'Inani Beach': [21.18, 92.06],
+  'Himchari': [21.3569, 92.0245],
+  'Kolatoli': [21.41, 91.99],
+  'Sea Beach': [21.4505, 91.9548],
+};
+
 const STORAGE_KEY = 'rbc_pickup_location';
 
 export function getSavedPickupLocation(): string {

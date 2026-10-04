@@ -321,6 +321,20 @@ Session-scoped pages (profile, bookings, dashboards, checkout, invoice) must **n
 `serverApi`: they need the user's token, which exists only in the browser.
 `src/test/nextjsConversion.test.ts` fails if one starts importing it.
 
+## Theme
+
+**Light is the default**, because the product design (`figma/` — the S-Rent template) is the
+light layout. `src/app/layout.tsx` server-renders `<html class="light">` with a white `body`,
+and `ThemeContext` starts in `'light'` on both server and client so hydration matches. A
+returning visitor's stored choice (light / dark / system) is applied in an effect right
+after mount; `html.dark` is the alternate palette. `src/test/nextjsConversion.test.ts`
+pins the default so it cannot silently drift back to dark.
+
+The public pages (`Home`, listings, bike details, checkout) are written in explicit Tailwind
+light utilities; everything else (auth, account, dashboards, admin, modals) reads the CSS
+variables in `globals.css`, so it follows the theme. When adding a page, style from the
+variables rather than a hardcoded background — otherwise it will not survive a theme flip.
+
 ## API Routes
 
 | Prefix | File | Access |

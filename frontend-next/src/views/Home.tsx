@@ -13,6 +13,7 @@ import EmptyState from '../components/ui/EmptyState';
 import VehicleCard from '../components/VehicleCard';
 import ShowcaseImage from '../components/ShowcaseImage';
 import SafeImage from '../components/SafeImage';
+import { orderPhotoFirst, pickHeroBikes } from '../lib/photoFirst';
 import PageErrorBoundary from '../components/PageErrorBoundary';
 import { NEWS } from '../data/homepage';
 import { CurrentSeasonalInfo } from '../components/SeasonalBadge';
@@ -91,12 +92,10 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [fetchError, setFetchError] = useState('');
   const [slowNetwork, setSlowNetwork] = useState(false);
-  // Start the carousel on a bike that actually has a photo (first paint matters).
-  const [heroSlide, setHeroSlide] = useState(() => {
-    const seed = initialBikes ?? [];
-    const i = seed.findIndex(b => (b.images || []).length > 0);
-    return i >= 0 ? i : 0;
-  });
+  // Index into `heroBikes` (photo-first) rather than into `bikes`: the fetched
+  // list can differ from the SSR seed, and the hero must never open on a bike
+  // whose photo is missing.
+  const [heroSlide, setHeroSlide] = useState(0);
   const [bikeRatings, setBikeRatings] = useState<Record<string, ReviewStats>>(initialRatings ?? {});
   const [faqs, setFaqs] = useState<Faq[]>(initialFaqs ?? []);
   const [rentalPackages, setRentalPackages] = useState<{ name: string; price: number }[] | null>(null);
@@ -298,7 +297,15 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
     }
   };
 
-  const heroBike = bikes.length > 0 ? bikes[heroSlide % bikes.length] : null;
+  // Carousel source: vehicles with an actual photo, so the first paint shows a
+  // bike instead of the placeholder tile.
+  const heroBikes = useMemo(() => pickHeroBikes(bikes), [bikes]);
+
+  // Lead the grid with vehicles that have a photo; a photo-less listing still
+  // appears, just not first.
+  const displayBikes = useMemo(() => orderPhotoFirst(bikes), [bikes]);
+
+  const heroBike = heroBikes.length > 0 ? heroBikes[heroSlide % heroBikes.length] : null;
 
   return (
     <div className="bg-white text-slate-900">
@@ -384,11 +391,11 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
                   <p className="text-lg font-black text-red-600">{heroBike.pricePerHour} <span className="text-xs font-semibold">TK/hr</span></p>
                 </div>
               )}
-              {bikes.length > 1 && (
+              {heroBikes.length > 1 && (
                 <div className="absolute -bottom-4 right-8 flex gap-1.5">
-                  {bikes.slice(0, 5).map((_, i) => (
+                  {heroBikes.slice(0, 5).map((_, i) => (
                     <button key={i} onClick={() => setHeroSlide(i)}
-                      className={`rounded-full transition-all ${heroSlide % bikes.length === i ? 'bg-orange-500 w-6 h-2' : 'bg-slate-300 hover:bg-slate-400 w-2 h-2'}`}
+                      className={`rounded-full transition-all ${heroSlide % heroBikes.length === i ? 'bg-orange-500 w-6 h-2' : 'bg-slate-300 hover:bg-slate-400 w-2 h-2'}`}
                       aria-label={`Go to slide ${i + 1}`} />
                   ))}
                 </div>
@@ -612,7 +619,7 @@ const Home = ({ initialBikes = null, initialCategories = null, initialFaqs = nul
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {bikes.map((bike, index) => {
+              {displayBikes.map((bike, index) => {
                 const rating = bikeRatings[bike._id];
                 const isTopRated = rating && (rating.avgRating || 0) >= 4.5 && (rating.total || 0) > 0;
                 const isFeatured = !isTopRated && bike.isVerified && index < 2;
