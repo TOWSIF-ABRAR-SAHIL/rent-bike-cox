@@ -522,8 +522,15 @@ function SidePanel({ open, onToggle, markers, selectedId, onSelect }: {
       <button
         onClick={onToggle}
         aria-label={open ? 'Collapse vehicle panel' : 'Expand vehicle panel'}
-        className="leaflet-top leaflet-left"
-        style={{ marginTop: '10px', marginLeft: '10px', zIndex: 1000, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, background: 'white', border: '2px solid rgba(0,0,0,0.2)', color: '#333', cursor: 'pointer' }}
+        className="leaflet-top leaflet-left leaflet-control"
+        // leaflet-control re-enables pointer events: Leaflet sets
+        // pointer-events:none on corner containers, so without this class the
+        // button is visible but dead (clicks fall through to the map).
+        // Closed: sit below Leaflet's own +/- zoom (top-left, ~72px tall) so
+        // the zoom control is never buried. Open: dock to the panel's right
+        // edge — the open panel (top:54, width:240) would otherwise swallow
+        // this button and it could never be collapsed again.
+        style={{ marginTop: open ? '10px' : '96px', marginLeft: open ? '254px' : '10px', zIndex: 1000, pointerEvents: 'auto', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, background: 'white', border: '2px solid rgba(0,0,0,0.2)', color: '#333', cursor: 'pointer' }}
       >
         {open ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
       </button>
@@ -594,9 +601,9 @@ function RecenterButton(): React.JSX.Element {
             else map.setView(COX_BAZAR, 12);
           } else map.setView(COX_BAZAR, 12);
         }}
-        className="leaflet-control-zoom"
+        className="leaflet-control-zoom leaflet-control"
         style={{
-          width: 34, height: 34, borderRadius: 4, cursor: 'pointer',
+          width: 34, height: 34, borderRadius: 4, cursor: 'pointer', pointerEvents: 'auto',
           background: 'white', border: '2px solid rgba(0,0,0,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 16,
