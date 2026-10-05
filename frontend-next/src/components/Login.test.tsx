@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 import Login from "@/components/Login";
+import { ToastProvider } from "@/components/Toast";
 
 const { loginMock, pushMock, postMock } = vi.hoisted(() => ({
   loginMock: vi.fn(),
@@ -34,7 +35,7 @@ beforeEach(() => {
 });
 
 async function submitCredentials(email = "rider@example.com", password = "wrong-password") {
-  render(<Login />);
+  render(<ToastProvider><Login /></ToastProvider>);
   fireEvent.change(screen.getByPlaceholderText("Email address"), { target: { value: email } });
   fireEvent.change(screen.getByPlaceholderText("Password"), { target: { value: password } });
   // The rejection settles a microtask later; flush it inside act so the state update
@@ -51,7 +52,8 @@ describe("Login error messages", () => {
     postMock.mockRejectedValue({ response: { status: 401, data: { message: "Invalid credentials" } } });
     await submitCredentials();
 
-    expect(await screen.findByText("Invalid credentials")).toBeInTheDocument();
+    // The same message also fires as a toast (inline error + toast together).
+    expect(await screen.findAllByText("Invalid credentials")).toHaveLength(2);
     expect(loginMock).not.toHaveBeenCalled();
   });
 
@@ -59,14 +61,14 @@ describe("Login error messages", () => {
     postMock.mockRejectedValue({ response: { status: 401, data: {} } });
     await submitCredentials();
 
-    expect(await screen.findByText("Invalid email or password")).toBeInTheDocument();
+    expect(await screen.findAllByText("Invalid email or password")).toHaveLength(2);
   });
 
   it("still explains a lockout (423)", async () => {
     postMock.mockRejectedValue({ response: { status: 423, data: { retryAfter: 900 } } });
     await submitCredentials();
 
-    expect(await screen.findByText(/Account temporarily locked/)).toBeInTheDocument();
+    expect(await screen.findAllByText(/Account temporarily locked/)).toHaveLength(2);
   });
 
   it("signs in and redirects on success", async () => {

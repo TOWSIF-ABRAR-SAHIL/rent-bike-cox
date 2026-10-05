@@ -5,9 +5,11 @@ import { useState, type ChangeEvent, type FormEvent } from 'react';
 import api, { type ApiError } from '../api/axios';
 
 import { useAuth } from '../context/useAuth';
+import { useToast } from './useToast';
 import { Mail, Lock, LogIn } from 'lucide-react';
 
 const Login = () => {
+  const { addToast } = useToast();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,12 +35,17 @@ const Login = () => {
         const retryAfter = data?.retryAfter || 900;
         const minutes = Math.ceil(retryAfter / 60);
         setError(`Account temporarily locked. Try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`);
+        addToast('Account temporarily locked — try again later', 'error');
       } else if (status === 401) {
         // A rejected login, not an expired session; the axios interceptor leaves a
         // credential 401 alone (see api/axios.ts) so `message` reaches the form.
-        setError(data?.message || 'Invalid email or password');
+        const msg = data?.message || 'Invalid email or password';
+        setError(msg);
+        addToast(msg, 'error');
       } else {
-        setError(data?.message || 'Login failed');
+        const msg = data?.message || 'Login failed';
+        setError(msg);
+        addToast(msg, 'error');
       }
     } finally {
       setLoading(false);
