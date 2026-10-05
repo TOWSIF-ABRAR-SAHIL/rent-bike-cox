@@ -3,15 +3,15 @@ const mongoose = require('mongoose');
 const announcementSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   message: { type: String, required: true },
-  type: { type: String, enum: ['banner', 'popup', 'notice', 'maintenance'], default: 'banner' },
-  position: { type: String, enum: ['top', 'bottom', 'modal', 'sidebar'], default: 'top' },
+  type: { type: String, enum: ['banner', 'popup', 'notice', 'toast', 'maintenance'], default: 'banner' },
+  position: { type: String, enum: ['top', 'bottom', 'center', 'modal', 'sidebar'], default: 'top' },
   pages: [{ type: String, default: 'all' }],
   audience: { type: String, enum: ['all', 'users', 'renters', 'admins', 'guests'], default: 'all' },
   schedule: {
     startDate: { type: Date, default: Date.now },
     endDate: { type: Date },
     showOnce: { type: Boolean, default: false },
-    frequency: { type: String, enum: ['always', 'once', 'daily'], default: 'always' }
+    frequency: { type: String, enum: ['always', 'once', 'daily', 'weekly'], default: 'always' }
   },
   isActive: { type: Boolean, default: true },
   // Set when an admin switches an announcement off by hand, so the scheduled
