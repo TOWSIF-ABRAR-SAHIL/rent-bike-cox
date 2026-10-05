@@ -196,8 +196,6 @@ rent-bike-cox/
 
 ## Remaining / Known Issues
 
-- **AnnouncementManager enum mismatch** — UI sends `toast/center/weekly`, the
-  model expects different enums; may return 500 (fix pending).
 - **Live anonymous React `#418` hydration warning** — seen on the deployed
   frontend even cache-bypassed; suspected Vercel edge/SSR cache, not
   reproducible locally (investigation pending).
