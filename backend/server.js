@@ -336,6 +336,10 @@ if (process.env.NODE_ENV !== 'production') {
 // also capped /profile, /refresh and /export-data at 5 requests per 15 minutes per
 // IP, which broke ordinary use behind NAT — the SPA alone calls /auth/refresh on a
 // timer.
+// Credential brute-force protection is OFF by user decision (dev and production):
+// repeated login attempts must never lock the user out. The limiter is still
+// *registered* so the admin Rate Limits view and apiContract test see it, but it
+// is not mounted on any route, so it never rejects a request.
 const authLimiter = makeLimiter('auth', {
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -343,18 +347,7 @@ const authLimiter = makeLimiter('auth', {
   standardHeaders: true,
   legacyHeaders: false,
 });
-// Credential brute-force protection stays ON in production. In dev it is off:
-// local testing (and automated browser QA) burns 5 logins in seconds, and
-// there is no attacker on localhost worth locking ourselves out for.
-if (process.env.NODE_ENV === 'production') {
-  app.use([
-    '/api/auth/login',
-    '/api/auth/register',
-    '/api/auth/forgot-password',
-    '/api/auth/verify-otp',
-    '/api/auth/reset-password',
-  ], authLimiter);
-}
+void authLimiter;
 
 // Looser ceiling for the remaining authenticated auth endpoints. Not registered:
 // the admin view lists the credential limiters, and this one never rejects ordinary

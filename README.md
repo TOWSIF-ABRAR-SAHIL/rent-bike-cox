@@ -47,7 +47,11 @@ Bike, car & jeep rental platform for Cox's Bazar. Guest browsing, 3-role system 
 - **Photo lightbox** — fullscreen gallery with zoom and keyboard navigation
 - **SEO** — meta tags, robots.txt, sitemap.xml, JSON-LD schema
 - **Security** — Helmet CSP, rate limiting, audit logging, fraud detection, circuit breaker
-- **Testing** — Vitest, run with `npm test` in either package (250 backend + 80 frontend)
+- **Disputes** — customers raise disputes, Admin reviews + resolves from the Disputes tab
+- **Login UX** — failed logins show both an inline error and a toast; the 5-attempt
+  credential lockout is OFF by owner decision (dev and production), so repeated
+  logins never lock the account
+- **Testing** — Vitest, run with `npm test` in either package (254 backend + 94 frontend)
 - **Rendering** — public pages (`/`, `/faq`, `/bike/[id]`) are server-rendered with ISR and prefetch their data; the policy pages ship no JavaScript; auth/booking/dashboard pages stay client-side
 
 ## Demo Accounts
@@ -174,6 +178,32 @@ rent-bike-cox/
 - `docs/Database.md` — All schemas and relations
 - `docs/Error-handling.md` — Status codes and error patterns
 - `CREDENTIALS.md` — All secrets and API keys (gitignored)
+
+## Recent Changes (latest first)
+
+- Login credential rate limiter removed everywhere (dev + production) — no more
+  login lockouts; the `auth` limiter stays registered for the admin Rate Limits
+  view only and is mounted on no route.
+- Login failures fire an error toast in addition to the inline form error
+  (wrong password, invalid ID, lockout, generic).
+- Admin Dashboard gained a **Disputes** tab: stats, filter/search, detail view,
+  resolve/dismiss with resolution note.
+- Tracking (live fleet) map: side-panel toggle and recenter/zoom controls no
+  longer overlap — all controls clickable again.
+- Light S-Rent theme is the default; dark mode stays a user toggle.
+- Service worker `rbx-v2`: no fetch caching on localhost/127.0.0.1, fixing
+  poisoned dev chunks.
+
+## Remaining / Known Issues
+
+- **AnnouncementManager enum mismatch** — UI sends `toast/center/weekly`, the
+  model expects different enums; may return 500 (fix pending).
+- **Live anonymous React `#418` hydration warning** — seen on the deployed
+  frontend even cache-bypassed; suspected Vercel edge/SSR cache, not
+  reproducible locally (investigation pending).
+- **Env/infra gaps** — Sentry DSN, SMTP credentials, Redis URL, Atlas M0→M10
+  upgrade, Render API key (all deferred, app runs without them).
+- PWA manifest exists, but no install-banner/QR pointing to a future mobile app.
 
 ## Commit Convention
 
