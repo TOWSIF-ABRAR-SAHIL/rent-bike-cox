@@ -343,13 +343,18 @@ const authLimiter = makeLimiter('auth', {
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use([
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/forgot-password',
-  '/api/auth/verify-otp',
-  '/api/auth/reset-password',
-], authLimiter);
+// Credential brute-force protection stays ON in production. In dev it is off:
+// local testing (and automated browser QA) burns 5 logins in seconds, and
+// there is no attacker on localhost worth locking ourselves out for.
+if (process.env.NODE_ENV === 'production') {
+  app.use([
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/forgot-password',
+    '/api/auth/verify-otp',
+    '/api/auth/reset-password',
+  ], authLimiter);
+}
 
 // Looser ceiling for the remaining authenticated auth endpoints. Not registered:
 // the admin view lists the credential limiters, and this one never rejects ordinary
