@@ -1,0 +1,6 @@
+{"message":"Gateway registered: sslcommerz (SSLCommerz)","level":"info","service":"rentbike","timestamp":"2026-09-27T20:09:10.311Z"}
+{"service":"rentbike","level":"info","message":"Server running on port 5055","timestamp":"2026-09-27T20:09:10.359Z"}
+{"service":"rentbike","interval":"60s","timeout":"300s","level":"info","message":"Cleanup scheduler started","timestamp":"2026-09-27T20:09:10.360Z"}
+{"message":"Maintenance reminder job disabled (DISABLE_JOBS=true)","level":"info","service":"rentbike","timestamp":"2026-09-27T20:09:10.360Z"}
+{"message":"Email campaign sender disabled (DISABLE_JOBS=true)","level":"info","service":"rentbike","timestamp":"2026-09-27T20:09:10.361Z"}
+{"service":"rentbike","method":"GET","url":"/api/health","status":200,"duration":10,"ip":"::1","userAgent":"node","correlationId":"[REDACTED]","level":"info","message":"request completed","timestamp":"2026-09-27T20:09:16.395Z"}
